@@ -2,7 +2,7 @@
 defmodule Exmbus.Apl.DataRecord do
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl.DataRecord.Header
-  alias Exmbus.Apl.DataRecord.DataType
+  alias Exmbus.DataType
 
   defstruct [
     # header is the Header struct

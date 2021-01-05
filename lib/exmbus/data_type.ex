@@ -1,4 +1,4 @@
-defmodule Exmbus.Apl.DataRecord.DataType do
+defmodule Exmbus.DataType do
   @moduledoc """
   Contains functions for working with data encoded according to EN 13757-3:2018 section 6.3.3 (Table 4)
   and specified in Annex A of same document.

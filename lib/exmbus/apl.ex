@@ -4,7 +4,7 @@ defmodule Exmbus.Apl do
 
   defstruct [
     records: [],
-    manufacturer: nil
+    manufacturer_data: nil
   ]
 
   @doc """
@@ -17,7 +17,7 @@ defmodule Exmbus.Apl do
 
     iex> decode(<<0b00000001, 0b00000011, 42, 0b01000001, 0b00000011, 62>>)
     {:ok, %Apl{
-      manufacturer: nil,
+      manufacturer_data: nil,
       records: [
         %Apl.DataRecord{
           data: 42,
@@ -57,14 +57,14 @@ defmodule Exmbus.Apl do
             }
           }
         }
-      ]}
-    }
+      ]
+    }}
 
     iex> decode(<<0x2F, 0x2F, 0x0F, 0x2F, 0x12, 0x34>>)
     {:ok, %Apl{
-      manufacturer: <<0x2F, 0x12, 0x34>>,
-      records: []}
-    }
+        manufacturer_data: <<0x2F, 0x12, 0x34>>,
+        records: [],
+    }}
   """
   def decode(bin) do
     decode(bin, [])
@@ -83,7 +83,7 @@ defmodule Exmbus.Apl do
         decode(rest, acc)
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        {:ok, %__MODULE__{records: :lists.reverse(acc), manufacturer: rest}}
+        {:ok, %__MODULE__{records: :lists.reverse(acc), manufacturer_data: rest}}
     end
   end
 

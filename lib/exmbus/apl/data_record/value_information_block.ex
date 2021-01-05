@@ -90,7 +90,6 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   end
 
   # vifes is a list of vife bytes
-  # rest is the rest of the telegram binary
   # struct is an initialized ValueInformationBlock from previous VIF
   # opts is options from the outside.
   defp decode_vifes([], rest, struct, _opts) do
@@ -163,12 +162,12 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   defp decode_vif_primary(<<_::1, 0b1111001::7>>),     do: {:ok, {:enhanced_identification, nil, ""}}
   defp decode_vif_primary(<<_::1, 0b1111010::7>>),     do: {:ok, {:address, nil, ""}}
 
-  defp decode_vif_fd(vif) do
-    raise "decoding from VIF linear extension table 0xFD not implemented"
+  defp decode_vif_fd(<<vif>>) do
+    raise "decoding from VIF linear extension table 0xFD not implemented (VIFE was #{u8_to_hex(vif)})"
   end
 
-  defp decode_vif_fb(vif) do
-    raise "decoding from VIF linear extension table 0xFB not implemented"
+  defp decode_vif_fb(<<vif>>) do
+    raise "decoding from VIF linear extension table 0xFB not implemented (VIFE was #{u8_to_hex(vif)})"
   end
 
   # collect vif and vife bytes and return them and the rest of the binary.
