@@ -24,7 +24,7 @@ defmodule Exmbus.Apl.DataRecord do
           function_field: :instantaneous,
           size: 8,
           storage: 0,
-          tariff: 0
+          tariff: 0,
         },
         vib: %ValueInformationBlock{
           description: :energy,

@@ -94,7 +94,7 @@ defmodule Exmbus.Tpl do
 
   # TPL header decoders
   def decode_tpl_header_short(bin) do
-
+    raise "TODO"
   end
   @doc """
   Decode a TPL long header.

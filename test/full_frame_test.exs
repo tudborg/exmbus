@@ -1,9 +1,12 @@
 defmodule FullFrameTest do
   use ExUnit.Case
 
-  test "mbus example" do
-    # borrowed from the old parser
-    datagram = Base.decode16!("6820206808FD7278563412931533032A0000000C1427048502046D32371F1502FD1700008916")
+  test "wmbus, unencrypted" do
+    datagram = Base.decode16!("2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F")
+  end
 
+  test "wmbus, encrypted: mode 5" do
+    datagram = Base.decode16!("2E4493157856341233037A2A0020055923C95AAA26D1B2E7493B013EC4A6F6D3529B520EDFF0EA6DEFC99D6D69EBF3")
+    key = <<1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17>>
   end
 end

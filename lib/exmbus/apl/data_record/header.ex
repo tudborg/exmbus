@@ -33,11 +33,16 @@ defmodule Exmbus.Apl.DataRecord.Header do
     case DIB.decode(bin) do
       {:ok, dib, rest} ->
         # we found a DataInformationBlock, continue to parse header.
-        {:ok, vib, rest} = VIB.decode(rest)
-        {:ok, %__MODULE__{dib: dib, vib: vib}, rest}
-      {:special_function, _type, _rest}=s ->
-        s # we just return the special function. The parser upstream will have to decide what to do,
-          # but there isn't a real header here. The APL layer knows what to do.
+        case VIB.decode(rest) do
+          {:ok, vib, rest} ->
+            {:ok, %__MODULE__{dib: dib, vib: vib}, rest}
+          {:error, reason, rest} ->
+            {:error, reason, rest}
+        end
+      {:special_function, _type, _rest}=special_function ->
+        # we just return the special function. The parser upstream will have to decide what to do,
+        # but there isn't a real header here. The APL layer knows what to do.
+        special_function
     end
   end
 
