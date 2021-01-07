@@ -10,26 +10,15 @@ defmodule DataRecordTest do
 
   describe "Main VIFE-code extension table (0xFD)" do
     test "0bE0010111 Error flags" do
-      {:ok, record, <<0xFF, 0xFF>>} = DataRecord.decode(<<0x02, 0xfd, 0x17, 0x00, 0x00, 0xFF, 0xFF>>)
+      {:ok, record, <<0xFF, 0xFF>>} = DataRecord.decode(<<0x02, 0xfd, 0x17, 0b00000100, 0b10000000, 0xFF, 0xFF>>)
 
       assert %DataRecord{
-        data: 0,
+        data: [true, false, false, false, false, false, false, false,
+              false, false, false, false, false, true, false, false],
         header: %Header{
-          dib: %DataInformationBlock{
-            coding: :int,
-            device: 0,
-            function_field: :instantaneous,
-            size: 16,
-            storage: 0,
-            tariff: 0
-          },
-          vib: %ValueInformationBlock{
-            description: :error_flags,
-            extensions: [],
-            multiplier: nil,
-            override_data_type: nil,
-            unit: ""
-          }
+          data_type: :type_d,
+          description: :error_flags,
+          size: 16,
         }
       } = record
     end

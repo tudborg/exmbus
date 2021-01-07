@@ -7,43 +7,198 @@ defmodule Exmbus.Apl.DataRecord.Header do
 
   # The header struct
   defstruct [
-    dib: nil,
-    vib: nil,
+    # DIB fields:
+    device: nil,
+    tariff: nil,
+    storage: nil,
+    function_field: nil,
+    # the coding and size comes from decoding the Data Field in the DIB
+    # they are split for easier access
+    coding: nil,
+    size: nil,
+    # VIB fields:
+    description: nil, # An atom describing the value. This is an atomized version of the "Description" from the documentation.
+    multiplier: nil,  # A multiplier to apply to the data. It's part of the VIF(E) information.
+    unit: nil,        # A string giving the unit of the value (e.g. kJ/h or °C)
+    extensions: [],   # A list of extensions that might modify the meaning of the data.
+    # Implied by a combination of the above
+    data_type: nil,  # If set, decode according to this datatype instead of what is found in the DIF
+                     # Options are: type_a, type_b, type_c, type_d, type_f, type_g,
+                     #              type_h, type_i, type_j, type_k, type_l, type_m
   ]
 
   @doc """
-  Decodes the next DataRecord header from a binary.
-
-    iex> decode(<<0b00000001, 0b00000011, 0xFF>>)
-    {:ok, %Header{
-      dib: %DataInformationBlock{coding: :int, device: 0, function_field: :instantaneous, size: 8, storage: 0, tariff: 0},
-      vib: %ValueInformationBlock{description: :energy, extensions: [], multiplier: 1, unit: "Wh"}
-    }, <<0xFF>>}
-
-    iex> decode(<<0x0F, 0x2F, 0xFF>>)
-    {:special_function, {:manufacturer_specific, :to_end}, <<0x2F, 0xFF>>}
-
-    iex> decode(<<0x2F, 0x2F, 0xFF>>)
-    {:special_function, :idle_filler, <<0x2F, 0xFF>>}
+  Decodes the next DataRecord Header from a binary.
   """
   @spec decode(binary())
-    :: {:ok, header :: %__MODULE__{}, rest :: binary()}
-    |  DIB.special_function()
-  def decode(bin) do
-    case DIB.decode(bin) do
-      {:ok, dib, rest} ->
-        # we found a DataInformationBlock, continue to parse header.
-        case VIB.decode(rest) do
-          {:ok, vib, rest} ->
-            {:ok, %__MODULE__{dib: dib, vib: vib}, rest}
-          {:error, reason, rest} ->
-            {:error, reason, rest}
-        end
-      {:special_function, _type, _rest}=special_function ->
+    :: {:ok, (header :: %__MODULE__{}) | {:special_function, type :: term()}, rest :: binary()}
+  def decode(bin, opts \\ []) do
+    case decode_dib(%__MODULE__{}, bin, opts) do
+      {:special_function, type, rest}=special_function ->
         # we just return the special function. The parser upstream will have to decide what to do,
         # but there isn't a real header here. The APL layer knows what to do.
         special_function
+      {:ok, %__MODULE__{}=header, rest} ->
+        # We found a DataInformationBlock and have filled in the header so far.
+        # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
+        # correctly.
+        decode_vib(header, rest, opts)
     end
   end
+
+  def decode_dib(header, <<special::4, 0b1111::4, rest::binary>>, _opts) do
+    # note that we are effectively stripping the least-significant bits of the dif which is
+    # always 0b1111 (i.e. 0xF) for special functions, so the following case only checks for the top
+    # 4 bits. In the manual these are written together (i.e. 0x0F), here we only write the MSB (0x0 instead of 0x0F)
+    case special do
+      # Start of manufacturer specific data structures to end of user data(see 6.5)
+      0x0 -> {:special_function, {:manufacturer_specific, :to_end}, rest}
+      # Same meaning as DIF = 0Fh + more records follow in next datagram (see 6.5)
+      0x1 -> {:special_function, {:manufacturer_specific, :more_records_follow}, rest}
+      # Idle filler, following byte is DIF, we could just recurse directly but let's keep the structure and return a special
+      0x2 -> {:special_function, :idle_filler, rest}
+      # special function range reserved for future use
+      r when r >= 0x3 and r <= 0x6 -> raise "special function DIF 0x#{Integer.to_string((r <<< 4) ||| 0xF, 16)} reserved for future use"
+      # Global readout request (all storage numbers, units, tariffs, function fields)
+      # TODO what does this mean exactly?
+      0x7 -> {:special_function, :global_readout_request, rest}
+    end
+  end
+  # regular DIF parsing:
+  def decode_dib(header, <<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts) do
+    {:ok, device, tariff, msb_storage, rest} =
+      case e do
+        # if extensions, decode dife:
+        1 -> decode_header_dife(rest)
+        # else return defaults:
+        0 -> {:ok, 0, 0, 0, rest}
+      end
+    #
+    storage = (msb_storage <<< 1) ||| lsb_storage
+    {default_data_type, coding, size} = DIB.decode_data_field(df)
+    {:ok, %{header |
+      device: device,
+      tariff: tariff,
+      storage: storage,
+      function_field: DIB.decode_function_field(ff),
+      coding: coding,
+      size: size,
+      data_type: default_data_type,
+    }, rest}
+  end
+
+  # decodes series of DIFE bytes.
+  # Note that this function should only be called if the DIF had the extension bit set.
+  defp decode_header_dife(<<0::1, device::1, tariff::2, storage::4, rest::binary>>) do
+    {:ok, device, tariff, storage, rest}
+  end
+  defp decode_header_dife(<<1::1, l_device::1, l_tariff::2, l_storage::4, rest::binary>>) do
+    {:ok, m_device, m_tariff, m_storage, rest} = decode_header_dife(rest)
+    {:ok,
+      (m_device <<< 1) ||| l_device,
+      (m_tariff <<< 2) ||| l_tariff,
+      (m_storage <<< 4) ||| l_storage,
+      rest
+    }
+  end
+
+  #
+  #
+  #
+
+  def decode_vib(header, bin, opts \\ []) do
+    # the :main is the default decode table name
+    decode_vib(header, :main, bin, opts)
+  end
+
+  # linear VIF-extension: EF, reserved for future use
+  defp decode_vib(_header, _table, <<0xEF, rest::binary>>, _opts), do: raise "VIF 0xEF reserved for future use."
+  # plain-text VIF:
+  defp decode_vib(header, _table, <<_::1, 0b111_1100::7, rest::binary>>, opts) do
+    case decode_vifes(header, rest, opts) do
+      {:ok, %__MODULE__{}=header, <<len, rest::binary>>} ->
+        # the unit is found after the VIB, so we now need to read the unit out from the rest of the data
+        <<ascii_vif::binary-size(len), rest::binary>> = rest
+        {:ok, %__MODULE__{header | description: {:user_defined, ascii_vif}}, rest}
+    end
+  end
+  # Any VIF: 7E / FE
+  # This VIF-Code can be used in direction master to slave for readout selection of all VIFs.
+  # See special function in 6.3.3
+  defp decode_vib(header, _table, <<_::1, 0b1111110::7, _rest::binary>>, _opts) do
+    raise "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d."
+  end
+  # manufacturer specific encoding. All bets are off.
+  defp decode_vib(header, _table, <<_::1, 0b1111111::7, _rest::binary>>, _opts) do
+    raise "Manufacturer-specific VIF encoding not implemented. See 6.4.1 list item e."
+  end
+  # linear VIF-extension: 0xFD, decode vif from table 14.
+  defp decode_vib(header, _table, <<0xFD, rest::binary>>, opts) do
+    decode_vib(header, 0xFD, rest, opts)
+  end
+  # linear VIF-extension: FB, decode vif from table 12.
+  defp decode_vib(header, _table, <<0xFB, rest::binary>>, opts) do
+    decode_vib(header, 0xFB, rest, opts)
+  end
+  defp decode_vib(header, table, <<vif::binary-size(1), rest::binary>>, opts) do
+    case VIB.decode_vif_table(header, table, vif) do
+      {:ok, header} ->
+        case vif do
+          # Do we have VIF extensions?
+          # yes:
+          <<1::1, _::7>> -> decode_vifes(header, rest, opts)
+          # no:
+          <<0::1, _::7>> -> {:ok, header, rest}
+        end
+    end
+  end
+
+  defp decode_vifes(header, <<_::1, 0b000::3, _::4, rest::binary>>, _opts) do
+    raise "VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)"
+  end
+  defp decode_vifes(header, <<_::1, 0b0010000::7, rest::binary>>, _opts) do
+    raise "VIFE E0010000 reserved"
+  end
+  defp decode_vifes(header, <<_::1, 0b0010001::7, rest::binary>>, _opts) do
+    raise "VIFE E0010001 reserved"
+  end
+  defp decode_vifes(header ,<<vife, rest::binary>>, _opts) do
+    raise "VIFE #{u8_to_hex(vife)} not implemented"
+  end
+
+
+
+
+
+
+  @doc """
+  Splits a binary into two, so that the left side contains a binary of all bytes
+  up to and including a byte without it's extension bit (MSB) set.
+
+  This is the way DRH blocks are seperated.
+
+    iex> split_by_extension_bit(<<0b0000_0000, 0xFF>>)
+    {<<0x00>>, <<0xFF>>}
+
+    iex> split_by_extension_bit(<<0b0000_0000, 0b0000_0000, 0xFF>>)
+    {<<0x00>>, <<0x00, 0xFF>>}
+
+    iex> split_by_extension_bit(<<0b1000_0000, 0b0000_0000, 0xFF>>)
+    {<<0b10000000, 0b00000000>>, <<0xFF>>}
+  """
+  @spec split_by_extension_bit(binary()) :: {binary(), binary()}
+  def split_by_extension_bit(<<byte::binary-size(1), rest::binary>>) do
+    case byte do
+      <<0::1, _::7>> ->
+        {byte, rest}
+      <<1::1, _::7>> ->
+        {tail, rest} = split_by_extension_bit(rest)
+        {<<byte::binary, tail::binary>>, rest}
+    end
+  end
+
+
+  defp u8_to_hex(u) when u >= 0 and u <= 255, do: "0x#{Integer.to_string(u, 16)}"
+
 
 end

@@ -137,6 +137,14 @@ defmodule Exmbus.DataType do
     {:ok, value, rest}
   end
 
+  def encode_type_a(value, bitsize) do
+    bcd =
+      value
+      |> Integer.digits
+      |> Integer.undigits(16)
+    {:ok, <<bcd::little-size(bitsize)>>}
+  end
+
   @doc """
   Type B
   Signed little-endian integer
@@ -304,8 +312,14 @@ defmodule Exmbus.DataType do
     raise "Type L (Listening window management) not implemented"
   end
 
+  # Type M: Date and time (CP_LVAR)
+  # The time format Type M contains always the coordinated universal time.
+  # A deviation of the local time zone to UTC can be considered in the field time offset.
+  # Daylight savings shall not be used in this time format.
   def decode_type_m(_bin) do
     raise "Type M (Compound CP_LVAR: Date and time/duration) not implemented"
+
+    # returns DateTime
   end
 
   # convert bitstring to list of bools.

@@ -7,41 +7,12 @@ defmodule Exmbus.Apl.DataRecord do
   defstruct [
     # header is the Header struct
     header: nil,
-    # data is the raw data decoded based on the structure described in header
+    # data is the data decoded based on the structure described in the header
     data: nil,
   ]
 
   @doc """
   Decodes a single DataRecord from a binary.
-
-    #dif, 8 bit int, vif, energy NNN=3, data=42
-    iex> decode(<<0b00000001, 0b00000011, 42, 0xFF>>)
-    {:ok, %DataRecord{
-      header:  %Header{
-        dib: %DataInformationBlock{
-          coding: :int,
-          device: 0,
-          function_field: :instantaneous,
-          size: 8,
-          storage: 0,
-          tariff: 0,
-        },
-        vib: %ValueInformationBlock{
-          description: :energy,
-          extensions: [],
-          multiplier: 1,
-          unit: "Wh"
-        }
-      },
-      data: 42
-    }, <<0xFF>>}
-
-    iex> decode(<<0x2F, 0xFF>>)
-    {:special_function, :idle_filler, <<0xFF>>}
-
-    iex> decode(<<0x0F, 0xFF>>)
-    {:special_function, {:manufacturer_specific, :to_end}, <<0xFF>>}
-
   """
   @spec decode(binary())
     :: {:ok, %__MODULE__{}, rest :: binary()}
@@ -83,9 +54,9 @@ defmodule Exmbus.Apl.DataRecord do
   """
   @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
   # The trivial case, no extensions, no multiplier. The data is the data.
-  def value(%DataRecord{header: %{vib: %{extensions: [], multiplier: nil}}, data: data}), do: data
+  def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}), do: data
   # Also easy case, no extensions, a multiplier exists and data is numerical:
-  def value(%DataRecord{header: %{vib: %{extensions: [], multiplier: mul}}, data: data}) when is_number(data), do: mul * data
+  def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data), do: mul * data
 
   @doc """
   Returns the unit for a DataRecord as a string.
@@ -93,30 +64,37 @@ defmodule Exmbus.Apl.DataRecord do
   raw unit in the header's Value Information Block.
   """
   # easy case, no extensions. The unit is the unit.
-  def unit(%DataRecord{header: %{vib: %{extensions: [], unit: unit}}}), do: unit
+  def unit(%DataRecord{header: %{extensions: [], unit: unit}}), do: unit
 
 
   @doc """
   decodes a value associated with a given header.
   """
   # No data:
-  def decode_data(%{dib: %{coding: :no_data, size: 0}}, bin), do: {:ok, :no_data, bin}
+  def decode_data(%{coding: :no_data, size: 0}, bin), do: {:ok, :no_data, bin}
   # Selection for readout:
-  def decode_data(%{dib: %{coding: :selection_for_readout, size: 0}}, bin), do: {:ok, :selection_for_readout, bin}
+  def decode_data(%{coding: :selection_for_readout, size: 0}, bin), do: {:ok, :selection_for_readout, bin}
   # BCD of any size (Type A)
-  def decode_data(%{dib: %{coding: :bcd, size: size}}, bin), do: DataType.decode_type_a(bin, size)
+  def decode_data(%{data_type: :type_a, size: size}, bin), do: DataType.decode_type_a(bin, size)
+  # Signed integer (Type B)
+  def decode_data(%{data_type: :type_b, size: size}, bin), do: DataType.decode_type_b(bin, size)
+  # Unsigned integer (Type C)
+  def decode_data(%{data_type: :type_c, size: size}, bin), do: DataType.decode_type_c(bin, size)
+  # Boolean (bit array) (Type D)
+  def decode_data(%{data_type: :type_d, size: size}, bin), do: DataType.decode_type_d(bin, size)
+  # Datetime 32bit (Type F)
+  def decode_data(%{data_type: :type_f, size: 32}, bin), do: DataType.decode_type_f(bin)
   # Date (Type G)
-  def decode_data(%{vib: %{description: :date}, dib: %{coding: :int, size: 16}}, bin), do: DataType.decode_type_g(bin)
-  # (Date)Time, depending on size, uses Type F, J, I or M
-  def decode_data(%{vib: %{description: :datetime}, dib: %{coding: :int, size: 32}}, bin), do: DataType.decode_type_f(bin)
-  def decode_data(%{vib: %{description: :datetime}, dib: %{coding: :int, size: 24}}, bin), do: DataType.decode_type_j(bin)
-  def decode_data(%{vib: %{description: :datetime}, dib: %{coding: :int, size: 48}}, bin), do: DataType.decode_type_i(bin)
-  def decode_data(%{vib: %{description: :datetime}, dib: %{size: :lvar}}, bin), do: DataType.decode_type_m(bin)
-  # Int/Binary (default is signed int, no override by VIF/VIFE)
-  def decode_data(%{dib: %{coding: :int, size: size}}, bin), do: DataType.decode_type_b(bin, size)
-  # Real
-  def decode_data(%{dib: %{coding: :real, size: 32}}, bin), do: DataType.decode_type_h(bin)
-  # variable length coding (LVAR)
-  def decode_data(%{dib: %{coding: :variable_length, size: :lvar}}, bin), do: DataType.decode_lvar(bin)
+  def decode_data(%{data_type: :type_g, size: 16}, bin), do: DataType.decode_type_g(bin)
+  # Real 32 bit (Type H)
+  def decode_data(%{data_type: :type_h, size: 32}, bin), do: DataType.decode_type_h(bin)
+  # Datetime 48 bit (Type I)
+  def decode_data(%{data_type: :type_i, size: 48}, bin), do: DataType.decode_type_i(bin)
+  # Time 24 bit (Type J)
+  def decode_data(%{data_type: :type_j, size: 24}, bin), do: DataType.decode_type_j(bin)
+  # Datetime in LVAR (Type M)
+  def decode_data(%{data_type: :type_m, size: :lvar}, bin), do: DataType.decode_type_m(bin)
+  # Variable length coding (LVAR)
+  def decode_data(%{coding: :variable_length, size: :lvar}, bin), do: DataType.decode_lvar(bin)
 
 end
