@@ -7,10 +7,11 @@ defmodule Exmbus.Message do
   alias Exmbus.Tpl
   alias Exmbus.Apl
   alias Exmbus.Apl.DataRecord
+  alias Exmbus.Apl.EncryptedApl
   alias Exmbus.Dll.Wmbus
 
   defstruct [
-    raw: nil, # raw internal parsed layers.
+    layers: nil, # internal parsed layer list
     records: nil, # [%DataRecord{}]
     manufacturer: nil,
     identification_no: nil,
@@ -19,22 +20,93 @@ defmodule Exmbus.Message do
   ]
 
   @doc """
-  Create a Message struct from parsed list
+  Parses a binary into a Message structure.
+  This is the raising version of parse/2
   """
-  def from_parsed(parsed, opts  \\ %{})
-  def from_parsed(parsed, opts) when is_list(opts), do: from_parsed(parsed, opts |> Enum.into(%{}))
-  def from_parsed(parsed, opts) when is_map(opts) do
-    # Gather manufacturer, identification number, device, version
-    {:ok, {m, i, d, v}} = gather_m_i_d_v(parsed, nil, nil, nil, nil, opts)
-    {:ok, records} = gather_records(parsed, opts)
+  def parse!(bin, opts \\ %{}) do
+    case parse(bin, opts) do
+      {:ok, message} -> message
+      {:error, reason} -> raise "parse!/2 failed with reason=#{inspect reason}"
+    end
+  end
 
-    parsed = case Map.get(opts, :keep_raw, false) do
-      true -> parsed
+  @doc """
+  Parses a binary into a Message structure.
+  This function will guess what DLL is being used and parse accordingly.
+  You can parse using a specific DLL using one of the parse_* functions.
+  """
+  def parse(bin, opts \\ %{})
+
+  def parse(bin, opts) when is_list(opts), do: parse(bin, opts |> Enum.into(%{}))
+  # Try to auto-guess what type of DLL is used
+  # If the signature is start,length,length,start it's probably MBus DLL
+  def parse(<<s, l, l, s, _::binary>>=bin, opts) when is_binary(bin), do: parse_mbus(bin ,opts)
+  # otherwise probably WMBus
+  def parse(bin, opts) when is_binary(bin), do: parse_wmbus(bin, opts)
+
+  @doc """
+  Parses a binary into a Message struct.
+  The binary must be a WMBus DLL binary
+  """
+  def parse_wmbus(bin, opts) do
+    case Wmbus.parse(bin, opts, []) do
+      {:ok, layers} -> from_layers(layers, opts)
+    end
+  end
+  @doc """
+  Parses a binary into a Message struct.
+  The binary must be an MBus DLL binary
+  """
+  def parse_mbus(bin, opts) do
+    raise "TODO"
+    # case Mbus.parse(bin, opts, []) do
+    #   {:ok, layers} -> from_layers(layers, opts)
+    # end
+  end
+
+
+  @doc """
+  Decrypt a Message where records are :encrypted.
+  :keyfn must be specified as an option.
+  """
+  def decrypt(message, opts) when is_list(opts), do: decrypt(message, opts |> Enum.into(%{}))
+  def decrypt(%__MODULE__{records: :encrypted, layers: layers}=message, opts) when is_list(layers) do
+    case Map.has_key?(opts, :keyfn) do
+      false -> raise "No :keyfn given in options to decrypt"
+      true  -> from_layers(layers, opts)
+    end
+  end
+
+  @doc """
+  Create a Message struct from a layer list.
+  The layer list is returned from some of the initial layer parsers like DLL.Wmbus.
+
+  If the APL layer is encrypted this function will return a Message struct where
+  the records field is set to `:encrypted`.
+
+  You can decrypt the APL by supplying a `:keyfn` option to this function as an option,
+  or call `Message.decrypt/2` later, with `:keyfn` as an option.
+
+  The `:keyfn` must be a function that takes two arguments, layers and options (same as this function),
+  and return {:ok, [key|_]} when byte_size(key) == 16.
+
+  If the Key function returns multiple keys they will be attempted from the head until the list
+  is empty. If no keys match the error `{:error, :no_keys_matched}` will be returned.
+  """
+  def from_layers(layers, opts  \\ %{})
+  def from_layers(layers, opts) when is_list(opts), do: from_layers(layers, opts |> Enum.into(%{}))
+  def from_layers([%Apl{} | _]=layers, opts) when is_map(opts) do
+    # Gather manufacturer, identification number, device, version
+    {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
+    {:ok, records} = gather_records(layers, opts)
+    # If we successfully gathered records, we only keep the original layers list
+    # if :keep_layers is set true in the options.
+    layers = case Map.get(opts, :keep_layers, false) do
+      true -> layers
       false -> nil
     end
-
     {:ok, %__MODULE__{
-      raw: parsed,
+      layers: layers,
       records: records,
       manufacturer: m,
       identification_no: i,
@@ -42,58 +114,55 @@ defmodule Exmbus.Message do
       version: v,
     }}
   end
-
-  ##
-  ## Getters:
-  ##
-
-  def to_map!(%__MODULE__{manufacturer: manufacturer, identification_no: identification_no, device: device, version: version, records: records}) do
-    %{
-      manufacturer: manufacturer,
-      identification_no: identification_no,
-      device: device,
-      version: version,
-      records: Enum.map(records, &DataRecord.to_map!/1),
-    }
+  # encrypted APL, keyfn supplied, auto-decrypt
+  def from_layers([%EncryptedApl{} | _]=layers, %{keyfn: f}=opts) when is_function(f) do
+    case decrypt_layers(layers, f, opts) do
+      {:ok, [%EncryptedApl{} | _]} -> raise "Avoiding infinite recursion" # probably overly protective, but...
+      {:ok, [_ | _]=plain_layers} -> from_layers(plain_layers, opts)
+      {:error, _}=e -> e
+    end
+  end
+  # encrypted APL, keyfn not supplied, mark records as encrypted.
+  # You can call Message.decrypt(message, keyfn: ...) on the returned struct to
+  # try decrypting it.
+  def from_layers([%EncryptedApl{} | _]=layers, opts) when is_map(opts) do
+    # Gather manufacturer, identification number, device, version
+    {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
+    {:ok, %__MODULE__{
+      layers: layers,
+      records: :encrypted,
+      manufacturer: m,
+      identification_no: i,
+      device: d,
+      version: v,
+    }}
   end
 
 
-  @doc """
-  Returns a tuple {value, unit} of the first record that matches the given requirements.
-
-  You can pass a function that takes a %DataRecord{} and returns true | false,
-  or you can pass a Keyword list specifying what requirements you are looking for.
-  The available requirements are:
-
-  - :storage
-  - :device
-  - :tariff
-  - :function_field
-  - :description
-  - :unit
-  """
-  def filter_records(%__MODULE__{records: records}, requirements) do
-    find_fn =
-      case requirements do
-        l when is_list(l) -> fn record -> record_matches?(record, requirements) end
-        f when is_function(f, 1) -> f
-      end
-    Enum.filter(records, find_fn)
-  end
-
-  # helper for checking if a record matches a set of requirements
-  defp record_matches?(record, []), do: true
-  defp record_matches?(%DataRecord{header: %{storage: v}}=r, [{:storage, v} | rest]), do: record_matches?(r, rest)
-  defp record_matches?(%DataRecord{header: %{device: v}}=r, [{:device, v} | rest]), do: record_matches?(r, rest)
-  defp record_matches?(%DataRecord{header: %{tariff: v}}=r, [{:tariff, v} | rest]), do: record_matches?(r, rest)
-  defp record_matches?(%DataRecord{header: %{function_field: v}}=r, [{:function_field, v} | rest]), do: record_matches?(r, rest)
-  defp record_matches?(%DataRecord{header: %{description: v}}=r, [{:description, v} | rest]), do: record_matches?(r, rest)
-  defp record_matches?(%DataRecord{}=r, [{:unit, u} | rest]), do: DataRecord.unit!(r) == u and record_matches?(r, rest)
-  defp record_matches?(_, _), do: false
 
   ##
   ## Construction helpers:
   ##
+
+  defp decrypt_layers(layers, keys_or_function) do
+    decrypt_layers(layers, keys_or_function, %{})
+  end
+  defp decrypt_layers(layers, f, opts) when is_function(f, 2) do
+    case f.(layers, opts) do
+      {:ok, keys} when is_list(keys) -> decrypt_layers(layers, keys, opts)
+      {:error, _}=e -> e
+    end
+  end
+  defp decrypt_layers(layers, [], _opts) do
+    {:error, :no_keys_matched}
+  end
+  defp decrypt_layers(layers, [key|tail], opts) do
+    case EncryptedApl.decrypt(layers, key, opts) do
+      {:ok, layers} -> {:ok, layers}
+      {:error, {:invalid_key, _}} -> decrypt_layers(tail, layers, opts)
+    end
+  end
+
 
   # Gather manufacturer, identification number, device, version from parsed layers,
   # returning as soon as we have found it.
@@ -106,6 +175,10 @@ defmodule Exmbus.Message do
   end
   # Gather from APL
   defp gather_m_i_d_v([%Apl{} | rest], m, i, d, v, opts) do
+    gather_m_i_d_v(rest, m, i, d, v, opts)
+  end
+  # Gather from APL
+  defp gather_m_i_d_v([%EncryptedApl{} | rest], m, i, d, v, opts) do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
   # Gather from TPL
@@ -131,7 +204,7 @@ defmodule Exmbus.Message do
       v || dll.version,
       opts)
   end
-  # gather (normalized) record values into a map
+  # gather records. Currently we just copy from the APL
   defp gather_records([%Apl{records: records} | _], _opts) do
     {:ok, records}
   end

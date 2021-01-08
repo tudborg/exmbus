@@ -10,56 +10,36 @@ defmodule FullFrameTest do
 
   test "wmbus, unencrypted Table P.1 from en13757-3:2003" do
     datagram = Base.decode16!("2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F")
-    assert {:ok, [
+    assert {:ok, %Message{}=message} = Exmbus.parse(datagram, keep_layers: true)
+    assert [
       %Apl{
         records: [
           %Exmbus.Apl.DataRecord{
             data: 2850427,
             header: %Exmbus.Apl.DataRecord.Header{
-              coding: :bcd,
-              data_type: :type_a,
-              description: :volume,
-              device: 0,
-              extensions: [],
+              coding: :bcd, data_type: :type_a,
+              description: :volume, device: 0, extensions: [],
               function_field: :instantaneous,
-              multiplier: 0.01,
-              size: 32,
-              storage: 0,
-              tariff: 0,
-              unit: "l",
+              multiplier: 0.01, size: 32, storage: 0, tariff: 0, unit: "l",
             }
           },
           %Exmbus.Apl.DataRecord{
             data: ~N[2008-05-31 23:50:00],
             header: %Exmbus.Apl.DataRecord.Header{
-              coding: :int_or_bin,
-              data_type: :type_f,
-              description: :naive_datetime,
-              device: 0,
-              extensions: [],
+              coding: :int_or_bin, data_type: :type_f,
+              description: :naive_datetime, device: 0, extensions: [],
               function_field: :instantaneous,
-              multiplier: nil,
-              size: 32,
-              storage: 0,
-              tariff: 0,
-              unit: nil,
+              multiplier: nil, size: 32, storage: 0, tariff: 0, unit: nil,
             }
           },
           %Exmbus.Apl.DataRecord{
             data: [false, false, false, false, false, false, false, false,
                    false, false, false, false, false, false, false, false],
             header: %Exmbus.Apl.DataRecord.Header{
-              coding: :int_or_bin,
-              data_type: :type_d,
-              description: :error_flags,
-              device: 0,
-              extensions: [],
+              coding: :int_or_bin, data_type: :type_d,
+              description: :error_flags, device: 0, extensions: [],
               function_field: :instantaneous,
-              multiplier: nil,
-              size: 16,
-              storage: 0,
-              tariff: 0,
-              unit: nil,
+              multiplier: nil, size: 16, storage: 0, tariff: 0, unit: nil,
             }
           }
         ],
@@ -70,22 +50,13 @@ defmodule FullFrameTest do
           access_no: 42,
           configuration_field: %Tpl.ConfigurationField{mode: 0},
           status: %Tpl.Status{
-            application_status: :no_error,
-            low_power: false,
-            manufacturer_status: 0b000,
-            permanent_error: false,
-            temporary_error: false,
+            application_status: :no_error, low_power: false, manufacturer_status: 0b000,
+            permanent_error: false, temporary_error: false,
           },
         },
       },
-      %Wmbus{
-        manufacturer: "ELS",
-        identification_no: 12345678,
-        device: :gas,
-        version: 51,
-        control: :snd_nr,
-      },
-    ]} = Exmbus.parse_wmbus(datagram)
+      %Wmbus{manufacturer: "ELS", identification_no: 12345678, device: :gas, version: 51, control: :snd_nr},
+    ] = message.layers
   end
 
   test "wmbus, encrypted: mode 5 Table P.1 from en13757-3:2003" do
@@ -97,106 +68,22 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, parsed=[
-      %EncryptedApl{
-        encrypted_bytes: <<89, 35, 201, 90, 170, 38, 209, 178, 231, 73, 59, 1, 62, 196, 166, 246,
-                           211, 82, 155, 82, 14, 223, 240, 234, 109, 239, 201, 157, 109, 105, 235, 243>>,
-        plain_bytes: <<>>,
-        mode: {:mode, 5},
-        iv: <<147, 21, 120, 86, 52, 18, 51, 3, 42, 42, 42, 42, 42, 42, 42, 42>>,
-      },
-      tpl=%Tpl{
-        frame_type: :full_frame,
-        header: %Tpl.Short{
-          access_no: 42,
-          configuration_field: %Tpl.ConfigurationField{mode: 5},
-          status: %Tpl.Status{
-            application_status: :no_error,
-            low_power: false,
-            manufacturer_status: 0b000,
-            permanent_error: false,
-            temporary_error: false,
-          },
-        },
-      },
-      dll=%Wmbus{
-        manufacturer: "ELS",
-        identification_no: 12345678,
-        device: :gas,
-        version: 51,
-        control: :snd_nr,
-      },
-    ]} = Exmbus.parse_wmbus(datagram)
+    assert {:ok, %Message{layers: layers, records: :encrypted}} = Exmbus.parse(datagram)
+    assert [eapl=%EncryptedApl{} | layers] = layers
+    assert [_tpl=%Tpl{} | layers] = layers
+    assert [_dll=%Wmbus{} | layers] = layers
+    assert [] = layers
 
-    assert {:ok, plain_parsed=[
-      %Apl{
-        records: records=[
-          %Exmbus.Apl.DataRecord{
-            data: 2850427,
-            header: %Exmbus.Apl.DataRecord.Header{
-              coding: :bcd,
-              data_type: :type_a,
-              description: :volume,
-              device: 0,
-              extensions: [],
-              function_field: :instantaneous,
-              multiplier: 0.01,
-              size: 32,
-              storage: 0,
-              tariff: 0,
-              unit: "l",
-            }
-          },
-          %Exmbus.Apl.DataRecord{
-            data: ~N[2008-05-31 23:50:00],
-            header: %Exmbus.Apl.DataRecord.Header{
-              coding: :int_or_bin,
-              data_type: :type_f,
-              description: :naive_datetime,
-              device: 0,
-              extensions: [],
-              function_field: :instantaneous,
-              multiplier: nil,
-              size: 32,
-              storage: 0,
-              tariff: 0,
-              unit: nil,
-            }
-          },
-          %Exmbus.Apl.DataRecord{
-            data: [false, false, false, false, false, false, false, false,
-                   false, false, false, false, false, false, false, false],
-            header: %Exmbus.Apl.DataRecord.Header{
-              coding: :int_or_bin,
-              data_type: :type_d,
-              description: :error_flags,
-              device: 0,
-              extensions: [],
-              function_field: :instantaneous,
-              multiplier: nil,
-              size: 16,
-              storage: 0,
-              tariff: 0,
-              unit: nil,
-            }
-          }
-        ]
-      },
-      ^tpl,
-      ^dll,
-    ]} = Exmbus.decrypt(parsed, keyfn)
+    assert %EncryptedApl{
+      encrypted_bytes: <<89, 35, 201, 90, 170, 38, 209, 178, 231, 73, 59, 1, 62, 196, 166, 246, 211, 82, 155, 82, 14, 223, 240, 234, 109, 239, 201, 157, 109, 105, 235, 243>>,
+      iv: <<147, 21, 120, 86, 52, 18, 51, 3, 42, 42, 42, 42, 42, 42, 42, 42>>,
+      mode: {:mode, 5},
+      plain_bytes: ""
+    } = eapl
 
-    assert {:ok, %Message{
-        raw: ^plain_parsed,
-        records: ^records,
-        manufacturer: "ELS",
-        identification_no: 12345678,
-        device: :gas,
-        version: 51,
-    }} = Exmbus.to_message(datagram, keyfn: keyfn, keep_raw: true)
+    assert {:ok, %Message{layers: nil, records: records}} = Exmbus.parse(datagram, keyfn: keyfn)
+    assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
-
-
 
   test "wmbus, encrypted: mode 5 Table F.2 from CEN/TR 17167:2018" do
     datagram = Base.decode16!("294493444433221155087288776655934455080004100500DFE2A782146D1513581CD2F83F3904015B19")
@@ -211,12 +98,11 @@ defmodule FullFrameTest do
       version: 85,
       records: [
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :units_for_hca,    unit: nil,  value: 1234},
-        %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25}
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :date,             unit: nil,  value: ~D[2007-04-30]},
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :units_for_hca,    unit: nil,  value: 23456},
+        %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25},
       ],
-    } = Exmbus.to_map!(datagram, keyfn: keyfn)
+    } = Exmbus.simplified!(datagram, keyfn: keyfn)
   end
-
 
 end
