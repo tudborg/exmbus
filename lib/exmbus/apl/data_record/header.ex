@@ -28,12 +28,12 @@ defmodule Exmbus.Apl.DataRecord.Header do
   ]
 
   @doc """
-  Decodes the next DataRecord Header from a binary.
+  Parses the next DataRecord Header from a binary.
   """
-  @spec decode(binary())
+  @spec parse(binary())
     :: {:ok, (header :: %__MODULE__{}) | {:special_function, type :: term()}, rest :: binary()}
-  def decode(bin, opts \\ []) do
-    case decode_dib(%__MODULE__{}, bin, opts) do
+  def parse(bin, opts \\ []) do
+    case parse_dib(%__MODULE__{}, bin, opts) do
       {:special_function, type, rest}=special_function ->
         # we just return the special function. The parser upstream will have to decide what to do,
         # but there isn't a real header here. The APL layer knows what to do.
@@ -42,11 +42,11 @@ defmodule Exmbus.Apl.DataRecord.Header do
         # We found a DataInformationBlock and have filled in the header so far.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        decode_vib(header, rest, opts)
+        parse_vib(header, rest, opts)
     end
   end
 
-  def decode_dib(header, <<special::4, 0b1111::4, rest::binary>>, _opts) do
+  def parse_dib(header, <<special::4, 0b1111::4, rest::binary>>, _opts) do
     # note that we are effectively stripping the least-significant bits of the dif which is
     # always 0b1111 (i.e. 0xF) for special functions, so the following case only checks for the top
     # 4 bits. In the manual these are written together (i.e. 0x0F), here we only write the MSB (0x0 instead of 0x0F)
@@ -65,11 +65,11 @@ defmodule Exmbus.Apl.DataRecord.Header do
     end
   end
   # regular DIF parsing:
-  def decode_dib(header, <<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts) do
+  def parse_dib(header, <<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts) do
     {:ok, device, tariff, msb_storage, rest} =
       case e do
         # if extensions, decode dife:
-        1 -> decode_header_dife(rest)
+        1 -> parse_header_dife(rest)
         # else return defaults:
         0 -> {:ok, 0, 0, 0, rest}
       end
@@ -89,11 +89,11 @@ defmodule Exmbus.Apl.DataRecord.Header do
 
   # decodes series of DIFE bytes.
   # Note that this function should only be called if the DIF had the extension bit set.
-  defp decode_header_dife(<<0::1, device::1, tariff::2, storage::4, rest::binary>>) do
+  defp parse_header_dife(<<0::1, device::1, tariff::2, storage::4, rest::binary>>) do
     {:ok, device, tariff, storage, rest}
   end
-  defp decode_header_dife(<<1::1, l_device::1, l_tariff::2, l_storage::4, rest::binary>>) do
-    {:ok, m_device, m_tariff, m_storage, rest} = decode_header_dife(rest)
+  defp parse_header_dife(<<1::1, l_device::1, l_tariff::2, l_storage::4, rest::binary>>) do
+    {:ok, m_device, m_tariff, m_storage, rest} = parse_header_dife(rest)
     {:ok,
       (m_device <<< 1) ||| l_device,
       (m_tariff <<< 2) ||| l_tariff,
@@ -106,16 +106,16 @@ defmodule Exmbus.Apl.DataRecord.Header do
   #
   #
 
-  def decode_vib(header, bin, opts \\ []) do
+  def parse_vib(header, bin, opts \\ []) do
     # the :main is the default decode table name
-    decode_vib(header, :main, bin, opts)
+    parse_vib(header, :main, bin, opts)
   end
 
   # linear VIF-extension: EF, reserved for future use
-  defp decode_vib(_header, _table, <<0xEF, rest::binary>>, _opts), do: raise "VIF 0xEF reserved for future use."
+  defp parse_vib(_header, _table, <<0xEF, rest::binary>>, _opts), do: raise "VIF 0xEF reserved for future use."
   # plain-text VIF:
-  defp decode_vib(header, _table, <<_::1, 0b111_1100::7, rest::binary>>, opts) do
-    case decode_vifes(header, rest, opts) do
+  defp parse_vib(header, _table, <<_::1, 0b111_1100::7, rest::binary>>, opts) do
+    case parse_vifes(header, rest, opts) do
       {:ok, %__MODULE__{}=header, <<len, rest::binary>>} ->
         # the unit is found after the VIB, so we now need to read the unit out from the rest of the data
         <<ascii_vif::binary-size(len), rest::binary>> = rest
@@ -125,44 +125,44 @@ defmodule Exmbus.Apl.DataRecord.Header do
   # Any VIF: 7E / FE
   # This VIF-Code can be used in direction master to slave for readout selection of all VIFs.
   # See special function in 6.3.3
-  defp decode_vib(header, _table, <<_::1, 0b1111110::7, _rest::binary>>, _opts) do
+  defp parse_vib(header, _table, <<_::1, 0b1111110::7, _rest::binary>>, _opts) do
     raise "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d."
   end
   # manufacturer specific encoding. All bets are off.
-  defp decode_vib(header, _table, <<_::1, 0b1111111::7, _rest::binary>>, _opts) do
+  defp parse_vib(header, _table, <<_::1, 0b1111111::7, _rest::binary>>, _opts) do
     raise "Manufacturer-specific VIF encoding not implemented. See 6.4.1 list item e."
   end
   # linear VIF-extension: 0xFD, decode vif from table 14.
-  defp decode_vib(header, _table, <<0xFD, rest::binary>>, opts) do
-    decode_vib(header, 0xFD, rest, opts)
+  defp parse_vib(header, _table, <<0xFD, rest::binary>>, opts) do
+    parse_vib(header, 0xFD, rest, opts)
   end
   # linear VIF-extension: FB, decode vif from table 12.
-  defp decode_vib(header, _table, <<0xFB, rest::binary>>, opts) do
-    decode_vib(header, 0xFB, rest, opts)
+  defp parse_vib(header, _table, <<0xFB, rest::binary>>, opts) do
+    parse_vib(header, 0xFB, rest, opts)
   end
-  defp decode_vib(header, table, <<vif::binary-size(1), rest::binary>>, opts) do
+  defp parse_vib(header, table, <<vif::binary-size(1), rest::binary>>, opts) do
     case VIB.decode_vif_table(header, table, vif) do
       {:ok, header} ->
         case vif do
           # Do we have VIF extensions?
           # yes:
-          <<1::1, _::7>> -> decode_vifes(header, rest, opts)
+          <<1::1, _::7>> -> parse_vifes(header, rest, opts)
           # no:
           <<0::1, _::7>> -> {:ok, header, rest}
         end
     end
   end
 
-  defp decode_vifes(header, <<_::1, 0b000::3, _::4, rest::binary>>, _opts) do
+  defp parse_vifes(header, <<_::1, 0b000::3, _::4, rest::binary>>, _opts) do
     raise "VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)"
   end
-  defp decode_vifes(header, <<_::1, 0b0010000::7, rest::binary>>, _opts) do
+  defp parse_vifes(header, <<_::1, 0b0010000::7, rest::binary>>, _opts) do
     raise "VIFE E0010000 reserved"
   end
-  defp decode_vifes(header, <<_::1, 0b0010001::7, rest::binary>>, _opts) do
+  defp parse_vifes(header, <<_::1, 0b0010001::7, rest::binary>>, _opts) do
     raise "VIFE E0010001 reserved"
   end
-  defp decode_vifes(header ,<<vife, rest::binary>>, _opts) do
+  defp parse_vifes(header ,<<vife, rest::binary>>, _opts) do
     raise "VIFE #{u8_to_hex(vife)} not implemented"
   end
 

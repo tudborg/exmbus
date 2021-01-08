@@ -13,47 +13,30 @@ defmodule Exmbus.Dll.Wmbus do
     identification_no: nil,
     version: nil,
     device: nil,
-
-    # not final
-    tpl: nil,
   ]
 
-  def decode(bin, opts \\ [])
-
-  def decode(bin, opts) when is_list(opts) do
-    decode(bin, Enum.into(opts, %{}))
+  def parse(<<len, rest::binary>>, %{length: true, crc: false}=opts, parsed) when byte_size(rest) == len do
+    parse(rest, %{opts | length: false}, parsed)
   end
 
-  def decode(<<len, rest::binary>>, %{length: true, crc: false}=opts) when byte_size(rest) == len do
-    decode(rest, %{opts | length: false})
-  end
-
-  def decode(<<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v, d, rest::binary>>, %{length: false, crc: false}=opts) do
+  def parse(<<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v, d, rest::binary>>, %{length: false, crc: false}=opts, parsed) do
     {:ok, control} = decode_c_field(c)
     {:ok, identification_no, <<>>} = DataType.decode_type_a(i_bytes, 32)
     {:ok, manufacturer} = Manufacturer.decode(man_bytes)
-    dll_opts = %{
-      # :/ In the case of short header in TPL then encryption will need information from DLL to create IV for decryption
-      dll: %{manufacturer: manufacturer, identification_no: identification_no, version: v, device: d}
+
+    dll = %__MODULE__{
+      control: control,
+      manufacturer: manufacturer,
+      identification_no: identification_no,
+      version: v,
+      device: d,
     }
-    case Tpl.decode(rest, Map.merge(dll_opts, opts)) do
-      {:error, reason} ->
-        {:error, {:tpl_decode_failed, reason}}
-      {:ok, tpl} ->
-        {:ok, %__MODULE__{
-          control: control,
-          manufacturer: manufacturer,
-          identification_no: identification_no,
-          version: v,
-          device: d,
-          tpl: tpl,
-        }}
-    end
+    Tpl.parse(rest, opts, [dll | parsed])
   end
 
   # set some defaults:
-  def decode(bin, %{}=opts) when not is_map_key(opts, :length), do: decode(bin, Map.put(opts, :length, true))
-  def decode(bin, %{}=opts) when not is_map_key(opts, :crc), do: decode(bin, Map.put(opts, :crc, false))
+  def parse(bin, %{}=opts, parsed) when not is_map_key(opts, :length), do: parse(bin, Map.put(opts, :length, true), parsed)
+  def parse(bin, %{}=opts, parsed) when not is_map_key(opts, :crc),    do: parse(bin, Map.put(opts, :crc, false), parsed)
 
   def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x0::4>>), do: raise "SND-NKE not implemented"
   def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x3::4>>), do: raise "SND-UD/SND-UD2 not implemented"

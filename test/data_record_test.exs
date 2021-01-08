@@ -10,7 +10,7 @@ defmodule DataRecordTest do
 
   describe "Main VIFE-code extension table (0xFD)" do
     test "0bE0010111 Error flags" do
-      {:ok, record, <<0xFF, 0xFF>>} = DataRecord.decode(<<0x02, 0xfd, 0x17, 0b00000100, 0b10000000, 0xFF, 0xFF>>)
+      {:ok, record, <<0xFF, 0xFF>>} = DataRecord.parse(<<0x02, 0xfd, 0x17, 0b00000100, 0b10000000, 0xFF, 0xFF>>)
 
       assert %DataRecord{
         data: [true, false, false, false, false, false, false, false,

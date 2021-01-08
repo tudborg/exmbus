@@ -14,14 +14,14 @@ defmodule Exmbus.Apl.DataRecord do
   @doc """
   Decodes a single DataRecord from a binary.
   """
-  @spec decode(binary())
+  @spec parse(binary())
     :: {:ok, %__MODULE__{}, rest :: binary()}
     |  Header.DataInformationBlock.special_function()
-  def decode(bin) do
-    case Header.decode(bin) do
+  def parse(bin) do
+    case Header.parse(bin) do
       {:ok, header, rest} ->
-        # decode data from rest
-        case decode_data(header, rest) do
+        # parse data from rest
+        case parse_data(header, rest) do
           {:ok, data, rest} ->
             {:ok, %__MODULE__{header: header, data: data}, rest}
           {:error, _reason, _rest}=e ->
@@ -71,30 +71,30 @@ defmodule Exmbus.Apl.DataRecord do
   decodes a value associated with a given header.
   """
   # No data:
-  def decode_data(%{coding: :no_data, size: 0}, bin), do: {:ok, :no_data, bin}
+  def parse_data(%{coding: :no_data, size: 0}, bin), do: {:ok, :no_data, bin}
   # Selection for readout:
-  def decode_data(%{coding: :selection_for_readout, size: 0}, bin), do: {:ok, :selection_for_readout, bin}
+  def parse_data(%{coding: :selection_for_readout, size: 0}, bin), do: {:ok, :selection_for_readout, bin}
   # BCD of any size (Type A)
-  def decode_data(%{data_type: :type_a, size: size}, bin), do: DataType.decode_type_a(bin, size)
+  def parse_data(%{data_type: :type_a, size: size}, bin), do: DataType.decode_type_a(bin, size)
   # Signed integer (Type B)
-  def decode_data(%{data_type: :type_b, size: size}, bin), do: DataType.decode_type_b(bin, size)
+  def parse_data(%{data_type: :type_b, size: size}, bin), do: DataType.decode_type_b(bin, size)
   # Unsigned integer (Type C)
-  def decode_data(%{data_type: :type_c, size: size}, bin), do: DataType.decode_type_c(bin, size)
+  def parse_data(%{data_type: :type_c, size: size}, bin), do: DataType.decode_type_c(bin, size)
   # Boolean (bit array) (Type D)
-  def decode_data(%{data_type: :type_d, size: size}, bin), do: DataType.decode_type_d(bin, size)
+  def parse_data(%{data_type: :type_d, size: size}, bin), do: DataType.decode_type_d(bin, size)
   # Datetime 32bit (Type F)
-  def decode_data(%{data_type: :type_f, size: 32}, bin), do: DataType.decode_type_f(bin)
+  def parse_data(%{data_type: :type_f, size: 32}, bin), do: DataType.decode_type_f(bin)
   # Date (Type G)
-  def decode_data(%{data_type: :type_g, size: 16}, bin), do: DataType.decode_type_g(bin)
+  def parse_data(%{data_type: :type_g, size: 16}, bin), do: DataType.decode_type_g(bin)
   # Real 32 bit (Type H)
-  def decode_data(%{data_type: :type_h, size: 32}, bin), do: DataType.decode_type_h(bin)
+  def parse_data(%{data_type: :type_h, size: 32}, bin), do: DataType.decode_type_h(bin)
   # Datetime 48 bit (Type I)
-  def decode_data(%{data_type: :type_i, size: 48}, bin), do: DataType.decode_type_i(bin)
+  def parse_data(%{data_type: :type_i, size: 48}, bin), do: DataType.decode_type_i(bin)
   # Time 24 bit (Type J)
-  def decode_data(%{data_type: :type_j, size: 24}, bin), do: DataType.decode_type_j(bin)
+  def parse_data(%{data_type: :type_j, size: 24}, bin), do: DataType.decode_type_j(bin)
   # Datetime in LVAR (Type M)
-  def decode_data(%{data_type: :type_m, size: :lvar}, bin), do: DataType.decode_type_m(bin)
+  def parse_data(%{data_type: :type_m, size: :lvar}, bin), do: DataType.decode_type_m(bin)
   # Variable length coding (LVAR)
-  def decode_data(%{coding: :variable_length, size: :lvar}, bin), do: DataType.decode_lvar(bin)
+  def parse_data(%{coding: :variable_length, size: :lvar}, bin), do: DataType.decode_lvar(bin)
 
 end
