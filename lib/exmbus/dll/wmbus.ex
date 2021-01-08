@@ -6,6 +6,7 @@ defmodule Exmbus.Dll.Wmbus do
   alias Exmbus.DataType
   alias Exmbus.Manufacturer
   alias Exmbus.Tpl
+  alias Exmbus.Tpl.Device
 
   defstruct [
     control: nil,
@@ -19,17 +20,18 @@ defmodule Exmbus.Dll.Wmbus do
     parse(rest, %{opts | length: false}, parsed)
   end
 
-  def parse(<<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v, d, rest::binary>>, %{length: false, crc: false}=opts, parsed) do
+  def parse(<<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v, d::binary-size(1), rest::binary>>, %{length: false, crc: false}=opts, parsed) do
     {:ok, control} = decode_c_field(c)
     {:ok, identification_no, <<>>} = DataType.decode_type_a(i_bytes, 32)
     {:ok, manufacturer} = Manufacturer.decode(man_bytes)
+    device = Device.decode(d)
 
     dll = %__MODULE__{
       control: control,
       manufacturer: manufacturer,
       identification_no: identification_no,
       version: v,
-      device: d,
+      device: device,
     }
     Tpl.parse(rest, opts, [dll | parsed])
   end

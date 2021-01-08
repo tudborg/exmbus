@@ -36,6 +36,18 @@ defmodule Exmbus.Apl.DataRecord do
     end
   end
 
+
+  @doc """
+  Retrieve the value of the DataRecord.
+  The value is calculated from the decoded data, modified with added extensions
+  found in the header.
+  """
+  @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
+  # The trivial case, no extensions, no multiplier. The data is the data.
+  def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}), do: {:ok, data}
+  # Also easy case, no extensions, a multiplier exists and data is numerical:
+  def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data), do: {:ok, mul * data}
+
   @doc """
   Retrieve the value of the DataRecord.
   This is the raising version of value/1
@@ -47,16 +59,6 @@ defmodule Exmbus.Apl.DataRecord do
     end
   end
 
-  @doc """
-  Retrieve the value of the DataRecord.
-  The value is calculated from the decoded data, modified with added extensions
-  found in the header.
-  """
-  @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
-  # The trivial case, no extensions, no multiplier. The data is the data.
-  def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}), do: data
-  # Also easy case, no extensions, a multiplier exists and data is numerical:
-  def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data), do: mul * data
 
   @doc """
   Returns the unit for a DataRecord as a string.
@@ -64,8 +66,26 @@ defmodule Exmbus.Apl.DataRecord do
   raw unit in the header's Value Information Block.
   """
   # easy case, no extensions. The unit is the unit.
-  def unit(%DataRecord{header: %{extensions: [], unit: unit}}), do: unit
+  def unit(%DataRecord{header: %{extensions: [], unit: unit}}), do: {:ok, unit}
 
+  def unit!(dr) do
+    case unit(dr) do
+      {:ok, unit} -> unit
+      # TODO handle error
+    end
+  end
+
+  def to_map!(%DataRecord{header: header}=dr) do
+    %{
+      unit: DataRecord.unit!(dr),
+      value: DataRecord.value!(dr),
+      device: header.device,
+      tariff: header.tariff,
+      storage: header.storage,
+      function_field: header.function_field,
+      description: header.description,
+    }
+  end
 
   @doc """
   decodes a value associated with a given header.

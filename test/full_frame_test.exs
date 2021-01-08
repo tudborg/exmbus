@@ -81,7 +81,7 @@ defmodule FullFrameTest do
       %Wmbus{
         manufacturer: "ELS",
         identification_no: 12345678,
-        device: 3,
+        device: :gas,
         version: 51,
         control: :snd_nr,
       },
@@ -122,7 +122,7 @@ defmodule FullFrameTest do
       dll=%Wmbus{
         manufacturer: "ELS",
         identification_no: 12345678,
-        device: 3,
+        device: :gas,
         version: 51,
         control: :snd_nr,
       },
@@ -130,7 +130,7 @@ defmodule FullFrameTest do
 
     assert {:ok, plain_parsed=[
       %Apl{
-        records: [
+        records: records=[
           %Exmbus.Apl.DataRecord{
             data: 2850427,
             header: %Exmbus.Apl.DataRecord.Header{
@@ -187,11 +187,36 @@ defmodule FullFrameTest do
     ]} = Exmbus.decrypt(parsed, keyfn)
 
     assert {:ok, %Message{
-        parsed: ^plain_parsed,
+        raw: ^plain_parsed,
+        records: ^records,
         manufacturer: "ELS",
         identification_no: 12345678,
-        device: 3,
+        device: :gas,
         version: 51,
-    }} = Exmbus.to_message(datagram, keyfn: keyfn)
+    }} = Exmbus.to_message(datagram, keyfn: keyfn, keep_raw: true)
   end
+
+
+
+  test "wmbus, encrypted: mode 5 Table F.2 from CEN/TR 17167:2018" do
+    datagram = Base.decode16!("294493444433221155087288776655934455080004100500DFE2A782146D1513581CD2F83F3904015B19")
+    key = <<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F>>
+    keyfn = fn (_parsed, _opts) ->
+      {:ok, [key]}
+    end
+    assert %{
+      device: :heat_cost_allocator,
+      manufacturer: "QDS",
+      identification_no: 55667788,
+      version: 85,
+      records: [
+        %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :units_for_hca,    unit: nil,  value: 1234},
+        %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25}
+        %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :date,             unit: nil,  value: ~D[2007-04-30]},
+        %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :units_for_hca,    unit: nil,  value: 23456},
+      ],
+    } = Exmbus.to_map!(datagram, keyfn: keyfn)
+  end
+
+
 end

@@ -8,6 +8,19 @@ defmodule Exmbus do
   alias Exmbus.Apl
   alias Exmbus.Apl.EncryptedApl
 
+
+  def to_map!(bin, opts \\ %{})
+  def to_map!(bin, opts) when is_binary(bin) do
+    case to_message(bin, opts) do
+      {:ok, message} -> to_map!(message, opts)
+      {:error, reason} -> raise "Failed to convert binary to message, reason=#{inspect reason}"
+    end
+  end
+  def to_map!(%Message{}=m, _opts) do
+    Message.to_map!(m)
+  end
+
+
   # Try to auto-guess what type of DLL is used
   # If the signature is start,length,length,start it's probably mbus DLL
   def to_message(bin, opts \\ %{})
@@ -23,6 +36,13 @@ defmodule Exmbus do
   def to_message(bin, opts) when is_binary(bin) do
     case parse_wmbus(bin, opts) do
       {:ok, parsed} -> to_message(parsed, opts)
+      {:error, _}=e -> e
+    end
+  end
+
+  def to_message!(bin, opts \\ %{}) do
+    case to_message(bin, opts) do
+      {:ok, message} -> message
       {:error, _}=e -> e
     end
   end

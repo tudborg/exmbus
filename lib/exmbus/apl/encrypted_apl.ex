@@ -7,6 +7,7 @@ defmodule Exmbus.Apl.EncryptedApl do
 
   alias Exmbus.Apl
   alias Exmbus.Tpl
+  alias Exmbus.Tpl.Device
   alias Exmbus.Dll.Wmbus
   alias Exmbus.Manufacturer
   alias Exmbus.DataType
@@ -60,14 +61,16 @@ defmodule Exmbus.Apl.EncryptedApl do
     %Wmbus{manufacturer: m, identification_no: i, version: v, device: d} = wmbus
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(i, 32)
-    {:ok, <<man_bytes::binary, id_bytes::binary, v, d,
+    device_byte = Device.encode(d)
+    {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
   defp layers_to_mode_5_iv([%Tpl{header: %Tpl.Long{}=header} | _]=parsed) do
     %Tpl.Long{manufacturer: m, identification_no: id, version: v, device: d, access_no: a_no} = header
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(id, 32)
-    {:ok, <<man_bytes::binary, id_bytes::binary, v, d,
+    device_byte = Device.encode(d)
+    {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
 
