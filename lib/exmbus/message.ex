@@ -1,7 +1,7 @@
 defmodule Exmbus.Message do
   @moduledoc """
   This is a structure for a simplified internal representation of a parsed datagram(s).
-  It collapes some fields into one.
+  The raw layers can optionally be kept as well with the `:keep_layers` option.
   """
 
   alias Exmbus.Tpl
@@ -12,6 +12,7 @@ defmodule Exmbus.Message do
 
   defstruct [
     layers: nil, # internal parsed layer list
+
     records: nil, # [%DataRecord{}]
     manufacturer: nil,
     identification_no: nil,
