@@ -1,4 +1,10 @@
 defmodule Exmbus.Tpl.Status do
+  @moduledoc """
+  EN 13757-7:2018 (E) - 7.5.6 Status byte in meter messages
+
+  More details about the error state of the meter can be provided in the M-Bus
+  application protocol of the meter response (refer to EN 13757-3:2018, Annex E).
+  """
 
   defstruct [
     manufacturer_status: 0,
@@ -13,7 +19,7 @@ defmodule Exmbus.Tpl.Status do
       0b00 -> :no_error
       0b01 -> :application_busy
       0b10 -> :any_application_error
-      0b11 -> raise "invalid application status 0b11"
+      0b11 -> :abnormal_condition_or_alarm
     end
     %__MODULE__{
       manufacturer_status: mfrs,
@@ -35,6 +41,7 @@ defmodule Exmbus.Tpl.Status do
        :no_error              -> 0b00
        :application_busy      -> 0b01
        :any_application_error -> 0b10
+       :abnormal_condition_or_alarm -> 0b11
     end
     <<mfrs::size(3), bool_to_int(t)::size(1), bool_to_int(p)::size(1), bool_to_int(l)::size(1), abin::size(2)>>
   end

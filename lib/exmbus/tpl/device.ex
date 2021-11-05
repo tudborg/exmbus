@@ -1,5 +1,8 @@
 defmodule Exmbus.Tpl.Device do
   @table [
+    #
+    # From mbus standard
+    #
     {<<0x00>>, :other, "[other]"},
     {<<0x01>>, :oil,   "[oil]"},
     {<<0x02>>, :electricity, "[electricity]"},
@@ -23,7 +26,30 @@ defmodule Exmbus.Tpl.Device do
     # in a separate register with an appropriate tariff ID
     {<<0x17>>, :hot_cold_water, "[hot_cold_water]"},
     {<<0x18>>, :pressure,       "[pressure]"},
-    {<<0x19>>, :ad_converter,    "[ad_converter]"}
+    {<<0x19>>, :ad_converter,    "[ad_converter]"},
+
+    #
+    # From OMS Spec Vol2 Primary
+    #
+    # Certifiable with OMS-CT
+    {<<0x20>>, :electricity_breaker, ""},
+    {<<0x21>>, :valve, ""},
+    {<<0x28>>, :waste_water, ""},
+    # Prepared for OMS-CT
+    {<<0x25>>, :display_device, ""},
+    {<<0x31>>, :communication_controller, ""},
+    {<<0x32>>, :unidirectional_repeater, ""},
+    {<<0x33>>, :bidirectional_repeater, ""},
+    {<<0x36>>, :radio_converter_system_side, ""},
+    {<<0x37>>, :radio_converter_meter_side, ""},
+    {<<0x38>>, :wired_adapter, ""},
+    # Not certifiable
+    {<<0x14>>, :calorific_value, ""},
+    {<<0x1A>>, :smoke_detector, ""},
+    {<<0x1B>>, :room_sensor, ""},
+    {<<0x1C>>, :gas_detector, ""},
+    {<<0x29>>, :garbage, ""},
+    {<<0x2A>>, :co2, ""},
   ]
 
   @doc """

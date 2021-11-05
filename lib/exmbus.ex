@@ -19,7 +19,10 @@ defmodule Exmbus do
       identification_no: identification_no,
       device: device,
       version: version,
-      records: Enum.map(records, &DataRecord.to_map!/1),
+      records: case records do
+        :encrypted -> :encrypted
+        r -> Enum.map(r, &DataRecord.to_map!/1)
+      end
     }
   end
 
