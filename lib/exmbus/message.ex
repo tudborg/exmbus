@@ -7,7 +7,6 @@ defmodule Exmbus.Message do
   alias Exmbus.Tpl
   alias Exmbus.Apl
   alias Exmbus.Apl.DataRecord
-  alias Exmbus.Apl.EncryptedApl
   alias Exmbus.Dll.Wmbus
 
   defstruct [
@@ -65,19 +64,6 @@ defmodule Exmbus.Message do
     # end
   end
 
-
-  @doc """
-  Decrypt a Message where records are :encrypted.
-  :keyfn must be specified as an option.
-  """
-  def decrypt(message, opts) when is_list(opts), do: decrypt(message, opts |> Enum.into(%{}))
-  def decrypt(%__MODULE__{records: :encrypted, layers: layers}=message, opts) when is_list(layers) do
-    case Map.has_key?(opts, :keyfn) do
-      false -> raise "No :keyfn given in options to decrypt"
-      true  -> from_layers(layers, opts)
-    end
-  end
-
   @doc """
   Create a Message struct from a layer list.
   The layer list is returned from some of the initial layer parsers like DLL.Wmbus.
@@ -85,14 +71,8 @@ defmodule Exmbus.Message do
   If the APL layer is encrypted this function will return a Message struct where
   the records field is set to `:encrypted`.
 
-  You can decrypt the APL by supplying a `:keyfn` option to this function as an option,
-  or call `Message.decrypt/2` later, with `:keyfn` as an option.
-
-  The `:keyfn` must be a function that takes two arguments, layers and options (same as this function),
-  and return {:ok, [key|_]} when byte_size(key) == 16.
-
-  If the Key function returns multiple keys they will be attempted from the head until the list
-  is empty. If no keys match the error `{:error, :no_keys_matched}` will be returned.
+  You can decrypt the APL by supplying a `:key` option to this function as an option.
+  `:key` must be a `Exmbus.Key` struct.
   """
   def from_layers(layers, opts  \\ %{})
   def from_layers(layers, opts) when is_list(opts), do: from_layers(layers, opts |> Enum.into(%{}))
@@ -115,18 +95,11 @@ defmodule Exmbus.Message do
       version: v,
     }}
   end
-  # encrypted APL, keyfn supplied, auto-decrypt
-  def from_layers([%EncryptedApl{} | _]=layers, %{keyfn: f}=opts) when is_function(f) do
-    case decrypt_layers(layers, f, opts) do
-      {:ok, [%EncryptedApl{} | _]} -> raise "Avoiding infinite recursion" # probably overly protective, but...
-      {:ok, [_ | _]=plain_layers} -> from_layers(plain_layers, opts)
-      {:error, _}=e -> e
-    end
-  end
+
   # encrypted APL, keyfn not supplied, mark records as encrypted.
   # You can call Message.decrypt(message, keyfn: ...) on the returned struct to
   # try decrypting it.
-  def from_layers([%EncryptedApl{} | _]=layers, opts) when is_map(opts) do
+  def from_layers([%Apl.Encrypted{} | _]=layers, opts) when is_map(opts) do
     # Gather manufacturer, identification number, device, version
     {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
     {:ok, %__MODULE__{
@@ -140,29 +113,6 @@ defmodule Exmbus.Message do
   end
 
 
-
-  ##
-  ## Construction helpers:
-  ##
-
-  defp decrypt_layers(layers, keys_or_function) do
-    decrypt_layers(layers, keys_or_function, %{})
-  end
-  defp decrypt_layers(layers, f, opts) when is_function(f, 2) do
-    case f.(layers, opts) do
-      {:ok, keys} when is_list(keys) -> decrypt_layers(layers, keys, opts)
-      {:error, _}=e -> e
-    end
-  end
-  defp decrypt_layers(layers, [], _opts) do
-    {:error, :no_keys_matched}
-  end
-  defp decrypt_layers(layers, [key|tail], opts) do
-    case EncryptedApl.decrypt(layers, key, opts) do
-      {:ok, layers} -> {:ok, layers}
-      {:error, {:invalid_key, _}} -> decrypt_layers(tail, layers, opts)
-    end
-  end
 
 
   # Gather manufacturer, identification number, device, version from parsed layers,
@@ -179,7 +129,7 @@ defmodule Exmbus.Message do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
   # Gather from APL
-  defp gather_m_i_d_v([%EncryptedApl{} | rest], m, i, d, v, opts) do
+  defp gather_m_i_d_v([%Apl.Encrypted{} | rest], m, i, d, v, opts) do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
   # Gather from TPL

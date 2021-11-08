@@ -1,63 +1,12 @@
 defmodule Exmbus.Tpl.Device do
-  @table [
-    #
-    # From mbus standard
-    #
-    {<<0x00>>, :other, "[other]"},
-    {<<0x01>>, :oil,   "[oil]"},
-    {<<0x02>>, :electricity, "[electricity]"},
-    {<<0x03>>, :gas,     "[gas]"},
-    {<<0x04>>, :heat,    "[heat]"},
-    {<<0x05>>, :steam,   "[steam]"},
-    {<<0x06>>, :warm_water, "[warm_water]"},
-    {<<0x07>>, :water,      "[water]"},
-    {<<0x08>>, :heat_cost_allocator, "[heat_cost_allocator]"},
-    {<<0x09>>, :compressed_air,      "[compressed_air]"},
-    {<<0x0A>>, :cooling_load_meter_outlet, "[cooling_load_meter_outlet]"},
-    {<<0x0B>>, :cooling_load_meter_inlet,  "[cooling_load_meter_inlet]"},
-    {<<0x0C>>, :heat_inlet,                "[heat_inlet]"},
-    {<<0x0D>>, :heat_cooling_load_meter,   "[heat_cooling_load_meter]"},
-    {<<0x0E>>, :bus,         "[bus]"},
-    {<<0x0F>>, :unknown,     "[unknown]"},
-    {<<0x15>>, :hot_water,   "[hot_water]"},
-    {<<0x16>>, :cold_water,  "[cold_water]"},
-    #  dual-register hot/cold meter.
-    # such a meter registers water flow above a limit temperature
-    # in a separate register with an appropriate tariff ID
-    {<<0x17>>, :hot_cold_water, "[hot_cold_water]"},
-    {<<0x18>>, :pressure,       "[pressure]"},
-    {<<0x19>>, :ad_converter,    "[ad_converter]"},
-
-    #
-    # From OMS Spec Vol2 Primary
-    #
-    # Certifiable with OMS-CT
-    {<<0x20>>, :electricity_breaker, ""},
-    {<<0x21>>, :valve, ""},
-    {<<0x28>>, :waste_water, ""},
-    # Prepared for OMS-CT
-    {<<0x25>>, :display_device, ""},
-    {<<0x31>>, :communication_controller, ""},
-    {<<0x32>>, :unidirectional_repeater, ""},
-    {<<0x33>>, :bidirectional_repeater, ""},
-    {<<0x36>>, :radio_converter_system_side, ""},
-    {<<0x37>>, :radio_converter_meter_side, ""},
-    {<<0x38>>, :wired_adapter, ""},
-    # Not certifiable
-    {<<0x14>>, :calorific_value, ""},
-    {<<0x1A>>, :smoke_detector, ""},
-    {<<0x1B>>, :room_sensor, ""},
-    {<<0x1C>>, :gas_detector, ""},
-    {<<0x29>>, :garbage, ""},
-    {<<0x2A>>, :co2, ""},
-  ]
+  @table Exmbus.TableLoader.from_file!(__DIR__, "device.csv")
 
   @doc """
   decode a device byte into internal atom
   """
-  @spec decode(binary) :: atom
+  @spec decode!(binary) :: atom
   Enum.each(@table, fn ({byte, atom, _}) ->
-      def decode(unquote(byte)), do: unquote(atom)
+      def decode!(unquote(byte)), do: unquote(atom)
   end)
   @doc """
   encode an internal device atom into it's mbus byte

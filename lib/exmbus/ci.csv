@@ -1,0 +1,80 @@
+CI low;CI high;Answer      ;Layer     ;TPL header type       ;Direction                                                ;higher layer protocol note
+0x00  ;0x1F   ;:ok         ;:apl      ;:none                 ;Reserved for DLMS-based applications                     ;DLMS (see EN 13757–1)
+0x20  ;0x4F   ;:error      ;:reserved ;                      ;                                                         ;
+0x50  ;:nil   ;:ok         ;:apl      ;:none                 ;Application reset or select to device                    ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x51  ;:nil   ;:ok         ;:apl      ;:none                 ;Command to device (full M-Bus frame)                     ;"M-Bus (not for wireless); according to EN 13757–3:2018, Clause 6"
+0x52  ;:nil   ;:error      ;:invalid  ;                      ;                                                         ;
+0x53  ;:nil   ;:ok         ;:apl      ;:long                 ;Application reset or select to device                    ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x54  ;:nil   ;:ok         ;:apl      ;:none                 ;Request of selected application to device                ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x55  ;:nil   ;:ok         ;:apl      ;:long                 ;Request of selected application to device                ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x56  ;0x59   ;:error      ;:reserved ;                      ;                                                         ;
+0x5A  ;:nil   ;:ok         ;:apl      ;:short                ;Command to device (full M-Bus frame)                     ;M-Bus according to EN 13757–3:2018, Clause 6
+0x5B  ;:nil   ;:ok         ;:apl      ;:long                 ;Command to device (full M-Bus frame)                     ;M-Bus according to EN 13757–3:2018, Clause 6
+0x5C  ;:nil   ;:ok         ;:apl      ;:none                 ;Synchronize action                                       ;according to EN 13757–3:2018, Clause 12
+0x5D  ;0x5E   ;:error      ;:reserved ;                      ;                                                         ;
+0x5F  ;:nil   ;:ok         ;:tpl      ;:long                 ;Specific usage                                           ;See Bibliographical Entry [8]
+0x60  ;:nil   ;:ok         ;:apl      ;:long                 ;Command to device                                        ;DLMS/COSEM with OBIS-Identifier (according to EN 13757–1 and EN 62056–5-3)
+0x61  ;:nil   ;:ok         ;:apl      ;:short                ;Command to device                                        ;DLMS/COSEM with OBIS-Identifier (according to EN 13757–1 and EN 62056–5-3)
+0x62  ;0x63   ;:error      ;:reserved ;                      ;                                                         ;
+0x64  ;:nil   ;:ok         ;:apl      ;:long                 ;Command to device                                        ;Reserved for OBIS-type value descriptors
+0x65  ;:nil   ;:ok         ;:apl      ;:short                ;Command to device                                        ;Reserved for OBIS-type value descriptors
+0x66  ;:nil   ;:ok         ;:apl      ;:none                 ;Response of selected application from device             ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x67  ;:nil   ;:ok         ;:apl      ;:short                ;Response of selected application from device             ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x68  ;:nil   ;:ok         ;:apl      ;:long                 ;Response of selected application from device             ;"Application Selection; according to EN 13757–3:2018, Clause 7"
+0x69  ;:nil   ;:ok         ;:apl      ;:none                 ;Response from device (M-Bus- Format frame)               ;"M-Bus; according to EN 13757–3:2018, 6, Annex G"
+0x6A  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device (M-Bus- Format frame)               ;"M-Bus; according to EN 13757–3:2018, Annex G"
+0x6B  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device (M-Bus- Format frame)               ;"M-Bus; according to EN 13757–3:2018, Annex G"
+0x6C  ;:nil   ;:ok         ;:apl      ;:long                 ;Time sync to device                                      ;According to EN 13757–3:2018, Clause 8
+0x6D  ;:nil   ;:ok         ;:apl      ;:long                 ;Time sync to device                                      ;According to EN 13757–3:2018, Clause 8
+0x6E  ;:nil   ;:ok         ;:apl      ;:short                ;Application error from device                            ;According to EN 13757–3:2018, Clause 10
+0x6F  ;:nil   ;:ok         ;:apl      ;:long                 ;Application error from device                            ;According to EN 13757–3:2018, Clause 10
+0x70  ;:nil   ;:ok         ;:apl      ;:none                 ;Application error from device                            ;According to EN 13757–3:2018, Clause 10
+0x71  ;:nil   ;:ok         ;:apl      ;:none                 ;Alarm from device                                        ;According to EN 13757–3:2018, Clause 9
+0x72  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device (full M-Bus frame)                  ;"M-Bus; according to EN 13757–3:2018, Clause 6"
+0x73  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device (M-Bus- Compact frame)              ;"M-Bus; according to EN 13757–3:2018, Clause 6, Annex G"
+0x74  ;:nil   ;:ok         ;:apl      ;:short                ;Alarm from device                                        ;According to EN 13757–3:2018, Clause 9
+0x75  ;:nil   ;:ok         ;:apl      ;:long                 ;Alarm from device                                        ;According to EN 13757–3:2018, Clause 9
+0x76  ;0x77   ;:error      ;:reserved ;                      ;                                                         ;
+0x78  ;:nil   ;:ok         ;:apl      ;:none                 ;Response from device (full M-Bus frame)                  ;"M-Bus; according to EN 13757–3:2018, Clause 6"
+0x79  ;:nil   ;:ok         ;:apl      ;:none                 ;Response from device (M-Bus- Compact frame)              ;"M-Bus; according to EN 13757–3:2018, Clause 6, Annex G"
+0x7A  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device (full M-Bus frame)                  ;"M-Bus; according to EN 13757–3:2018, Clause 6"
+0x7B  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device (M-Bus- Compact frame)              ;"M-Bus; according to EN 13757–3:2018, Annex G and EN 13757–3:2018, Clause 6"
+0x7C  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device                                     ;DLMS/COSEM with OBIS-Identifier (according to EN 13757–1 and EN 62056–5-3)
+0x7D  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device                                     ;DLMS/COSEM with OBIS-Identifier (according to EN 13757–1 and EN 62056–5-3)
+0x7E  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device                                     ;Reserved for OBIS-type value descriptors
+0x7F  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device                                     ;Reserved for OBIS-type value descriptors
+0x80  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer to device (without APL)                  ;According to EN 13757–4
+0x81  ;:nil   ;:ok         ;:nwl      ;:nil                  ;Network Layer data                                       ;According to EN 13757–5
+0x82  ;:nil   ;:ok         ;:apl      ;:long                 ;Network management data to device                        ;According to EN 13757–4 and EN 13757–5
+0x83  ;:nil   ;:ok         ;:apl      ;:none                 ;Network management data to device                        ;According to EN 13757–4 and EN 13757–5
+0x84  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer to device (M- Bus-Compact frame expected);
+0x85  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer to device (M- Bus-Format frame expected) ;
+0x86  ;:nil   ;:ok         ;:ell      ;:nil                  ;Reserved for Extended Link Layer                         ;According to EN 13757–4
+0x87  ;:nil   ;:ok         ;:apl      ;:long                 ;Network management data from device                      ;According to EN 13757–4, EN 13757–5
+0x88  ;:nil   ;:ok         ;:apl      ;:short                ;Network management data from device                      ;According to EN 13757–4, EN 13757–5
+0x89  ;:nil   ;:ok         ;:apl      ;:none                 ;Network management data from device                      ;According to EN 13757–4, EN 13757–5
+0x8A  ;:nil   ;:ok         ;:tpl      ;:short                ;Transport Layer from device (without APL)                ;According to EN 13757–4
+0x8B  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer from device (without APL)                ;According to EN 13757–4
+0x8C  ;0x8F   ;:ok         ;:ell      ;:nil                  ;Extended Link Layer                                      ;According to EN 13757–4
+0x90  ;:nil   ;:ok         ;:afl      ;:nil                  ;Authentication and Fragmentation Sublayer                ;According to Clause 6
+0x91  ;:nil   ;:error      ;:reserved ;                      ;                                                         ;
+0x92  ;0x97   ;:error      ;:reserved ;                      ;                                                         ;
+0x98  ;0x9D   ;:error      ;:reserved ;                      ;                                                         ;
+0x9E  ;:nil   ;:ok         ;:tpl      ;:short                ;Specific usage                                           ;See Bibliographical Entry [8]
+0x9F  ;:nil   ;:ok         ;:tpl      ;:long                 ;Specific usage                                           ;See Bibliographical Entry [8]
+0xA0  ;0xB7   ;:ok         ;:apl      ;:manufacturer_specific;Manufacturer specific                                    ;According to EN 13757–3:2018, 13
+0xB8  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 300 Bd                                  ;"Management of lower layers; according to 8.2"
+0xB9  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 600 Bd                                  ;"Management of lower layers; according to 8.2"
+0xBA  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 1 200 Bd                                ;"Management of lower layers; according to 8.2"
+0xBB  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 2 400 Bd                                ;"Management of lower layers; according to 8.2"
+0xBC  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 4 800 Bd                                ;"Management of lower layers; according to 8.2"
+0xBD  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 9 600 Bd                                ;"Management of lower layers; according to 8.2"
+0xBE  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 19 200 Bd                               ;"Management of lower layers; according to 8.2"
+0xBF  ;:nil   ;:ok         ;:apl      ;:none                 ;Set baud rate to 38 400 Bd                               ;"Management of lower layers; according to 8.2"
+0xC0  ;:nil   ;:ok         ;:apl      ;:long                 ;Command to device                                        ;"Image transfer; according to EN 13757– 3:2018, Annex I,"
+0xC1  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device                                     ;"Image transfer; according EN 13757– 3:2018, Annex I"
+0xC2  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device                                     ;"Image transfer; according to EN 13757– 3:2018, Annex I"
+0xC3  ;:nil   ;:ok         ;:apl      ;:long                 ;Command to device                                        ;"Security Information Transfer; according to Annex A"
+0xC4  ;:nil   ;:ok         ;:apl      ;:short                ;Response from device                                     ;"Security Information Transfer; according to Annex A"
+0xC5  ;:nil   ;:ok         ;:apl      ;:long                 ;Response from device                                     ;"Security Information Transfer; according to Annex A"
+0xC6  ;0xFF   ;:error      ;:reserved ;                      ;                                                         ;

@@ -5,7 +5,7 @@ defmodule Exmbus.Dll.Wmbus do
 
   alias Exmbus.DataType
   alias Exmbus.Manufacturer
-  alias Exmbus.Tpl
+  alias Exmbus.CI
   alias Exmbus.Tpl.Device
 
   defstruct [
@@ -24,7 +24,7 @@ defmodule Exmbus.Dll.Wmbus do
     {:ok, control} = decode_c_field(c)
     {:ok, identification_no, <<>>} = DataType.decode_type_a(i_bytes, 32)
     {:ok, manufacturer} = Manufacturer.decode(man_bytes)
-    device = Device.decode(d)
+    device = Device.decode!(d)
 
     dll = %__MODULE__{
       control: control,
@@ -33,7 +33,7 @@ defmodule Exmbus.Dll.Wmbus do
       version: v,
       device: device,
     }
-    Tpl.parse(rest, opts, [dll | parsed])
+    CI.parse(rest, opts, [dll | parsed])
   end
 
   # set some defaults:

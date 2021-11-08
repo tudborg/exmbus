@@ -18,7 +18,6 @@ defmodule LiveGatewayExportTest do
   end
 
   defp handle_csv_line([expected_manufacturer, expected_serial, hexdata]) do
-    Logger.debug("parsing for #{expected_manufacturer} #{expected_serial}: #{hexdata}")
     assert %{} =
              hexdata
              |> Base.decode16!()

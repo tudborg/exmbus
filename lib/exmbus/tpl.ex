@@ -9,7 +9,6 @@ defmodule Exmbus.Tpl do
   alias Exmbus.DataType
   alias Exmbus.Manufacturer
   alias Exmbus.Apl
-  alias Exmbus.Tpl.AplContainer
   alias Exmbus.Tpl.Device
   alias Exmbus.Tpl.Status
   alias Exmbus.Tpl.ConfigurationField
@@ -73,12 +72,12 @@ defmodule Exmbus.Tpl do
   # MBus full frame short
   def parse(<<0x7A, rest::binary>>, opts, parsed) do
     {:ok, header, rest} = parse_tpl_header_short(rest)
-    parse_apl(:full_frame, header, rest, opts, parsed)
+    finalize_tpl(:full_frame, header, rest, opts, parsed)
   end
   # MBus full frame long
   def parse(<<0x72, rest::binary>>, opts, parsed) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
-    parse_apl(:full_frame, header, rest, opts, parsed)
+    finalize_tpl(:full_frame, header, rest, opts, parsed)
   end
 
   # MBus compact long
@@ -121,7 +120,7 @@ defmodule Exmbus.Tpl do
   ##
 
   # decode APL layer after decoding TPL header and figuring out encryption mode and frame type
-  defp parse_apl(frame_type, header, rest, opts, parsed) do
+  defp finalize_tpl(frame_type, header, rest, opts, parsed) do
     tpl = %__MODULE__{
       frame_type: frame_type,
       header: header,
@@ -165,7 +164,7 @@ defmodule Exmbus.Tpl do
     # the ident_bytes is 32 bits of BCD (Type A):
     {:ok, identification_no, <<>>} = DataType.decode_type_a(ident_bytes, 32)
     status = Status.decode(status_byte)
-    device = Device.decode(device_byte)
+    device = Device.decode!(device_byte)
     {:ok, manufacturer} = Manufacturer.decode(man_bytes)
     {:ok, configuration_field, rest} = ConfigurationField.decode(rest)
     header = %Long{

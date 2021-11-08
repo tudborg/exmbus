@@ -4,8 +4,8 @@ defmodule FullFrameTest do
   alias Exmbus.Message
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl
-  alias Exmbus.Apl.EncryptedApl
   alias Exmbus.Tpl
+  alias Exmbus.Key
   alias Exmbus.Dll.Wmbus
 
   test "wmbus, unencrypted Table P.1 from en13757-3:2003" do
@@ -69,19 +69,19 @@ defmodule FullFrameTest do
     end
 
     assert {:ok, %Message{layers: layers, records: :encrypted}} = Exmbus.parse(datagram)
-    assert [eapl=%EncryptedApl{} | layers] = layers
+    assert [eapl=%Apl.Encrypted{} | layers] = layers
     assert [_tpl=%Tpl{} | layers] = layers
     assert [_dll=%Wmbus{} | layers] = layers
     assert [] = layers
 
-    assert %EncryptedApl{
+    assert %Apl.Encrypted{
       encrypted_bytes: <<89, 35, 201, 90, 170, 38, 209, 178, 231, 73, 59, 1, 62, 196, 166, 246, 211, 82, 155, 82, 14, 223, 240, 234, 109, 239, 201, 157, 109, 105, 235, 243>>,
       iv: <<147, 21, 120, 86, 52, 18, 51, 3, 42, 42, 42, 42, 42, 42, 42, 42>>,
       mode: {:mode, 5},
       plain_bytes: ""
     } = eapl
 
-    assert {:ok, %Message{layers: nil, records: records}} = Exmbus.parse(datagram, keyfn: keyfn)
+    assert {:ok, %Message{layers: nil, records: records}} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
 
@@ -102,7 +102,7 @@ defmodule FullFrameTest do
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :units_for_hca,    unit: nil,  value: 23456},
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25},
       ],
-    } = Exmbus.simplified!(datagram, keyfn: keyfn)
+    } = Exmbus.simplified!(datagram, key: Key.by_fn(keyfn))
   end
 
 end
