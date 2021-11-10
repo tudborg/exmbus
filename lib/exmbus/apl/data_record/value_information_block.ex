@@ -122,6 +122,8 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
     raise "decoding from VIF linear extension table 0xFB not implemented. VIFE was: #{Exmbus.Debug.u8_to_binary_str(vif)}, header was: #{inspect header}"
   end
 
+
+  # TODO: Try to undertand this remark k of table 12 (page 19), section is 6.4.4.1
   # This function implements remark K in table 12 which says:
   # "Binary data (see Table 4) shall be interpreted as data type A (unsigned BCD) or data type C (unsigned integer) according to Annex A."
   # I read this as: if the coding is :int_or_bin then decode it as either type A or type C, but it isn't clear
@@ -129,11 +131,10 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   # Maybe what it SHOULD have set is that if the coding is int/binary then do type C, if it's BCD then do type A.
   # Or maybe it says that the binary (as in the raw) data should be decoded as either BCD or UINT, and
   # anything else is an error, but that also seems weird for something like manufacturer, customer, etc.
-  defp fd_remark_k(%Header{data_type: :type_b}) do
-    :type_c # possibly this?
-  end
-  defp fd_remark_k(%Header{}=header) do
-    raise "TODO Not sure what the coding should be but header was #{inspect header}"
+  defp fd_remark_k(%Header{data_type: data_type}) do
+    # This is most likely wrong!
+    # but I don't understand the spec on this.
+    data_type
   end
 
   defp on_time_unit(0b00), do: "seconds"

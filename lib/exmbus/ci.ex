@@ -13,15 +13,15 @@ defmodule Exmbus.CI do
   to the responsible parse function, effectivly making this function pure routing based on CI.
   """
   @spec parse(binary(), any(), any()) :: {:ok, term(), rest :: binary()} | {:error, reason :: any()}
-  def parse(<<ci, _::binary>>=bin, opts, parsed) do
+  def parse(<<ci, _::binary>>=bin, opts, ctx) do
     case lookup(ci) do
       # If APL then TPL is also implied because EN 13757-7:2018 section 5.2:
       # > The Transport Layer and the Application Layer uses a shared CI-field.
       # > For that reason, a Transport Layer shall be present whenever the Application Layer is used in a message.
       {:ok, {:tpl, _tpl_header, _, _}} ->
-        Tpl.parse(bin, opts, parsed)
+        Tpl.parse(bin, opts, ctx)
       {:ok, {:apl, _tpl_header, _, _}} ->
-        Tpl.parse(bin, opts, parsed)
+        Tpl.parse(bin, opts, ctx)
       {:ok, {:ell, _, what, note}} ->
         raise "Not implemented: #{what}, #{note}."
 

@@ -10,18 +10,20 @@ defmodule Exmbus.Apl do
 
   defstruct [
     records: [],
-    manufacturer_data: nil,
+    manufacturer_bytes: nil,
   ]
 
-  defmodule Encrypted do
+  defmodule Raw do
     @moduledoc """
-    Used to signify that the APL was encrypted and no key was supplied
+    Contains the raw APL and encryption mode.
+    This struct is usually an intermedidate struct
+    and will not show in the final parse stack unless options are given
+    to not parse the APL.
     """
     defstruct [
       encrypted_bytes: nil,
       plain_bytes: nil,
       mode: nil,
-      iv: nil,
     ]
   end
 
@@ -32,94 +34,90 @@ defmodule Exmbus.Apl do
   and some optional manufacturer specific data.
 
   The function assumes that the entire input is the APL layer data.
-
   """
-  def parse(bin, opts, [%Tpl{}=tpl|_]=parsed) do
-    case Tpl.encrypted?(tpl) do
-      true -> parse_encrypted(bin, opts, parsed)
-      false -> parse_unencrypted(bin, opts, parsed)
+  def parse(bin, opts, ctx) do
+    {:ok, ctx} = append_raw(bin, opts, ctx)
+    parse_apl(opts, ctx)
+  end
+
+  def parse_apl(opts, [%Raw{mode: 0, plain_bytes: bin} | ctx]) do
+    parse_records(bin, opts, ctx)
+  end
+  # when encryption mode is 5 and key option is set:
+  def parse_apl(%{key: %Key{}}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
+    case decrypt_mode_5(enc, opts, ctx) do
+      {:ok, decrypted} ->
+        parse_records(<<decrypted::binary, plain::binary>>, opts, ctx)
     end
   end
-  # if TPL isn't the previous layer then treat it as not encrypted
-  def parse(bin, opts, parsed) do
-    parse_unencrypted(bin, opts, parsed)
+  # when no key is supplied or we don't understand how to decrypt, return parse context
+  def parse_apl(%{}, [%Raw{} | _]=ctx) do
+    {:ok, ctx}
   end
 
-  defp parse_unencrypted(bin, _opts, parsed) do
-    {:ok, {records, manufacturer_data}} = parse_records(bin, [])
-    apl = %__MODULE__{
-      records: records,
-      manufacturer_data: manufacturer_data,
-    }
-    {:ok, [apl | parsed]}
+  # assume decrypted apl bytes as first argument, parse data fields
+  # an return an {:ok, [Apl|ctx]}
+  defp parse_records(bin, opts, ctx) do
+    parse_records(bin, opts, ctx, [])
   end
 
-  defp parse_records(<<>>, acc) do
-    # no more APL data
-    {:ok, {:lists.reverse(acc), <<>>}}
+  defp parse_records(<<>>, _opts, ctx, acc) do
+    {:ok, [
+      %__MODULE__{
+        records: :lists.reverse(acc),
+        manufacturer_bytes: <<>>,
+      } | ctx]}
   end
-  defp parse_records(bin, acc) do
-    case DataRecord.parse(bin) do
+  defp parse_records(bin, opts, ctx, acc) do
+    case DataRecord.parse(bin, opts, ctx) do
       {:ok, record, rest} ->
-        parse_records(rest, [record | acc])
+        parse_records(rest, opts, ctx, [record | acc])
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        parse_records(rest, acc)
+        parse_records(rest, opts, ctx, acc)
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        {:ok, {:lists.reverse(acc), rest}}
+        {:ok,
+          [%__MODULE__{
+            records: :lists.reverse(acc),
+            manufacturer_bytes: rest,
+          } | ctx]}
+      {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
+        {:ok,[
+          %__MODULE__{
+            records: :lists.reverse(acc),
+            manufacturer_bytes: rest,
+          } | ctx]}
     end
   end
 
-  defp parse_encrypted(bin, opts, [%Tpl{}=tpl | _]=parsed) do
-    mode = Tpl.encryption_mode(tpl)
-    {enc, plain} = split_encrypted(bin, tpl)
-    {:ok, iv} = case mode do
-      {:mode, 5} -> layers_to_mode_5_iv(parsed)
-    end
-    encrypted_apl = %Encrypted{
-      encrypted_bytes: enc,
-      plain_bytes: plain,
-      mode: mode,
-      iv: iv,
-    }
-    # If we have a Key option set, try parsing with that,
-    # otherwise, return the current parse stack back to the user.
-    # we cannot continue any further without a key.
-    case Map.get(opts, :key) do
-      %Key{}=key ->
-        parse_encrypted_with_key(key, opts, [encrypted_apl | parsed])
-      nil ->
-        {:ok, [encrypted_apl | parsed]}
-    end
-  end
-
-  defp parse_encrypted_with_key(%Key{}=key, opts, [%Encrypted{mode: {:mode, 5}, iv: iv, encrypted_bytes: enc, plain_bytes: plain} | parsed]) do
-    # TODO handle multiple possible keys
-    {:ok, [byte_key]} = Key.keys_for_parse_stack(key, opts, parsed)
+  # decrypt mode 5 bytes
+  defp decrypt_mode_5(enc, %{key: key}=opts, ctx) do
+    {:ok, iv} = ctx_to_mode_5_iv(ctx)
+    {:ok, [byte_key]} = Key.keys_for_parse_stack(key, opts, ctx)
     case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
-      <<0x2f, 0x2f, _::binary>>=decrypted ->
-        parse_unencrypted(<<decrypted::binary, plain::binary>>, opts, parsed)
+      <<0x2f, 0x2f, rest::binary>> ->
+        {:ok, rest}
       _ ->
         {:error, {:invalid_key, byte_key}}
     end
   end
 
-
-
-  #####################
-  # Encryption helpers
-  #####################
-
-  # split APL bytes into two an encrypted and plain part based on tpl header, {encrypted, plain}
-  defp split_encrypted(apl_bytes, tpl) do
-    len = Tpl.encrypted_byte_count(tpl)
-    <<enc::binary-size(len), plain::binary>> = apl_bytes
-    {enc, plain}
+  # append a Raw struct to the parse stack
+  defp append_raw(bin, _opts, [%Tpl{}=tpl | _]=ctx) do
+    {:mode, m} = Tpl.encryption_mode(tpl)
+    {:ok, enclen} = Tpl.encrypted_byte_count(tpl)
+    <<enc::binary-size(enclen), plain::binary>> = bin
+    {:ok,
+      [%Raw{
+        mode: m,
+        encrypted_bytes: enc,
+        plain_bytes: plain,
+      } | ctx]}
   end
 
   # Generate the IV for mode 5 encryption
-  defp layers_to_mode_5_iv([%Tpl{header: %Tpl.Short{access_no: a_no}}, %Wmbus{}=wmbus | _]) do
+  defp ctx_to_mode_5_iv([%Tpl{header: %Tpl.Short{access_no: a_no}}, %Wmbus{}=wmbus | _]) do
     %Wmbus{manufacturer: m, identification_no: i, version: v, device: d} = wmbus
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(i, 32)
@@ -127,7 +125,7 @@ defmodule Exmbus.Apl do
     {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
-  defp layers_to_mode_5_iv([%Tpl{header: %Tpl.Long{}=header} | _]) do
+  defp ctx_to_mode_5_iv([%Tpl{header: %Tpl.Long{}=header} | _]) do
     %Tpl.Long{manufacturer: m, identification_no: id, version: v, device: d, access_no: a_no} = header
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(id, 32)

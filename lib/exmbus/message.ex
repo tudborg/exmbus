@@ -99,7 +99,7 @@ defmodule Exmbus.Message do
   # encrypted APL, keyfn not supplied, mark records as encrypted.
   # You can call Message.decrypt(message, keyfn: ...) on the returned struct to
   # try decrypting it.
-  def from_layers([%Apl.Encrypted{} | _]=layers, opts) when is_map(opts) do
+  def from_layers([%Apl.Raw{mode: mode} | _]=layers, opts) when is_map(opts) and mode > 0 do
     # Gather manufacturer, identification number, device, version
     {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
     {:ok, %__MODULE__{
@@ -129,7 +129,7 @@ defmodule Exmbus.Message do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
   # Gather from APL
-  defp gather_m_i_d_v([%Apl.Encrypted{} | rest], m, i, d, v, opts) do
+  defp gather_m_i_d_v([%Apl.Raw{} | rest], m, i, d, v, opts) do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
   # Gather from TPL

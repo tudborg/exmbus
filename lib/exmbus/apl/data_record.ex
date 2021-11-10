@@ -14,11 +14,11 @@ defmodule Exmbus.Apl.DataRecord do
   @doc """
   Decodes a single DataRecord from a binary.
   """
-  @spec parse(binary())
+  @spec parse(binary(), opts :: map(), parse_context :: [any()])
     :: {:ok, %__MODULE__{}, rest :: binary()}
     |  Header.DataInformationBlock.special_function()
-  def parse(bin) do
-    case Header.parse(bin) do
+  def parse(bin, opts, ctx) do
+    case Header.parse(bin, opts, ctx) do
       {:ok, header, rest} ->
         # parse data from rest
         case parse_data(header, rest) do
@@ -44,11 +44,21 @@ defmodule Exmbus.Apl.DataRecord do
   """
   @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
   # The trivial case, no extensions, no multiplier. The data is the data.
-  def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}), do: {:ok, data}
+  def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}) do
+    {:ok, data}
+  end
   # Also easy case, no extensions, a multiplier exists and data is numerical:
-  def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data), do: {:ok, mul * data}
+  def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data) do
+    {:ok, mul * data}
+  end
+  def value(%DataRecord{header: %{extensions: [{:record_error, :none} | tail]}=header}=dr) do
+    # We ignore a record_error: :none
+    value(%{dr | header: %{header | extensions: tail}})
+  end
   # If we have unknown extensions:
-  def value(%DataRecord{header: %{extensions: [ext|_]}}), do: {:error, {:unhandled_extension, ext}}
+  def value(%DataRecord{header: %{extensions: [ext|_]}}) do
+    {:error, {:unhandled_extension, ext}}
+  end
 
   @doc """
   Returns the unit for a DataRecord as a string.
@@ -56,20 +66,42 @@ defmodule Exmbus.Apl.DataRecord do
   raw unit in the header's Value Information Block.
   """
   # easy case, no extensions. The unit is the unit.
-  def unit(%DataRecord{header: %{extensions: [], unit: unit}}), do: {:ok, unit}
-  def unit(%DataRecord{header: %{extensions: [ext|_]}}), do: {:error, {:unhandled_extension, ext}}
+  def unit(%DataRecord{header: %{extensions: [], unit: unit}}) do
+    {:ok, unit}
+  end
+  def unit(%DataRecord{header: %{extensions: [{:record_error, :none} | tail]}=header}=dr) do
+    # We ignore a record_error: :none
+    unit(%{dr | header: %{header | extensions: tail}})
+  end
+  def unit(%DataRecord{header: %{extensions: [ext|_]}}) do
+    {:error, {:unhandled_extension, ext}}
+  end
 
 
-  def to_map!(%DataRecord{header: header}=dr) do
+  def to_map!(%DataRecord{data: raw_data, header: %{unit: raw_unit}=header}=dr) do
     unit =
       case unit(dr) do
-        {:ok, u} -> u
-        {:error, {:unhandled_extension, _ext}} -> nil
+        {:ok, u} ->
+          u
+        {:error, {:unhandled_extension, _ext}} ->
+          # an unknown extension existed in this data record.
+          # for that reason, we cannot be certain of what the real value should
+          # have been, since the unknown extension might modify it.
+          # we return a {:raw, _} tuple to allow for debugability.
+          # Notice that a tuple will not correctly JSON encode.
+          {:raw, raw_unit}
       end
     value =
       case value(dr) do
-        {:ok, v} -> v
-        {:error, {:unhandled_extension, _ext}} -> nil
+        {:ok, v} ->
+          v
+        {:error, {:unhandled_extension, _ext}} ->
+          # an unknown extension existed in this data record.
+          # for that reason, we cannot be certain of what the real value should
+          # have been, since the unknown extension might modify it.
+          # we return a {:raw, _} tuple to allow for debugability.
+          # Notice that a tuple will not correctly JSON encode.
+          {:raw, raw_data}
       end
     %{
       unit: unit,

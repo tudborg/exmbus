@@ -49,7 +49,7 @@ defmodule Exmbus.Tpl do
 
 
   @doc """
-  Parses a transport layer and adds it to the parsed list.
+  Parses a transport layer and adds it to the parse context.
   This function will return an error if the first byte
   is not a CI field describing a transport layer.
   """
@@ -58,34 +58,34 @@ defmodule Exmbus.Tpl do
   ## format frames:
   ##
   # none
-  def parse(<<0x69, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus format frame tpl header=none"
+  def parse(<<0x69, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=none"
   # short
-  def parse(<<0x6A, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus format frame tpl header=short"
+  def parse(<<0x6A, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=short"
   # long
-  def parse(<<0x6B, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus format frame tpl header=long"
+  def parse(<<0x6B, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=long"
 
   ##
   ## Full frames:
   ##
   # MBus full frame none
-  def parse(<<0x78, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus full frame tpl header=none"
+  def parse(<<0x78, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus full frame tpl header=none"
   # MBus full frame short
-  def parse(<<0x7A, rest::binary>>, opts, parsed) do
+  def parse(<<0x7A, rest::binary>>, opts, ctx) do
     {:ok, header, rest} = parse_tpl_header_short(rest)
-    finalize_tpl(:full_frame, header, rest, opts, parsed)
+    finalize_tpl(:full_frame, header, rest, opts, ctx)
   end
   # MBus full frame long
-  def parse(<<0x72, rest::binary>>, opts, parsed) do
+  def parse(<<0x72, rest::binary>>, opts, ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:full_frame, header, rest, opts, parsed)
+    finalize_tpl(:full_frame, header, rest, opts, ctx)
   end
 
   # MBus compact long
-  def parse(<<0x73, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus compact frame tpl header=long"
+  def parse(<<0x73, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=long"
   # MBus compact none
-  def parse(<<0x79, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus compact frame tpl header=none"
+  def parse(<<0x79, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=none"
   # MBus compact short
-  def parse(<<0x7B, rest::binary>>, _opts, _parsed), do: raise "TODO: MBus compact frame tpl header=short"
+  def parse(<<0x7B, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=short"
 
 
 
@@ -111,21 +111,24 @@ defmodule Exmbus.Tpl do
   Get the number of expected encrypted bytes in the APL binary
   """
   def encrypted_byte_count(%__MODULE__{header: header}), do: encrypted_byte_count(header)
-  def encrypted_byte_count(%None{}), do: 0
-  def encrypted_byte_count(%Short{configuration_field: %{mode: m, blocks: n}}) when m != 0, do: n * 16
-  def encrypted_byte_count(%Long{configuration_field: %{mode: m, blocks: n}}) when m != 0, do: n * 16
+  def encrypted_byte_count(%None{}), do: {:ok, 0}
+  def encrypted_byte_count(%Short{configuration_field: %{mode: m, blocks: n}}) when m != 0, do: {:ok, n * 16}
+  def encrypted_byte_count(%Long{configuration_field: %{mode: m, blocks: n}}) when m != 0, do: {:ok, n * 16}
+  # when mode is 0, then encrypted byte count is 0
+  def encrypted_byte_count(%Short{configuration_field: %{mode: 0}}), do: {:ok, 0}
+  def encrypted_byte_count(%Long{configuration_field: %{mode: 0}}), do: {:ok, 0}
 
   ##
   ## Helpers
   ##
 
   # decode APL layer after decoding TPL header and figuring out encryption mode and frame type
-  defp finalize_tpl(frame_type, header, rest, opts, parsed) do
+  defp finalize_tpl(frame_type, header, rest, opts, ctx) do
     tpl = %__MODULE__{
       frame_type: frame_type,
       header: header,
     }
-    Apl.parse(rest, opts, [tpl | parsed])
+    Apl.parse(rest, opts, [tpl | ctx])
   end
 
   # TPL header decoders

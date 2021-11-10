@@ -69,17 +69,15 @@ defmodule FullFrameTest do
     end
 
     assert {:ok, %Message{layers: layers, records: :encrypted}} = Exmbus.parse(datagram)
-    assert [eapl=%Apl.Encrypted{} | layers] = layers
+    assert [raw=%Apl.Raw{} | layers] = layers
     assert [_tpl=%Tpl{} | layers] = layers
     assert [_dll=%Wmbus{} | layers] = layers
     assert [] = layers
 
-    assert %Apl.Encrypted{
+    assert %Apl.Raw{
       encrypted_bytes: <<89, 35, 201, 90, 170, 38, 209, 178, 231, 73, 59, 1, 62, 196, 166, 246, 211, 82, 155, 82, 14, 223, 240, 234, 109, 239, 201, 157, 109, 105, 235, 243>>,
-      iv: <<147, 21, 120, 86, 52, 18, 51, 3, 42, 42, 42, 42, 42, 42, 42, 42>>,
-      mode: {:mode, 5},
       plain_bytes: ""
-    } = eapl
+    } = raw
 
     assert {:ok, %Message{layers: nil, records: records}} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
