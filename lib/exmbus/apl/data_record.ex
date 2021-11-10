@@ -47,18 +47,8 @@ defmodule Exmbus.Apl.DataRecord do
   def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}), do: {:ok, data}
   # Also easy case, no extensions, a multiplier exists and data is numerical:
   def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data), do: {:ok, mul * data}
-
-  @doc """
-  Retrieve the value of the DataRecord.
-  This is the raising version of value/1
-  """
-  def value!(dr) do
-    case value(dr) do
-      {:ok, value} -> value
-      # TODO handle error
-    end
-  end
-
+  # If we have unknown extensions:
+  def value(%DataRecord{header: %{extensions: [ext|_]}}), do: {:error, {:unhandled_extension, ext}}
 
   @doc """
   Returns the unit for a DataRecord as a string.
@@ -67,18 +57,23 @@ defmodule Exmbus.Apl.DataRecord do
   """
   # easy case, no extensions. The unit is the unit.
   def unit(%DataRecord{header: %{extensions: [], unit: unit}}), do: {:ok, unit}
+  def unit(%DataRecord{header: %{extensions: [ext|_]}}), do: {:error, {:unhandled_extension, ext}}
 
-  def unit!(dr) do
-    case unit(dr) do
-      {:ok, unit} -> unit
-      # TODO handle error
-    end
-  end
 
   def to_map!(%DataRecord{header: header}=dr) do
+    unit =
+      case unit(dr) do
+        {:ok, u} -> u
+        {:error, {:unhandled_extension, _ext}} -> nil
+      end
+    value =
+      case value(dr) do
+        {:ok, v} -> v
+        {:error, {:unhandled_extension, _ext}} -> nil
+      end
     %{
-      unit: DataRecord.unit!(dr),
-      value: DataRecord.value!(dr),
+      unit: unit,
+      value: value,
       device: header.device,
       tariff: header.tariff,
       storage: header.storage,

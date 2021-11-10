@@ -203,13 +203,23 @@ defmodule Exmbus.DataType do
     # to do since it doesn't fit in our normal type for time.
     # instead, I guard for it and raise if we see it. I suspect noone actually uses this feature.
     has_periodicity = minute == 63 or hour == 31 or day == 0 or month == 15 or year == 127
-    if has_periodicity, do: raise "timestamp of Type F indicated periodicity but that is not supported by this library. Contact author."
-    # if the date is marked invalid raise. I've not seen this in the wild.
-    if iv == 1, do: raise "time marked invalid which this library doesn't support. Contact author."
-    # try to put all of that into a NaiveDateTime
-    case NaiveDateTime.new(year, month, day, hour, minute, 0) do
-      {:ok, ndt} -> {:ok, ndt, rest}
-      {:error, reason} -> {:error, reason, rest}
+
+    cond do
+      iv == 1 ->
+        # If "invalid" is set, we return the :invalid atom, because apparently
+        # meters will intentionally send an invalid record.
+        {:ok, :invalid, rest}
+
+      has_periodicity ->
+        # We don't currently properly support representing periodicity, so we return an error:
+        {:error, {:unsupported_feature, :data_type_f_with_periodicity}, rest}
+
+      true ->
+        # try to put all of that into a NaiveDateTime
+        case NaiveDateTime.new(year, month, day, hour, minute, 0) do
+          {:ok, ndt} -> {:ok, ndt, rest}
+          {:error, reason} -> {:error, reason, rest}
+        end
     end
   end
   @doc """
@@ -220,9 +230,9 @@ defmodule Exmbus.DataType do
     {:ok, ~D[2021-02-01], <<0xFF>>}
   """
   # TYPE G, date (16 bit)
-  def decode_type_g(<<0xFF, 0xFF, _rest::binary>>) do
+  def decode_type_g(<<0xFF, 0xFF, rest::binary>>) do
     # manual Table A.6 — Type G: Date (CP16) "A value of FFh in both bytes (that means FFFFh) shall be interpreted as invalid."
-    raise "time marked invalid which this library doesn't support. Contact author."
+    {:ok, :invalid, rest}
   end
   def decode_type_g(<<year_lsb::3, day::5,year_msb::4, month::4, rest::binary>>) do
     year = case ((year_msb <<< 3) ||| year_lsb) do
@@ -233,7 +243,7 @@ defmodule Exmbus.DataType do
     # to do since it doesn't fit in our normal type for time.
     # instead, I guard for it and raise if we see it. I suspect noone actually uses this feature.
     has_periodicity = day == 0 or month == 15 or year == 127
-    if has_periodicity, do: raise "timestamp of Type F indicated periodicity but that is not supported by this library. Contact author."
+    if has_periodicity, do: raise "timestamp of Type G indicated periodicity but that is not supported by this library. Contact author."
     case Date.new(year, month, day) do
       {:ok, date} -> {:ok, date, rest}
       {:error, reason} -> {:error, reason, rest}

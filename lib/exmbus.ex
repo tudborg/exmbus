@@ -28,4 +28,8 @@ defmodule Exmbus do
 
   def parse!(bin, opts \\ %{}), do: Message.parse!(bin, opts)
   def parse(bin, opts \\ %{}), do: Message.parse(bin, opts)
+
+
+
+
 end

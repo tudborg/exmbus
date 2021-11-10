@@ -112,7 +112,9 @@ defmodule Exmbus.Apl.DataRecord.Header do
   end
 
   # linear VIF-extension: EF, reserved for future use
-  defp parse_vib(_header, _table, <<0xEF, rest::binary>>, _opts), do: raise "VIF 0xEF reserved for future use."
+  defp parse_vib(_header, _table, <<0xEF, _rest::binary>>, _opts) do
+    raise "VIF 0xEF reserved for future use."
+  end
   # plain-text VIF:
   defp parse_vib(header, _table, <<_::1, 0b111_1100::7, rest::binary>>, opts) do
     case parse_vifes(header, rest, opts) do
@@ -125,12 +127,21 @@ defmodule Exmbus.Apl.DataRecord.Header do
   # Any VIF: 7E / FE
   # This VIF-Code can be used in direction master to slave for readout selection of all VIFs.
   # See special function in 6.3.3
-  defp parse_vib(header, _table, <<_::1, 0b1111110::7, _rest::binary>>, _opts) do
+  defp parse_vib(_header, _table, <<_::1, 0b1111110::7, _rest::binary>>, _opts) do
     raise "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d."
   end
-  # manufacturer specific encoding. All bets are off.
-  defp parse_vib(header, _table, <<_::1, 0b1111111::7, _rest::binary>>, _opts) do
-    raise "Manufacturer-specific VIF encoding not implemented. See 6.4.1 list item e."
+  # Manufacturer specific encoding, 7F / FF.
+  # Rest of data-record (including VIFEs) are manufacturer specific.
+  defp parse_vib(%__MODULE__{description: nil, extensions: exts}=header, _table, <<_::1, 0b1111111::7, rest::binary>>, _opts) do
+    {vifes, rest} = split_by_extension_bit(rest)
+
+    manufacturer_specific_vifes =
+      vifes
+      |> :binary.bin_to_list()
+      |> Enum.map(&({:manufacturer_specific_vife, &1}))
+
+    {:ok, %__MODULE__{header | description: :manufacturer_specific_encoding, extensions: manufacturer_specific_vifes ++ exts}, rest}
+    #raise "Manufacturer-specific VIF encoding not implemented. See 6.4.1 list item e."
   end
   # linear VIF-extension: 0xFD, decode vif from table 14.
   defp parse_vib(header, _table, <<0xFD, rest::binary>>, opts) do
@@ -142,7 +153,7 @@ defmodule Exmbus.Apl.DataRecord.Header do
   end
   defp parse_vib(header, table, <<vif::binary-size(1), rest::binary>>, opts) do
     case VIB.decode_vif_table(header, table, vif) do
-      {:ok, header} ->
+      {:ok, %__MODULE__{}=header} ->
         case vif do
           # Do we have VIF extensions?
           # yes:
@@ -153,21 +164,24 @@ defmodule Exmbus.Apl.DataRecord.Header do
     end
   end
 
-  defp parse_vifes(header, <<_::1, 0b000::3, _::4, rest::binary>>, _opts) do
+  defp parse_vifes(_header, <<_::1, 0b000::3, _::4, _rest::binary>>, _opts) do
     raise "VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)"
   end
-  defp parse_vifes(header, <<_::1, 0b0010000::7, rest::binary>>, _opts) do
+  defp parse_vifes(_header, <<_::1, 0b0010000::7, _rest::binary>>, _opts) do
     raise "VIFE E0010000 reserved"
   end
-  defp parse_vifes(header, <<_::1, 0b0010001::7, rest::binary>>, _opts) do
+  defp parse_vifes(_header, <<_::1, 0b0010001::7, _rest::binary>>, _opts) do
     raise "VIFE E0010001 reserved"
   end
-  defp parse_vifes(header ,<<vife, rest::binary>>, _opts) do
-    raise "VIFE #{u8_to_hex(vife)} not implemented"
+  # Unknown VIFE (We have not implemented a specific atom for it, and don't know how it affects the value)
+  defp parse_vifes(%__MODULE__{extensions: exts}=header ,<<ext::1, vife::7, rest::binary>>, opts) do
+    # the vife is unknown. We add it as unknown to the extensions list.
+    header = %__MODULE__{header | extensions: [{{:unknown_vife, vife}} | exts]}
+    case ext do
+      0 -> {:ok, header, rest}
+      1 -> parse_vifes(header, rest, opts)
+    end
   end
-
-
-
 
 
 
@@ -198,7 +212,7 @@ defmodule Exmbus.Apl.DataRecord.Header do
   end
 
 
-  defp u8_to_hex(u) when u >= 0 and u <= 255, do: "0x#{Integer.to_string(u, 16)}"
+
 
 
 end

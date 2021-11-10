@@ -92,10 +92,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   def decode_vif_table(header, 0xFD, <<_::1, 0b010_0001::7>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :last_storage_number_for_cyclic_storage}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b010_0010::7>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :size_of_storage_block}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b010_0011::7>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :descriptor_for_tariff_and_device}}
-  def decode_vif_table(header, 0xFD, <<_::1, 0b010_01::5, 00::2>>), do: {:ok, %{header | description: {:storage_interval, :second}}}
-  def decode_vif_table(header, 0xFD, <<_::1, 0b010_01::5, 01::2>>), do: {:ok, %{header | description: {:storage_interval, :minute}}}
-  def decode_vif_table(header, 0xFD, <<_::1, 0b010_01::5, 10::2>>), do: {:ok, %{header | description: {:storage_interval, :hour}}}
-  def decode_vif_table(header, 0xFD, <<_::1, 0b010_01::5, 11::2>>), do: {:ok, %{header | description: {:storage_interval, :day}}}
+  def decode_vif_table(header, 0xFD, <<_::1, 0b010_01::5, nn::2>>), do: {:ok, %{header | description: :storage_interval, unit: on_time_unit(nn)}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b010_1000::7>>), do: {:ok, %{header | description: {:storage_interval, :month}}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b010_1001::7>>), do: {:ok, %{header | description: {:storage_interval, :year}}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b010_1010::7>>), do: {:ok, %{header | description: :operator_specific_data}}
@@ -103,6 +100,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   # ... skipped some vifs ...
   def decode_vif_table(header, 0xFD, <<_::1, 0b011_1010::7>>), do: {:ok, %{header | description: :dimensionless}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b011_1011::7>>), do: {:ok, %{header | description: {:container, :wmbus}}}
+  def decode_vif_table(header, 0xFD, <<_::1, 0b011_11::5, nn::2>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :period_of_nominal_data_transmissions, unit: on_time_unit(nn)}}
   # ... skipped some vifs ...
   def decode_vif_table(header, 0xFD, <<_::1, 0b110_0000::7>>), do: {:ok, %{header | description: :reset_counter}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b110_0001::7>>), do: {:ok, %{header | description: :cumulation_counter}}
@@ -114,14 +112,14 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   def decode_vif_table(header, 0xFD, <<_::1, 0b111_0110::7>>), do: {:ok, %{header | description: {:container, :manufacturer}}}
   # ... skipped some vifs ...
   def decode_vif_table(header, 0xFD, <<vif>>) do
-    {:error, {:unknown_vif, "decoding from VIF linear extension table 0xFD not implemented (VIFE was #{u8_to_hex(vif)})"}}
+    raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.u8_to_binary_str(vif)}, header was: #{inspect header}"
   end
 
   # TODO 0xFB table
   # def decode_vif_table(header, 0xFB, <<_::1, 0b000_0000::7>>), do: {}
   # def decode_vif_table(header, 0xFB, <<_::1, 0b000_0000::7>>), do: {}
   def decode_vif_table(header, 0xFB, <<vif>>) do
-    {:error, {:unknown_vif, "decoding from VIF linear extension table 0xFB not implemented (VIFE was #{u8_to_hex(vif)})"}}
+    raise "decoding from VIF linear extension table 0xFB not implemented. VIFE was: #{Exmbus.Debug.u8_to_binary_str(vif)}, header was: #{inspect header}"
   end
 
   # This function implements remark K in table 12 which says:
@@ -131,8 +129,11 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   # Maybe what it SHOULD have set is that if the coding is int/binary then do type C, if it's BCD then do type A.
   # Or maybe it says that the binary (as in the raw) data should be decoded as either BCD or UINT, and
   # anything else is an error, but that also seems weird for something like manufacturer, customer, etc.
-  defp fd_remark_k(%Header{}) do
-    raise "TODO Not sure what the coding should be"
+  defp fd_remark_k(%Header{data_type: :type_b}) do
+    :type_c # possibly this?
+  end
+  defp fd_remark_k(%Header{}=header) do
+    raise "TODO Not sure what the coding should be but header was #{inspect header}"
   end
 
   defp on_time_unit(0b00), do: "seconds"
@@ -140,5 +141,4 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   defp on_time_unit(0b10), do: "hours"
   defp on_time_unit(0b11), do: "days"
 
-  defp u8_to_hex(u) when u >= 0 and u <= 255, do: "0x#{Integer.to_string(u, 16)}"
 end
