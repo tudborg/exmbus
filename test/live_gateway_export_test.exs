@@ -1,23 +1,19 @@
 defmodule LiveGatewayExportTest do
-  NimbleCSV.define(CSV, separator: ",", escape: "\"")
-
   use ExUnit.Case
+  @moduletag :integration
+
   require Logger
 
-  alias Exmbus.Message
-  alias Exmbus.Apl.DataRecord
-  alias Exmbus.Apl
-  alias Exmbus.Apl.EncryptedApl
-  alias Exmbus.Tpl
-  alias Exmbus.Dll.Wmbus
+  NimbleCSV.define(CSV, separator: ",", escape: "\"")
 
   defp parse_export(filename) do
     Path.join(__DIR__, filename)
     |> File.stream!()
-    |> CSV.parse_stream()
+    |> CSV.parse_stream(skip_headers: false)
   end
 
   defp handle_csv_line([expected_manufacturer, expected_serial, hexdata]) do
+    Logger.debug("#{expected_manufacturer} #{expected_serial} #{hexdata}")
     assert %{} =
              hexdata
              |> Base.decode16!()

@@ -92,9 +92,9 @@ defmodule Exmbus.Apl do
   end
 
   # decrypt mode 5 bytes
-  defp decrypt_mode_5(enc, %{key: key}=opts, ctx) do
+  defp decrypt_mode_5(enc, opts, ctx) do
     {:ok, iv} = ctx_to_mode_5_iv(ctx)
-    {:ok, [byte_key]} = Key.keys_for_parse_stack(key, opts, ctx)
+    {:ok, [byte_key]} = Key.from_options(opts, ctx)
     case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
       <<0x2f, 0x2f, rest::binary>> ->
         {:ok, rest}

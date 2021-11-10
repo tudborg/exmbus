@@ -1,9 +1,6 @@
 defmodule TplTest do
   use ExUnit.Case
 
-  alias Exmbus.Tpl
-  alias Exmbus.Apl
-
   doctest Exmbus.Tpl, import: true
 
   test "MBus full frame, long header" do

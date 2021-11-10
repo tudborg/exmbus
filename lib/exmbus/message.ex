@@ -6,7 +6,6 @@ defmodule Exmbus.Message do
 
   alias Exmbus.Tpl
   alias Exmbus.Apl
-  alias Exmbus.Apl.DataRecord
   alias Exmbus.Dll.Wmbus
 
   defstruct [
@@ -26,6 +25,7 @@ defmodule Exmbus.Message do
   def parse!(bin, opts \\ %{}) do
     case parse(bin, opts) do
       {:ok, message} -> message
+      {:error, reason, partial_ctx} -> raise "parse!/2 failed with reason=#{inspect reason} ctx=#{inspect partial_ctx}"
       {:error, reason} -> raise "parse!/2 failed with reason=#{inspect reason}"
     end
   end
@@ -49,15 +49,15 @@ defmodule Exmbus.Message do
   The binary must be a WMBus DLL binary
   """
   def parse_wmbus(bin, opts) do
-    case Wmbus.parse(bin, opts, []) do
-      {:ok, layers} -> from_layers(layers, opts)
+    with {:ok, layers} <- Wmbus.parse(bin, opts, []) do
+      from_layers(layers, opts)
     end
   end
   @doc """
   Parses a binary into a Message struct.
   The binary must be an MBus DLL binary
   """
-  def parse_mbus(bin, opts) do
+  def parse_mbus(_bin, _opts) do
     raise "TODO"
     # case Mbus.parse(bin, opts, []) do
     #   {:ok, layers} -> from_layers(layers, opts)

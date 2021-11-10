@@ -79,7 +79,7 @@ defmodule Exmbus.Tpl.ConfigurationField do
     {:ok, cf, rest}
   end
   # raise if unknown encryption mode
-  defp be_decode(<<_::3, mode::5, _::8>>, rest) do
+  defp be_decode(<<_::3, mode::5, _::8>>, _rest) do
     raise "Encryption mode #{mode} not implemented."
   end
 

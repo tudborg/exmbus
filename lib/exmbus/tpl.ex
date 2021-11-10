@@ -58,17 +58,17 @@ defmodule Exmbus.Tpl do
   ## format frames:
   ##
   # none
-  def parse(<<0x69, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=none"
+  def parse(<<0x69, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=none"
   # short
-  def parse(<<0x6A, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=short"
+  def parse(<<0x6A, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=short"
   # long
-  def parse(<<0x6B, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=long"
+  def parse(<<0x6B, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=long"
 
   ##
   ## Full frames:
   ##
   # MBus full frame none
-  def parse(<<0x78, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus full frame tpl header=none"
+  def parse(<<0x78, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus full frame tpl header=none"
   # MBus full frame short
   def parse(<<0x7A, rest::binary>>, opts, ctx) do
     {:ok, header, rest} = parse_tpl_header_short(rest)
@@ -81,11 +81,11 @@ defmodule Exmbus.Tpl do
   end
 
   # MBus compact long
-  def parse(<<0x73, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=long"
+  def parse(<<0x73, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=long"
   # MBus compact none
-  def parse(<<0x79, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=none"
+  def parse(<<0x79, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=none"
   # MBus compact short
-  def parse(<<0x7B, rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=short"
+  def parse(<<0x7B, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=short"
 
 
 
@@ -147,16 +147,15 @@ defmodule Exmbus.Tpl do
   @doc """
   Decode a TPL long header.
 
-
     iex> parse_tpl_header_long(<<0x78,0x56,0x34,0x12,0x93,0x15,0x33,0x03,0x2A,0x00,0x00,0x00,0xFF,0xFF>>)
-    {:ok, %Tpl.Long{
+    {:ok, %Exmbus.Tpl.Long{
       identification_no: 12345678,
       manufacturer: "ELS",
       version: 51,
       device: :gas,
       access_no: 42,
-      status: %Tpl.Status{},
-      configuration_field: %Tpl.ConfigurationField{},
+      status: %Exmbus.Tpl.Status{},
+      configuration_field: %Exmbus.Tpl.ConfigurationField{},
     }, <<0xFF, 0xFF>>}
   """
   # NOTE, rest contains the Configuration Field but we can't parse it out becaise

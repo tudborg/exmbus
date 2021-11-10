@@ -8,10 +8,7 @@ defmodule Exmbus do
 
   def simplified!(bin, opts \\ %{})
   def simplified!(bin, opts) when is_binary(bin) do
-    case parse(bin, opts) do
-      {:ok, message} -> simplified!(message, opts)
-      {:error, reason} -> raise "Failed to convert binary to message, reason=#{inspect reason}"
-    end
+    simplified!(parse!(bin, opts), opts)
   end
   def simplified!(%Message{manufacturer: manufacturer, identification_no: identification_no, device: device, version: version, records: records}, _opts) do
     %{

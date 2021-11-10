@@ -62,8 +62,8 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   ## The FD table
   ##
   # Currency, not implemented
-  def decode_vif_table(header, 0xFD, <<_::1, 0b000_00::5, nn::2>>), do: raise "0xFD vif 0bE00000nn not supported. Credit of 10^(nn–3) of the nominal local legal currency units."
-  def decode_vif_table(header, 0xFD, <<_::1, 0b000_01::5, nn::2>>), do: raise "0xFD vif 0bE00000nn not supported. Debit of 10^(nn–3) of the nominal local legal currency units."
+  def decode_vif_table(_header, 0xFD, <<_::1, 0b000_00::5, _nn::2>>), do: raise "0xFD vif 0bE00000nn not supported. Credit of 10^(nn–3) of the nominal local legal currency units."
+  def decode_vif_table(_header, 0xFD, <<_::1, 0b000_01::5, _nn::2>>), do: raise "0xFD vif 0bE00000nn not supported. Debit of 10^(nn–3) of the nominal local legal currency units."
   def decode_vif_table(header, 0xFD, <<_::1, 0b000_1000::7>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :unique_message_identification}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b000_1001::7>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :device_type}}
   def decode_vif_table(header, 0xFD, <<_::1, 0b000_1010::7>>), do: {:ok, %{header | data_type: fd_remark_k(header), description: :manufacturer}}

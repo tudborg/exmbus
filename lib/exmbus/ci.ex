@@ -5,6 +5,7 @@ defmodule Exmbus.CI do
   @table Exmbus.TableLoader.from_file!(__DIR__, "ci.csv")
 
   alias Exmbus.Tpl
+  alias Exmbus.Ell
 
 
 
@@ -22,8 +23,10 @@ defmodule Exmbus.CI do
         Tpl.parse(bin, opts, ctx)
       {:ok, {:apl, _tpl_header, _, _}} ->
         Tpl.parse(bin, opts, ctx)
-      {:ok, {:ell, _, what, note}} ->
-        raise "Not implemented: #{what}, #{note}."
+      {:ok, {:ell, _ell_type, _, _}} ->
+        Ell.parse(bin, opts, ctx)
+      {:ok, {symbol, _, what, note}} ->
+        raise "Not implemented: CI=#{Exmbus.Debug.u8_to_hex_str(ci)} #{what} (symbol=#{symbol}), #{note}."
 
       # lookup error:
       {:error, _reason}=e ->

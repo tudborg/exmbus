@@ -13,6 +13,7 @@ defmodule Exmbus.Tpl.Device do
   """
   @spec encode(atom) :: binary
   Enum.each(@table, fn ({byte, atom, _}) ->
+      # TODO: encode/1 should return {:ok, byte}
       def encode(unquote(atom)), do: unquote(byte)
   end)
   @doc """

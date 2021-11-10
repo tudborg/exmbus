@@ -1,4 +1,4 @@
-CI low;CI high;Answer      ;Layer     ;TPL header type       ;Direction                                                ;higher layer protocol note
+CI low;CI high;Answer      ;Layer     ;Layer Ext             ;Direction                                                ;higher layer protocol note
 0x00  ;0x1F   ;:ok         ;:apl      ;:none                 ;Reserved for DLMS-based applications                     ;DLMS (see EN 13757–1)
 0x20  ;0x4F   ;:error      ;:reserved ;                      ;                                                         ;
 0x50  ;:nil   ;:ok         ;:apl      ;:none                 ;Application reset or select to device                    ;"Application Selection; according to EN 13757–3:2018, Clause 7"
@@ -49,13 +49,16 @@ CI low;CI high;Answer      ;Layer     ;TPL header type       ;Direction         
 0x83  ;:nil   ;:ok         ;:apl      ;:none                 ;Network management data to device                        ;According to EN 13757–4 and EN 13757–5
 0x84  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer to device (M- Bus-Compact frame expected);
 0x85  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer to device (M- Bus-Format frame expected) ;
-0x86  ;:nil   ;:ok         ;:ell      ;:nil                  ;Reserved for Extended Link Layer                         ;According to EN 13757–4
+0x86  ;:nil   ;:ok         ;:ell      ;:five                 ;Extended Link Layer V                                    ;According to EN 13757–4
 0x87  ;:nil   ;:ok         ;:apl      ;:long                 ;Network management data from device                      ;According to EN 13757–4, EN 13757–5
 0x88  ;:nil   ;:ok         ;:apl      ;:short                ;Network management data from device                      ;According to EN 13757–4, EN 13757–5
 0x89  ;:nil   ;:ok         ;:apl      ;:none                 ;Network management data from device                      ;According to EN 13757–4, EN 13757–5
 0x8A  ;:nil   ;:ok         ;:tpl      ;:short                ;Transport Layer from device (without APL)                ;According to EN 13757–4
 0x8B  ;:nil   ;:ok         ;:tpl      ;:long                 ;Transport Layer from device (without APL)                ;According to EN 13757–4
-0x8C  ;0x8F   ;:ok         ;:ell      ;:nil                  ;Extended Link Layer                                      ;According to EN 13757–4
+0x8C  ;:nil   ;:ok         ;:ell      ;:one                  ;Extended Link Layer I                                    ;According to EN 13757–4
+0x8D  ;:nil   ;:ok         ;:ell      ;:two                  ;Extended Link Layer II                                   ;According to EN 13757–4
+0x8E  ;:nil   ;:ok         ;:ell      ;:three                ;Extended Link Layer III                                  ;According to EN 13757–4
+0x8F  ;:nil   ;:ok         ;:ell      ;:four                 ;Extended Link Layer IV                                   ;According to EN 13757–4
 0x90  ;:nil   ;:ok         ;:afl      ;:nil                  ;Authentication and Fragmentation Sublayer                ;According to Clause 6
 0x91  ;:nil   ;:error      ;:reserved ;                      ;                                                         ;
 0x92  ;0x97   ;:error      ;:reserved ;                      ;                                                         ;
