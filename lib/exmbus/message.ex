@@ -6,6 +6,7 @@ defmodule Exmbus.Message do
 
   alias Exmbus.Tpl
   alias Exmbus.Apl
+  alias Exmbus.Ell
   alias Exmbus.Dll.Wmbus
 
   defstruct [
@@ -76,7 +77,7 @@ defmodule Exmbus.Message do
   """
   def from_layers(layers, opts  \\ %{})
   def from_layers(layers, opts) when is_list(opts), do: from_layers(layers, opts |> Enum.into(%{}))
-  def from_layers([%Apl{} | _]=layers, opts) when is_map(opts) do
+  def from_layers(layers, opts) when is_map(opts) do
     # Gather manufacturer, identification number, device, version
     {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
     {:ok, records} = gather_records(layers, opts)
@@ -96,24 +97,6 @@ defmodule Exmbus.Message do
     }}
   end
 
-  # encrypted APL, keyfn not supplied, mark records as encrypted.
-  # You can call Message.decrypt(message, keyfn: ...) on the returned struct to
-  # try decrypting it.
-  def from_layers([%Apl.Raw{mode: mode} | _]=layers, opts) when is_map(opts) and mode > 0 do
-    # Gather manufacturer, identification number, device, version
-    {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
-    {:ok, %__MODULE__{
-      layers: layers,
-      records: :encrypted,
-      manufacturer: m,
-      identification_no: i,
-      device: d,
-      version: v,
-    }}
-  end
-
-
-
 
   # Gather manufacturer, identification number, device, version from parsed layers,
   # returning as soon as we have found it.
@@ -125,11 +108,19 @@ defmodule Exmbus.Message do
     {:error, {:could_not_gather_m_i_d_v, {m, i, d, v}}}
   end
   # Gather from APL
-  defp gather_m_i_d_v([%Apl{} | rest], m, i, d, v, opts) do
+  defp gather_m_i_d_v([%Apl.FullFrame{} | rest], m, i, d, v, opts) do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
-  # Gather from APL
+  defp gather_m_i_d_v([%Apl.FormatFrame{} | rest], m, i, d, v, opts) do
+    gather_m_i_d_v(rest, m, i, d, v, opts)
+  end
+  defp gather_m_i_d_v([%Apl.CompactFrame{} | rest], m, i, d, v, opts) do
+    gather_m_i_d_v(rest, m, i, d, v, opts)
+  end
   defp gather_m_i_d_v([%Apl.Raw{} | rest], m, i, d, v, opts) do
+    gather_m_i_d_v(rest, m, i, d, v, opts)
+  end
+  defp gather_m_i_d_v([%Ell{} | rest], m, i, d, v, opts) do
     gather_m_i_d_v(rest, m, i, d, v, opts)
   end
   # Gather from TPL
@@ -155,9 +146,18 @@ defmodule Exmbus.Message do
       v || dll.version,
       opts)
   end
-  # gather records. Currently we just copy from the APL
-  defp gather_records([%Apl{records: records} | _], _opts) do
+  # gather records
+  defp gather_records([%Apl.FullFrame{records: records} | _], _opts) do
     {:ok, records}
+  end
+  defp gather_records([%Apl.CompactFrame{} | _], _opts) do
+    {:ok, :compact_frame}
+  end
+  defp gather_records([%Apl.FormatFrame{} | _], _opts) do
+    {:ok, :format_frame}
+  end
+  defp gather_records([%Apl.Raw{mode: n} | _], _opts) when n > 0 do
+    {:ok, :encrypted}
   end
 
 end

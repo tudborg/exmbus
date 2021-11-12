@@ -68,7 +68,9 @@ defmodule Exmbus.Tpl do
   ## Full frames:
   ##
   # MBus full frame none
-  def parse(<<0x78, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus full frame tpl header=none"
+  def parse(<<0x78, rest::binary>>, opts, ctx) do
+    finalize_tpl(:full_frame, %None{}, rest, opts, ctx)
+  end
   # MBus full frame short
   def parse(<<0x7A, rest::binary>>, opts, ctx) do
     {:ok, header, rest} = parse_tpl_header_short(rest)
@@ -81,11 +83,19 @@ defmodule Exmbus.Tpl do
   end
 
   # MBus compact long
-  def parse(<<0x73, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=long"
+  def parse(<<0x73, rest::binary>>, opts, ctx) do
+    {:ok, header, rest} = parse_tpl_header_long(rest)
+    finalize_tpl(:compact_frame, header, rest, opts, ctx)
+  end
   # MBus compact none
-  def parse(<<0x79, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=none"
+  def parse(<<0x79, rest::binary>>, opts, ctx) do
+    finalize_tpl(:compact_frame, %None{}, rest, opts, ctx)
+  end
   # MBus compact short
-  def parse(<<0x7B, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus compact frame tpl header=short"
+  def parse(<<0x7B, rest::binary>>, opts, ctx) do
+    {:ok, header, rest} = parse_tpl_header_short(rest)
+    finalize_tpl(:compact_frame, header, rest, opts, ctx)
+  end
 
 
 

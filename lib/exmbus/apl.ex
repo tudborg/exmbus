@@ -1,6 +1,6 @@
 defmodule Exmbus.Apl do
 
-  alias Exmbus.Apl.DataRecord
+  alias Exmbus.Apl
   alias Exmbus.Tpl
   alias Exmbus.Key
   alias Exmbus.Dll.Wmbus
@@ -8,10 +8,24 @@ defmodule Exmbus.Apl do
   alias Exmbus.Tpl.Device
   alias Exmbus.DataType
 
-  defstruct [
-    records: [],
-    manufacturer_bytes: nil,
-  ]
+  defmodule FullFrame do
+    defstruct [
+      records: [],
+      manufacturer_bytes: nil,
+    ]
+  end
+
+  defmodule FormatFrame do
+    defstruct [
+      headers: nil,
+    ]
+  end
+
+  defmodule CompactFrame do
+    defstruct [
+      bytes: nil
+    ]
+  end
 
   defmodule Raw do
     @moduledoc """
@@ -28,7 +42,7 @@ defmodule Exmbus.Apl do
   end
 
   @doc """
-  Decode the Application Layer and return an %Apl{} struct.
+  Decode the Application Layer and return one of the Apl frame structs.
 
   The Application Layer consists of N number of records where N >= 0,
   and some optional manufacturer specific data.
@@ -57,39 +71,76 @@ defmodule Exmbus.Apl do
 
   # assume decrypted apl bytes as first argument, parse data fields
   # an return an {:ok, [Apl|ctx]}
-  defp parse_records(bin, opts, ctx) do
-    parse_records(bin, opts, ctx, [])
+  defp parse_records(bin, opts, [ %Tpl{frame_type: :full_frame} | _]=ctx) do
+    parse_full_frame(bin, opts, ctx, [])
+  end
+  defp parse_records(bin, opts, [ %Tpl{frame_type: :format_frame} | _]=ctx) do
+    parse_format_frame(bin, opts, ctx, [])
+  end
+  defp parse_records(bin, opts, [ %Tpl{frame_type: :compact_frame} | _]=ctx) do
+    parse_compact_frame(bin, opts, ctx, [])
   end
 
-  defp parse_records(<<>>, _opts, ctx, acc) do
-    {:ok, [
-      %__MODULE__{
-        records: :lists.reverse(acc),
-        manufacturer_bytes: <<>>,
-      } | ctx]}
+  #
+  # Parse full-frame records:
+  #
+  defp parse_full_frame(<<>>, opts, ctx, acc) do
+    finalize_full_frame(<<>>, opts, ctx, acc)
   end
-  defp parse_records(bin, opts, ctx, acc) do
-    case DataRecord.parse(bin, opts, ctx) do
+  defp parse_full_frame(bin, opts, ctx, acc) do
+    case Apl.DataRecord.parse(bin, opts, ctx) do
       {:ok, record, rest} ->
-        parse_records(rest, opts, ctx, [record | acc])
+        parse_full_frame(rest, opts, ctx, [record | acc])
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        parse_records(rest, opts, ctx, acc)
+        parse_full_frame(rest, opts, ctx, acc)
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        {:ok,
-          [%__MODULE__{
-            records: :lists.reverse(acc),
-            manufacturer_bytes: rest,
-          } | ctx]}
+        finalize_full_frame(rest, opts, ctx, acc)
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        {:ok,[
-          %__MODULE__{
-            records: :lists.reverse(acc),
-            manufacturer_bytes: rest,
-          } | ctx]}
+        finalize_full_frame(rest, opts, ctx, acc)
     end
   end
+
+  defp finalize_full_frame(rest, _opts, ctx, acc) do
+    {:ok, [
+      %FullFrame{
+        records: :lists.reverse(acc),
+        manufacturer_bytes: rest,
+      } | ctx]}
+  end
+
+  #
+  # Format Frame
+  #
+  defp parse_format_frame(<<>>, opts, ctx, acc) do
+    finalize_format_frame(<<>>, opts, ctx, acc)
+  end
+  defp parse_format_frame(bin, opts, ctx, acc) do
+    case Apl.DataRecord.Header.parse(bin, opts, ctx) do
+      {:ok, header, rest} ->
+        parse_format_frame(rest, opts, ctx, [header | acc])
+      # just skip the idle filler
+      {:special_function, :idle_filler, rest} ->
+        parse_format_frame(rest, opts, ctx, acc)
+      # manufacturer specific data is the rest of the APL data
+      {:special_function, {:manufacturer_specific, :to_end}, rest} ->
+        finalize_format_frame(rest, opts, ctx, acc)
+      {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
+        finalize_format_frame(rest, opts, ctx, acc)
+    end
+  end
+
+  defp finalize_format_frame(<<>>, _opts, ctx, acc) do
+    {:ok, [%FormatFrame{headers: :lists.reverse(acc)} | ctx]}
+  end
+  #
+  # Compact Frame
+  #
+  defp parse_compact_frame(bin, _opts, ctx, _acc) do
+    {:ok, [%CompactFrame{bytes: bin} | ctx]}
+  end
+
 
   # decrypt mode 5 bytes
   defp decrypt_mode_5(enc, opts, ctx) do

@@ -17,7 +17,7 @@ defmodule Exmbus do
       device: device,
       version: version,
       records: case records do
-        :encrypted -> :encrypted
+        a when is_atom(a) -> a
         r -> Enum.map(r, &DataRecord.to_map!/1)
       end
     }
