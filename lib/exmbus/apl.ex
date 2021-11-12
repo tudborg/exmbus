@@ -94,14 +94,22 @@ defmodule Exmbus.Apl do
   # decrypt mode 5 bytes
   defp decrypt_mode_5(enc, opts, ctx) do
     {:ok, iv} = ctx_to_mode_5_iv(ctx)
-    {:ok, [byte_key]} = Key.from_options(opts, ctx)
-    case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
-      <<0x2f, 0x2f, rest::binary>> ->
-        {:ok, rest}
-      _ ->
-        {:error, {:invalid_key, byte_key}}
+    {:ok, byte_keys} = Key.from_options(opts, ctx)
+
+    answer =
+      Enum.find_value(byte_keys, fn(byte_key) ->
+        case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
+          <<0x2f, 0x2f, rest::binary>> -> rest
+          _ -> nil
+        end
+      end)
+
+    case answer do
+      nil -> {:error, {:no_valid_keys, byte_keys}}
+      bin -> {:ok, bin}
     end
   end
+
 
   # append a Raw struct to the parse stack
   defp append_raw(bin, _opts, [%Tpl{}=tpl | _]=ctx) do

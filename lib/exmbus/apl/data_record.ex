@@ -43,6 +43,9 @@ defmodule Exmbus.Apl.DataRecord do
   found in the header.
   """
   @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
+  def value(%DataRecord{header: %{}, data: {:invalid, _}}) do
+    {:ok, :invalid}
+  end
   # The trivial case, no extensions, no multiplier. The data is the data.
   def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}) do
     {:ok, data}

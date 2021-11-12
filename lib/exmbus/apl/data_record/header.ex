@@ -154,6 +154,7 @@ defmodule Exmbus.Apl.DataRecord.Header do
     parse_vib(0xFB, rest, opts, ctx, header)
   end
   defp parse_vib(table, <<vif::binary-size(1), rest::binary>>, opts, ctx, header) do
+    <<ivif>> = vif
     case VIB.decode_vif_table(header, table, vif) do
       {:ok, %__MODULE__{}=header} ->
         case vif do

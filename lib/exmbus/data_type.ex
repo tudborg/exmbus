@@ -130,11 +130,17 @@ defmodule Exmbus.DataType do
   def decode_type_a(bin, bitsize) do
     # TODO: performance of using digits/undigits.
     <<bcd::little-size(bitsize), rest::binary>> = bin
-    value = case Integer.digits(bcd, 16) do
-      [0xf | digits] -> -Integer.undigits(digits)
-      digits -> Integer.undigits(digits)
+    digits = Integer.digits(bcd, 16)
+    if not Enum.any?(digits, &(&1 > 0x9 and &1 < 0xf)) do
+      value =
+        case Integer.digits(bcd, 16) do
+          [0xf | digits] -> -Integer.undigits(digits)
+          digits -> Integer.undigits(digits)
+        end
+      {:ok, value, rest}
+    else
+      {:ok, {:invalid, {:type_a, bcd}}, rest}
     end
-    {:ok, value, rest}
   end
 
   def encode_type_a(value, bitsize) do
