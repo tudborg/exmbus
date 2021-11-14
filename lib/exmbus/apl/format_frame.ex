@@ -15,7 +15,11 @@ defmodule Exmbus.Apl.FormatFrame do
 
   def format_signature(%__MODULE__{headers: headers}) when is_list(headers) do
     headers
-    |> Enum.map(&Header.encode!/1)
+    |> Enum.map(fn header ->
+      {:ok, header_bin} = Header.unparse(%{}, [header])
+      header_bin
+    end)
+    |> Enum.into("")
     |> format_signature()
   end
 

@@ -13,6 +13,12 @@ defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
     size: nil, # the size of the value in bits, or :variable_length
   ]
 
+  def unparse(_opts, [%__MODULE__{device: 0, tariff: 0, storage: s}=dib | _]) when s <= 1 do
+    ff_int = encode_function_field(dib.function_field)
+    df_int = encode_data_field(dib.data_type, dib.size)
+    {:ok, <<0::1, s::1, ff_int::2, df_int::4>>}
+  end
+
   def parse(<<special::4, 0b1111::4, rest::binary>>, _opts, _ctx) do
     # note that we are effectively stripping the least-significant bits of the dif which is
     # always 0b1111 (i.e. 0xF) for special functions, so the following case only checks for the top
@@ -99,10 +105,33 @@ defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
   def decode_data_field(0b1110), do: {:bcd, 48} # 12 digit BCD
   def decode_data_field(0b1111), do: raise "unexpected special function coding, this should have been handled already"
 
+  def encode_data_field(:no_data, 0), do: 0b0000
+  def encode_data_field(:int_or_bin, 8), do: 0b0001
+  def encode_data_field(:int_or_bin, 16), do: 0b0010
+  def encode_data_field(:int_or_bin, 24), do: 0b0011
+  def encode_data_field(:int_or_bin, 32), do: 0b0100
+  def encode_data_field(:real, 32), do: 0b0101
+  def encode_data_field(:int_or_bin, 48), do: 0b0110
+  def encode_data_field(:int_or_bin, 64), do: 0b0111
+  def encode_data_field(:selection_for_readout, 0), do: 0b1000
+  def encode_data_field(:bcd, 8), do: 0b1001 # 2 digit BCD
+  def encode_data_field(:bcd, 16), do: 0b1010 # 4 digit BCD
+  def encode_data_field(:bcd, 24), do: 0b1011 # 6 digit BCD
+  def encode_data_field(:bcd, 32), do: 0b1100 # 8 digit BCD
+  def encode_data_field(:variable_length, :variable_length), do: 0b1101
+  def encode_data_field(:bcd, 48), do: 0b1110 # 12 digit BCD
+
   # function field to atom
   def decode_function_field(0b00), do: :instantaneous
   def decode_function_field(0b01), do: :maximum
   def decode_function_field(0b10), do: :minimum
   def decode_function_field(0b11), do: :value_during_error_state
+
+  def encode_function_field(:instantaneous), do: 0b00
+  def encode_function_field(:maximum), do: 0b01
+  def encode_function_field(:minimum), do: 0b10
+  def encode_function_field(:value_during_error_state), do: 0b11
+
+
 
 end
