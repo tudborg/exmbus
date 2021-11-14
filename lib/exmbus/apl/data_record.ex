@@ -2,6 +2,8 @@
 defmodule Exmbus.Apl.DataRecord do
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl.DataRecord.Header
+  alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
+  alias Exmbus.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.DataType
 
   defstruct [
@@ -14,16 +16,13 @@ defmodule Exmbus.Apl.DataRecord do
   @doc """
   Decodes a single DataRecord from a binary.
   """
-  @spec parse(binary(), opts :: map(), parse_context :: [any()])
-    :: {:ok, %__MODULE__{}, rest :: binary()}
-    |  Header.DataInformationBlock.special_function()
   def parse(bin, opts, ctx) do
     case Header.parse(bin, opts, ctx) do
-      {:ok, header, rest} ->
+      {:ok, [header | ctx], rest} ->
         # parse data from rest
         case parse_data(header, rest) do
           {:ok, data, rest} ->
-            {:ok, %__MODULE__{header: header, data: data}, rest}
+            {:ok, [%__MODULE__{header: header, data: data} | ctx], rest}
           {:error, _reason, _rest}=e ->
             e
         end
@@ -43,23 +42,23 @@ defmodule Exmbus.Apl.DataRecord do
   found in the header.
   """
   @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
-  def value(%DataRecord{header: %{}, data: {:invalid, _}}) do
+  def value(%DataRecord{header: _, data: {:invalid, _}}) do
     {:ok, :invalid}
   end
   # The trivial case, no extensions, no multiplier. The data is the data.
-  def value(%DataRecord{header: %{extensions: [], multiplier: nil}, data: data}) do
+  def value(%DataRecord{header: %{vib: %{extensions: [], multiplier: nil}}, data: data}) do
     {:ok, data}
   end
   # Also easy case, no extensions, a multiplier exists and data is numerical:
-  def value(%DataRecord{header: %{extensions: [], multiplier: mul}, data: data}) when is_number(data) do
+  def value(%DataRecord{header: %{vib: %{extensions: [], multiplier: mul}}, data: data}) when is_number(data) do
     {:ok, mul * data}
   end
-  def value(%DataRecord{header: %{extensions: [{:record_error, :none} | tail]}=header}=dr) do
+  def value(%DataRecord{header: %{vib: %{extensions: [{:record_error, :none} | tail]}=vib}=header}=dr) do
     # We ignore a record_error: :none
-    value(%{dr | header: %{header | extensions: tail}})
+    value(%{dr | header: %{header | vib: %{vib | extensions: tail}}})
   end
   # If we have unknown extensions:
-  def value(%DataRecord{header: %{extensions: [ext|_]}}) do
+  def value(%DataRecord{header: %{vib: %{extensions: [ext|_]}}}) do
     {:error, {:unhandled_extension, ext}}
   end
 
@@ -69,19 +68,22 @@ defmodule Exmbus.Apl.DataRecord do
   raw unit in the header's Value Information Block.
   """
   # easy case, no extensions. The unit is the unit.
-  def unit(%DataRecord{header: %{extensions: [], unit: unit}}) do
+  def unit(%DataRecord{header: %{vib: vib}}) do
+    unit(vib)
+  end
+  def unit(%VIB{extensions: [], unit: unit}) do
     {:ok, unit}
   end
-  def unit(%DataRecord{header: %{extensions: [{:record_error, :none} | tail]}=header}=dr) do
+  def unit(%VIB{extensions: [{:record_error, :none} | tail]}=vib) do
     # We ignore a record_error: :none
-    unit(%{dr | header: %{header | extensions: tail}})
+    unit(%VIB{vib | extensions: tail})
   end
-  def unit(%DataRecord{header: %{extensions: [ext|_]}}) do
+  def unit(%VIB{extensions: [ext|_]}) do
     {:error, {:unhandled_extension, ext}}
   end
 
 
-  def to_map!(%DataRecord{data: raw_data, header: %{unit: raw_unit}=header}=dr) do
+  def to_map!(%DataRecord{data: raw_data, header: %{vib: %{unit: raw_unit}}=header}=dr) do
     unit =
       case unit(dr) do
         {:ok, u} ->
@@ -109,11 +111,11 @@ defmodule Exmbus.Apl.DataRecord do
     %{
       unit: unit,
       value: value,
-      device: header.device,
-      tariff: header.tariff,
-      storage: header.storage,
-      function_field: header.function_field,
-      description: header.description,
+      device: header.dib.device,
+      tariff: header.dib.tariff,
+      storage: header.dib.storage,
+      function_field: header.dib.function_field,
+      description: header.vib.description,
     }
   end
 
@@ -121,30 +123,30 @@ defmodule Exmbus.Apl.DataRecord do
   decodes a value associated with a given header.
   """
   # No data:
-  def parse_data(%{coding: :no_data, size: 0}, bin), do: {:ok, :no_data, bin}
+  def parse_data(%{dib: %{data_type: :no_data, size: 0}}, bin), do: {:ok, :no_data, bin}
   # Selection for readout:
-  def parse_data(%{coding: :selection_for_readout, size: 0}, bin), do: {:ok, :selection_for_readout, bin}
+  def parse_data(%{dib: %{data_type: :selection_for_readout, size: 0}}, bin), do: {:ok, :selection_for_readout, bin}
   # BCD of any size (Type A)
-  def parse_data(%{data_type: :type_a, size: size}, bin), do: DataType.decode_type_a(bin, size)
+  def parse_data(%{coding: :type_a, dib: %{size: size}}, bin), do: DataType.decode_type_a(bin, size)
   # Signed integer (Type B)
-  def parse_data(%{data_type: :type_b, size: size}, bin), do: DataType.decode_type_b(bin, size)
+  def parse_data(%{coding: :type_b, dib: %{size: size}}, bin), do: DataType.decode_type_b(bin, size)
   # Unsigned integer (Type C)
-  def parse_data(%{data_type: :type_c, size: size}, bin), do: DataType.decode_type_c(bin, size)
+  def parse_data(%{coding: :type_c, dib: %{size: size}}, bin), do: DataType.decode_type_c(bin, size)
   # Boolean (bit array) (Type D)
-  def parse_data(%{data_type: :type_d, size: size}, bin), do: DataType.decode_type_d(bin, size)
+  def parse_data(%{coding: :type_d, dib: %{size: size}}, bin), do: DataType.decode_type_d(bin, size)
   # Datetime 32bit (Type F)
-  def parse_data(%{data_type: :type_f, size: 32}, bin), do: DataType.decode_type_f(bin)
+  def parse_data(%{coding: :type_f, dib: %{size: 32}}, bin), do: DataType.decode_type_f(bin)
   # Date (Type G)
-  def parse_data(%{data_type: :type_g, size: 16}, bin), do: DataType.decode_type_g(bin)
+  def parse_data(%{coding: :type_g, dib: %{size: 16}}, bin), do: DataType.decode_type_g(bin)
   # Real 32 bit (Type H)
-  def parse_data(%{data_type: :type_h, size: 32}, bin), do: DataType.decode_type_h(bin)
+  def parse_data(%{coding: :type_h, dib: %{size: 32}}, bin), do: DataType.decode_type_h(bin)
   # Datetime 48 bit (Type I)
-  def parse_data(%{data_type: :type_i, size: 48}, bin), do: DataType.decode_type_i(bin)
+  def parse_data(%{coding: :type_i, dib: %{size: 48}}, bin), do: DataType.decode_type_i(bin)
   # Time 24 bit (Type J)
-  def parse_data(%{data_type: :type_j, size: 24}, bin), do: DataType.decode_type_j(bin)
+  def parse_data(%{coding: :type_j, dib: %{size: 24}}, bin), do: DataType.decode_type_j(bin)
   # Datetime in LVAR (Type M)
-  def parse_data(%{data_type: :type_m, size: :lvar}, bin), do: DataType.decode_type_m(bin)
-  # Variable length coding (LVAR)
-  def parse_data(%{coding: :variable_length, size: :lvar}, bin), do: DataType.decode_lvar(bin)
+  def parse_data(%{coding: :type_m, dib: %{size: :variable_length}}, bin), do: DataType.decode_type_m(bin)
+  # Variable length data_type (LVAR)
+  def parse_data(%{dib: %{size: :variable_length}}, bin), do: DataType.decode_lvar(bin)
 
 end

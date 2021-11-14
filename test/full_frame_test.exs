@@ -12,34 +12,68 @@ defmodule FullFrameTest do
     datagram = Base.decode16!("2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F")
     assert {:ok, %Message{}=message} = Exmbus.parse(datagram, keep_layers: true)
     assert [
-      %Apl{
+      %Apl.FullFrame{
         records: [
           %Exmbus.Apl.DataRecord{
             data: 2850427,
             header: %Exmbus.Apl.DataRecord.Header{
-              coding: :bcd, data_type: :type_a,
-              description: :volume, device: 0, extensions: [],
-              function_field: :instantaneous,
-              multiplier: 0.01, size: 32, storage: 0, tariff: 0, unit: "l",
+              dib: %{
+                data_type: :bcd,
+                device: 0,
+                storage: 0,
+                tariff: 0,
+                function_field: :instantaneous,
+                size: 32,
+              },
+              vib: %{
+              description: :volume,
+              extensions: [],
+              multiplier: 0.01,
+              unit: "m^3",
+
+              },
+              coding: :type_a,
             }
           },
           %Exmbus.Apl.DataRecord{
             data: ~N[2008-05-31 23:50:00],
             header: %Exmbus.Apl.DataRecord.Header{
-              coding: :int_or_bin, data_type: :type_f,
-              description: :naive_datetime, device: 0, extensions: [],
-              function_field: :instantaneous,
-              multiplier: nil, size: 32, storage: 0, tariff: 0, unit: nil,
+              dib: %{
+                device: 0,
+                data_type: :int_or_bin,
+                size: 32,
+                storage: 0,
+                tariff: 0,
+                function_field: :instantaneous,
+              },
+              vib: %{
+                coding: :type_f,
+                description: :naive_datetime,
+                extensions: [],
+                multiplier: nil,
+                unit: nil,
+              },
             }
           },
           %Exmbus.Apl.DataRecord{
             data: [false, false, false, false, false, false, false, false,
                    false, false, false, false, false, false, false, false],
             header: %Exmbus.Apl.DataRecord.Header{
-              coding: :int_or_bin, data_type: :type_d,
-              description: :error_flags, device: 0, extensions: [],
-              function_field: :instantaneous,
-              multiplier: nil, size: 16, storage: 0, tariff: 0, unit: nil,
+              dib: %{
+                data_type: :int_or_bin,
+                size: 16,
+                device: 0,
+                storage: 0,
+                tariff: 0,
+                function_field: :instantaneous,
+              },
+              vib: %{
+                description: :error_flags,
+                extensions: [],
+                multiplier: nil,
+                unit: nil,
+              },
+              coding: :type_d,
             }
           }
         ],
@@ -68,7 +102,7 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, %Message{layers: layers, records: :encrypted}} = Exmbus.parse(datagram)
+    assert {:ok, %Message{layers: layers, records: :encrypted}} = Exmbus.parse(datagram, keep_layers: true)
     assert [raw=%Apl.Raw{} | layers] = layers
     assert [_tpl=%Tpl{} | layers] = layers
     assert [_dll=%Wmbus{} | layers] = layers

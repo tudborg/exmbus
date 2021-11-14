@@ -1,26 +1,102 @@
 defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
   use Bitwise
 
+  defstruct [
+    # DIB fields:
+    device: nil,
+    tariff: nil,
+    storage: nil,
+    function_field: nil,
+    # the coding and size comes from decoding the Data Field in the DIB
+    # they are split for easier access
+    data_type: nil, # the data_type is integer/binary, real, bcd, variable_length and so on
+    size: nil, # the size of the value in bits, or :variable_length
+  ]
+
+  def parse(<<special::4, 0b1111::4, rest::binary>>, _opts, _ctx) do
+    # note that we are effectively stripping the least-significant bits of the dif which is
+    # always 0b1111 (i.e. 0xF) for special functions, so the following case only checks for the top
+    # 4 bits. In the manual these are written together (i.e. 0x0F), here we only write the MSB (0x0 instead of 0x0F)
+    case special do
+      # Start of manufacturer specific data structures to end of user data(see 6.5)
+      0x0 -> {:special_function, {:manufacturer_specific, :to_end}, rest}
+      # Same meaning as DIF = 0Fh + more records follow in next datagram (see 6.5)
+      # This is a "request" from the meter to the station, to request more data.
+      0x1 -> {:special_function, {:manufacturer_specific, :more_records_follow}, rest}
+      # Idle filler, following byte is DIF, we could just recurse directly but let's keep the structure and return a special
+      0x2 -> {:special_function, :idle_filler, rest}
+      # special function range reserved for future use
+      r when r >= 0x3 and r <= 0x6 -> raise "special function DIF 0x#{Integer.to_string((r <<< 4) ||| 0xF, 16)} reserved for future use"
+      # Global readout request (all storage numbers, units, tariffs, function fields)
+      # TODO what does this mean exactly?
+      0x7 -> {:special_function, :global_readout_request, rest}
+    end
+  end
+  # regular DIF parsing:
+  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts, _ctx) do
+    {:ok, device, tariff, msb_storage, rest} =
+      case e do
+        # if extensions, decode dife:
+        1 -> parse_header_dife(rest)
+        # else return defaults:
+        0 -> {:ok, 0, 0, 0, rest}
+      end
+    #
+    storage = (msb_storage <<< 1) ||| lsb_storage
+    {data_type, size} = decode_data_field(df)
+    {:ok,
+      %__MODULE__{
+        device: device,
+        tariff: tariff,
+        storage: storage,
+        function_field: decode_function_field(ff),
+        data_type: data_type,
+        size: size,
+      }, rest}
+  end
+
+  # decodes series of DIFE bytes.
+  # Note that this function should only be called if the DIF had the extension bit set.
+  defp parse_header_dife(<<0::1, device::1, tariff::2, storage::4, rest::binary>>) do
+    {:ok, device, tariff, storage, rest}
+  end
+  defp parse_header_dife(<<1::1, l_device::1, l_tariff::2, l_storage::4, rest::binary>>) do
+    {:ok, m_device, m_tariff, m_storage, rest} = parse_header_dife(rest)
+    {:ok,
+      (m_device <<< 1) ||| l_device,
+      (m_tariff <<< 2) ||| l_tariff,
+      (m_storage <<< 4) ||| l_storage,
+      rest
+    }
+  end
+
+
   @moduledoc """
   Utilities for DIB parsing
   """
 
+  def default_coding(%__MODULE__{data_type: :int_or_bin}), do: :type_b
+  def default_coding(%__MODULE__{data_type: :real}), do: :type_h
+  def default_coding(%__MODULE__{data_type: :bcd}), do: :type_a
+  def default_coding(%__MODULE__{data_type: _}), do: nil
+
   # data field conversion to nicer internal format.
-  def decode_data_field(0b0000), do: {nil, :no_data, 0}
-  def decode_data_field(0b0001), do: {:type_b, :int_or_bin, 8}
-  def decode_data_field(0b0010), do: {:type_b, :int_or_bin, 16}
-  def decode_data_field(0b0011), do: {:type_b, :int_or_bin, 24}
-  def decode_data_field(0b0100), do: {:type_b, :int_or_bin, 32}
-  def decode_data_field(0b0101), do: {:type_h, :real, 32}
-  def decode_data_field(0b0110), do: {:type_b, :int_or_bin, 48}
-  def decode_data_field(0b0111), do: {:type_b, :int_or_bin, 64}
-  def decode_data_field(0b1000), do: {nil, :selection_for_readout, 0}
-  def decode_data_field(0b1001), do: {:type_a, :bcd, 8} # 2 digit BCD
-  def decode_data_field(0b1010), do: {:type_a, :bcd, 16} # 4 digit BCD
-  def decode_data_field(0b1011), do: {:type_a, :bcd, 24} # 6 digit BCD
-  def decode_data_field(0b1100), do: {:type_a, :bcd, 32} # 8 digit BCD
-  def decode_data_field(0b1101), do: {:lvar, :variable_length, :lvar}
-  def decode_data_field(0b1110), do: {:type_a, :bcd, 48} # 12 digit BCD
+  # returns data_type, size in bits
+  def decode_data_field(0b0000), do: {:no_data, 0}
+  def decode_data_field(0b0001), do: {:int_or_bin, 8}
+  def decode_data_field(0b0010), do: {:int_or_bin, 16}
+  def decode_data_field(0b0011), do: {:int_or_bin, 24}
+  def decode_data_field(0b0100), do: {:int_or_bin, 32}
+  def decode_data_field(0b0101), do: {:real, 32}
+  def decode_data_field(0b0110), do: {:int_or_bin, 48}
+  def decode_data_field(0b0111), do: {:int_or_bin, 64}
+  def decode_data_field(0b1000), do: {:selection_for_readout, 0}
+  def decode_data_field(0b1001), do: {:bcd, 8} # 2 digit BCD
+  def decode_data_field(0b1010), do: {:bcd, 16} # 4 digit BCD
+  def decode_data_field(0b1011), do: {:bcd, 24} # 6 digit BCD
+  def decode_data_field(0b1100), do: {:bcd, 32} # 8 digit BCD
+  def decode_data_field(0b1101), do: {:variable_length, :variable_length}
+  def decode_data_field(0b1110), do: {:bcd, 48} # 12 digit BCD
   def decode_data_field(0b1111), do: raise "unexpected special function coding, this should have been handled already"
 
   # function field to atom

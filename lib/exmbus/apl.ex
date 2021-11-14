@@ -7,25 +7,9 @@ defmodule Exmbus.Apl do
   alias Exmbus.Manufacturer
   alias Exmbus.Tpl.Device
   alias Exmbus.DataType
-
-  defmodule FullFrame do
-    defstruct [
-      records: [],
-      manufacturer_bytes: nil,
-    ]
-  end
-
-  defmodule FormatFrame do
-    defstruct [
-      headers: nil,
-    ]
-  end
-
-  defmodule CompactFrame do
-    defstruct [
-      bytes: nil
-    ]
-  end
+  alias Exmbus.Apl.FullFrame
+  alias Exmbus.Apl.FormatFrame
+  alias Exmbus.Apl.CompactFrame
 
   defmodule Raw do
     @moduledoc """
@@ -54,20 +38,26 @@ defmodule Exmbus.Apl do
     parse_apl(opts, ctx)
   end
 
-  def parse_apl(opts, [%Raw{mode: 0, plain_bytes: bin} | ctx]) do
+  def to_map!(%FullFrame{records: records, manufacturer_bytes: <<>>}) do
+    %{records: Enum.map(records, &Apl.DataRecord.to_map!/1)}
+  end
+
+  defp parse_apl(opts, [%Raw{mode: 0, plain_bytes: bin} | ctx]) do
     parse_records(bin, opts, ctx)
   end
   # when encryption mode is 5 and key option is set:
-  def parse_apl(%{key: %Key{}}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
+  defp parse_apl(%{key: %Key{}}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
     case decrypt_mode_5(enc, opts, ctx) do
       {:ok, decrypted} ->
         parse_records(<<decrypted::binary, plain::binary>>, opts, ctx)
     end
   end
   # when no key is supplied or we don't understand how to decrypt, return parse context
-  def parse_apl(%{}, [%Raw{} | _]=ctx) do
+  defp parse_apl(%{}, [%Raw{} | _]=ctx) do
     {:ok, ctx}
   end
+
+
 
   # assume decrypted apl bytes as first argument, parse data fields
   # an return an {:ok, [Apl|ctx]}
@@ -89,7 +79,7 @@ defmodule Exmbus.Apl do
   end
   defp parse_full_frame(bin, opts, ctx, acc) do
     case Apl.DataRecord.parse(bin, opts, ctx) do
-      {:ok, record, rest} ->
+      {:ok, [record | _], rest} ->
         parse_full_frame(rest, opts, ctx, [record | acc])
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
@@ -192,6 +182,5 @@ defmodule Exmbus.Apl do
     {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
-
 
 end
