@@ -30,19 +30,19 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.Vife do
   end
 
   # no more extensions, return
-  def parse(_table, 0, rest, _opts, ctx) do
+  def parse(0, rest, _opts, ctx) do
     {:ok, ctx, rest}
   end
   # VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)
-  def parse(:main, 1, <<e::1, 0b000::3, nnnn::4, rest::binary>>, opts, [%VIB{extensions: exts}=vib | ctx]) do
+  def parse(1, <<e::1, 0b000::3, nnnn::4, rest::binary>>, opts, [%VIB{table: :main, extensions: exts}=vib | ctx]) do
     case direction_from_ctx(ctx) do
       {:ok, :from_meter} ->
         {:ok, record_error} = ErrorCode.decode(nnnn)
-        parse(:main, e, rest, opts, [%VIB{vib | extensions: [{:record_error, record_error} | exts]} | ctx])
+        parse(e, rest, opts, [%VIB{vib | extensions: [{:record_error, record_error} | exts]} | ctx])
     end
   end
-  def parse(table, 1, <<e::1, vife::7, rest::binary>>, opts, [%VIB{extensions: exts}=vib | ctx]) do
-    parse(table, e, rest, opts, [%VIB{vib | extensions: [{:unknown_vife, table, vife}| exts]} | ctx])
+  def parse(1, <<e::1, vife::7, rest::binary>>, opts, [%VIB{extensions: exts}=vib | ctx]) do
+    parse(e, rest, opts, [%VIB{vib | extensions: [{:unknown_vife, vife}| exts]} | ctx])
   end
 
   # From ctx, find layer with direction and call direction function on it:

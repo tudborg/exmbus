@@ -14,42 +14,42 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
   ###
   # primary VIF table decoding
   ###
-  def parse(<<e::1, 0b0000::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :energy,                 multiplier: pow10to(n-3), unit: "Wh"} | ctx])
-  def parse(<<e::1, 0b0001::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :energy,                 multiplier: pow10to(n),   unit: "J"} | ctx])
-  def parse(<<e::1, 0b0010::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :volume,                 multiplier: pow10to(n-6), unit: "m^3"} | ctx])
-  def parse(<<e::1, 0b0011::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :mass,                   multiplier: pow10to(n-6), unit: "kg"} | ctx])
-  def parse(<<e::1, 0b01000::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :on_time,                unit:  on_time_unit(n)} | ctx])
-  def parse(<<e::1, 0b01001::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :operating_time,         unit:  on_time_unit(n)} | ctx])
-  def parse(<<e::1, 0b0101::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :power,                  multiplier: pow10to(n-3), unit: "W"} | ctx])
-  def parse(<<e::1, 0b0110::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :power,                  multiplier: pow10to(n),   unit: "J/h"} | ctx])
-  def parse(<<e::1, 0b0111::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :volume_flow,            multiplier: pow10to(n-6), unit: "m^3/h"} | ctx])
-  def parse(<<e::1, 0b1000::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :volume_flow_ext,        multiplier: pow10to(n-7), unit: "m^3/min"} | ctx])
-  def parse(<<e::1, 0b1001::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :volume_flow_ext,        multiplier: pow10to(n-9), unit: "m^3/s"} | ctx])
-  def parse(<<e::1, 0b1010::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :mass_flow,              multiplier: pow10to(n-3), unit: "kg/h"} | ctx])
-  def parse(<<e::1, 0b10110::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :flow_temperature,       multiplier: pow10to(n-3), unit: "°C"} | ctx])
-  def parse(<<e::1, 0b10111::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :return_temperature,     multiplier: pow10to(n-3), unit: "°C"} | ctx])
-  def parse(<<e::1, 0b11000::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :temperature_difference, multiplier: pow10to(n-3), unit: "K"} | ctx])
-  def parse(<<e::1, 0b11001::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :external_temperature,   multiplier: pow10to(n-3), unit: "°C"} | ctx])
-  def parse(<<e::1, 0b11010::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(:main, e, rest, opts, [%VIB{description: :pressure,               multiplier: pow10to(n-3), unit: "bar"} | ctx])
+  def parse(<<e::1, 0b0000::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :energy,                 multiplier: pow10to(n-3), unit: "Wh"} | ctx])
+  def parse(<<e::1, 0b0001::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :energy,                 multiplier: pow10to(n),   unit: "J"} | ctx])
+  def parse(<<e::1, 0b0010::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :volume,                 multiplier: pow10to(n-6), unit: "m^3"} | ctx])
+  def parse(<<e::1, 0b0011::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :mass,                   multiplier: pow10to(n-6), unit: "kg"} | ctx])
+  def parse(<<e::1, 0b01000::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :on_time,                unit:  on_time_unit(n)} | ctx])
+  def parse(<<e::1, 0b01001::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :operating_time,         unit:  on_time_unit(n)} | ctx])
+  def parse(<<e::1, 0b0101::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :power,                  multiplier: pow10to(n-3), unit: "W"} | ctx])
+  def parse(<<e::1, 0b0110::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :power,                  multiplier: pow10to(n),   unit: "J/h"} | ctx])
+  def parse(<<e::1, 0b0111::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :volume_flow,            multiplier: pow10to(n-6), unit: "m^3/h"} | ctx])
+  def parse(<<e::1, 0b1000::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :volume_flow_ext,        multiplier: pow10to(n-7), unit: "m^3/min"} | ctx])
+  def parse(<<e::1, 0b1001::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :volume_flow_ext,        multiplier: pow10to(n-9), unit: "m^3/s"} | ctx])
+  def parse(<<e::1, 0b1010::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :mass_flow,              multiplier: pow10to(n-3), unit: "kg/h"} | ctx])
+  def parse(<<e::1, 0b10110::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :flow_temperature,       multiplier: pow10to(n-3), unit: "°C"} | ctx])
+  def parse(<<e::1, 0b10111::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :return_temperature,     multiplier: pow10to(n-3), unit: "°C"} | ctx])
+  def parse(<<e::1, 0b11000::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :temperature_difference, multiplier: pow10to(n-3), unit: "K"} | ctx])
+  def parse(<<e::1, 0b11001::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :external_temperature,   multiplier: pow10to(n-3), unit: "°C"} | ctx])
+  def parse(<<e::1, 0b11010::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :pressure,               multiplier: pow10to(n-3), unit: "bar"} | ctx])
   # TYPE: Date and Time
   # - Data field 0b0010, type G
   # - Data field 0b0011, type J
   # - Data field 0b0100, type F
   # - Data field 0b0110, type I
   # - Data field 0b1101, type M (LVAR)
-  def parse(<<e::1, 0b1101100::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 16} | _]=ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :date, coding: :type_g} | ctx])
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 24} | _]=ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :time, coding: :type_j} | ctx])
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 32} | _]=ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :naive_datetime, coding: :type_f} | ctx])
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 48} | _]=ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :naive_datetime, coding: :type_i} | ctx])
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :variable_length     } | _]=ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :datetime, coding: :type_m} | ctx])
+  def parse(<<e::1, 0b1101100::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 16} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :date, coding: :type_g} | ctx])
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 24} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :time, coding: :type_j} | ctx])
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 32} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :naive_datetime, coding: :type_f} | ctx])
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 48} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :naive_datetime, coding: :type_i} | ctx])
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :variable_length     } | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :datetime, coding: :type_m} | ctx])
 
-  def parse(<<e::1, 0b1101110::7, rest::binary>>, opts, ctx),      do: Vife.parse(:main, e, rest, opts, [%VIB{description: :units_for_hca} | ctx])
+  def parse(<<e::1, 0b1101110::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :units_for_hca} | ctx])
   def parse(<<e::1, 0b1101111::7, rest::binary>>, _opts, _ctx),    do: Vife.error(e, rest, {:reserved, "VIF 0b1101111 reserved for future use"})
-  def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :averaging_duration, unit: on_time_unit(nn)} | ctx])
-  def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(:main, e, rest, opts, [%VIB{description: :actuality_duration, unit: on_time_unit(nn)} | ctx])
-  def parse(<<e::1, 0b1111000::7, rest::binary>>, opts, ctx),      do: Vife.parse(:main, e, rest, opts, [%VIB{description: :fabrication_no} | ctx])
-  def parse(<<e::1, 0b1111001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:main, e, rest, opts, [%VIB{description: :enhanced_identification} | ctx])
-  def parse(<<e::1, 0b1111010::7, rest::binary>>, opts, ctx),      do: Vife.parse(:main, e, rest, opts, [%VIB{description: :address} | ctx])
+  def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :averaging_duration, unit: on_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :actuality_duration, unit: on_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b1111000::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :fabrication_no} | ctx])
+  def parse(<<e::1, 0b1111001::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :enhanced_identification} | ctx])
+  def parse(<<e::1, 0b1111010::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :address} | ctx])
 
   # plain-text VIF:
   # See EN 13757-3:2018(EN) - C.2
@@ -58,7 +58,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
     # first we need to parse all of the extensions as well.
     # we pass in a description set to a marker we can match on it's way out of the vifes/4 again
     # to make sure it hasn't  changed.
-    case Vife.parse(:main, e, rest, opts, [%VIB{description: {:user_defined, nil}} | ctx]) do
+    case Vife.parse(e, rest, opts, [%VIB{table: :main, description: {:user_defined, nil}} | ctx]) do
       # the length in bytes and the ascii unit itself is found after the VIB
       # so we now need to read the unit out from the rest of the data.
       # First we get the length in the first byte:
@@ -89,6 +89,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
 
   {:ok, [
     %VIB{
+      table: :main,
       description: :manufacturer_specific_encoding,
       extensions: Enum.map(vifes, &({:manufacturer_specific_vife, &1}))
     } | ctx], rest}
@@ -97,6 +98,27 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
   def parse(<<0b1111_1011, rest::binary>>, opts, ctx), do: FB.parse(rest, opts, ctx)
   def parse(<<0b1111_1101, rest::binary>>, opts, ctx), do: FD.parse(rest, opts, ctx)
   def parse(<<0b1110_1111, _rest::binary>>, _opts, _ctx), do: raise "VIF 0xEF reserved for future use."
+
+
+
+
+  @doc """
+  Unparse a VIB contact from the main table
+  """
+  def unparse(_opts, [%VIB{table: :main, extensions: []} | _]) do
+    raise "not implemented"
+  end
+
+
+
+
+
+
+
+
+
+
+
 
   defp on_time_unit(0b00), do: "seconds"
   defp on_time_unit(0b01), do: "minutes"
