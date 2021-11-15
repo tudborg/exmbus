@@ -4,7 +4,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   """
 
   alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
-  alias Exmbus.Apl.DataRecord.ValueInformationBlock.VifTablePrimary
+  alias Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain
 
   defstruct [
     # VIB fields:
@@ -21,7 +21,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
 
   def parse(bin, opts, [%DIB{} | _]=ctx) do
     # delegate the parsing to the primary table
-    VifTablePrimary.parse(bin, opts, ctx)
+    VifTableMain.parse(bin, opts, ctx)
   end
 
 end

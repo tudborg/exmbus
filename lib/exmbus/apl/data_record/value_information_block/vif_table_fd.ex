@@ -2,58 +2,59 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFD do
 
   alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Apl.DataRecord.ValueInformationBlock, as: VIB
+  alias Exmbus.Apl.DataRecord.ValueInformationBlock.Vife
 
   ##
   ## The FD table
   ##
   def parse(<<_::1, 0b000_00::5, _nn::2>>, _opts, _ctx), do: raise "0xFD vif 0bE00000nn not supported. Credit of 10^(nn–3) of the nominal local legal currency units."
   def parse(<<_::1, 0b000_01::5, _nn::2>>, _opts, _ctx), do: raise "0xFD vif 0bE00000nn not supported. Debit of 10^(nn–3) of the nominal local legal currency units."
-  def parse(<<e::1, 0b000_1000::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :unique_message_identification} | ctx])
-  def parse(<<e::1, 0b000_1001::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :device_type} | ctx])
-  def parse(<<e::1, 0b000_1010::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :manufacturer} | ctx])
-  def parse(<<e::1, 0b000_1011::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :parameter_set_identification} | ctx])
-  def parse(<<e::1, 0b000_1100::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :model_version} | ctx])
-  def parse(<<e::1, 0b000_1101::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :hardware_version_number} | ctx])
-  def parse(<<e::1, 0b000_1110::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :firmware_version_number} | ctx])
-  def parse(<<e::1, 0b000_1111::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :other_software_version_number} | ctx])
-  def parse(<<e::1, 0b001_0000::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :customer_location} | ctx])
-  def parse(<<e::1, 0b001_0001::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :customer} | ctx])
-  def parse(<<e::1, 0b001_0010::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_user} | ctx])
-  def parse(<<e::1, 0b001_0011::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_operator} | ctx])
-  def parse(<<e::1, 0b001_0100::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_system_operator} | ctx])
-  def parse(<<e::1, 0b001_0101::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_developer} | ctx])
-  def parse(<<e::1, 0b001_0110::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :password} | ctx])
-  def parse(<<e::1, 0b001_0111::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: :type_d, description: :error_flags} | ctx])
-  def parse(<<e::1, 0b001_1000::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :error_mask} | ctx])
-  def parse(<<e::1, 0b001_1001::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :security_key} | ctx])
-  def parse(<<e::1, 0b001_1010::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :digital_output} | ctx])
-  def parse(<<e::1, 0b001_1011::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :digital_input} | ctx])
-  def parse(<<e::1, 0b001_1100::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :baud_rate} | ctx])
-  def parse(<<e::1, 0b001_1101::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :response_delay_time} | ctx])
-  def parse(<<e::1, 0b001_1110::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: :retry} | ctx])
-  def parse(<<e::1, 0b001_1111::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: :remote_control} | ctx])
-  def parse(<<e::1, 0b010_0000::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :first_storage_number_for_cyclic_storage} | ctx])
-  def parse(<<e::1, 0b010_0001::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :last_storage_number_for_cyclic_storage} | ctx])
-  def parse(<<e::1, 0b010_0010::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :size_of_storage_block} | ctx])
-  def parse(<<e::1, 0b010_0011::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :descriptor_for_tariff_and_device} | ctx])
-  def parse(<<e::1, 0b010_01::5, nn::2, rest::binary>>, opts, ctx), do: vifes(e, rest, opts, [%VIB{description: :storage_interval, unit: on_time_unit(nn)} | ctx])
-  def parse(<<e::1, 0b010_1000::7, rest::binary>>, opts,      ctx), do: vifes(e, rest, opts, [%VIB{description: {:storage_interval, :month}} | ctx])
-  def parse(<<e::1, 0b010_1001::7, rest::binary>>, opts,      ctx), do: vifes(e, rest, opts, [%VIB{description: {:storage_interval, :year}} | ctx])
-  def parse(<<e::1, 0b010_1010::7, rest::binary>>, opts,      ctx), do: vifes(e, rest, opts, [%VIB{description: :operator_specific_data} | ctx])
-  def parse(<<e::1, 0b010_1011::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :time_point_second} | ctx])
+  def parse(<<e::1, 0b000_1000::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :unique_message_identification} | ctx])
+  def parse(<<e::1, 0b000_1001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :device_type} | ctx])
+  def parse(<<e::1, 0b000_1010::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :manufacturer} | ctx])
+  def parse(<<e::1, 0b000_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :parameter_set_identification} | ctx])
+  def parse(<<e::1, 0b000_1100::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :model_version} | ctx])
+  def parse(<<e::1, 0b000_1101::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :hardware_version_number} | ctx])
+  def parse(<<e::1, 0b000_1110::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :firmware_version_number} | ctx])
+  def parse(<<e::1, 0b000_1111::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :other_software_version_number} | ctx])
+  def parse(<<e::1, 0b001_0000::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :customer_location} | ctx])
+  def parse(<<e::1, 0b001_0001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :customer} | ctx])
+  def parse(<<e::1, 0b001_0010::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_user} | ctx])
+  def parse(<<e::1, 0b001_0011::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_operator} | ctx])
+  def parse(<<e::1, 0b001_0100::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_system_operator} | ctx])
+  def parse(<<e::1, 0b001_0101::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :access_code_developer} | ctx])
+  def parse(<<e::1, 0b001_0110::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :password} | ctx])
+  def parse(<<e::1, 0b001_0111::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: :type_d, description: :error_flags} | ctx])
+  def parse(<<e::1, 0b001_1000::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :error_mask} | ctx])
+  def parse(<<e::1, 0b001_1001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :security_key} | ctx])
+  def parse(<<e::1, 0b001_1010::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :digital_output} | ctx])
+  def parse(<<e::1, 0b001_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :digital_input} | ctx])
+  def parse(<<e::1, 0b001_1100::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :baud_rate} | ctx])
+  def parse(<<e::1, 0b001_1101::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :response_delay_time} | ctx])
+  def parse(<<e::1, 0b001_1110::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :retry} | ctx])
+  def parse(<<e::1, 0b001_1111::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :remote_control} | ctx])
+  def parse(<<e::1, 0b010_0000::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :first_storage_number_for_cyclic_storage} | ctx])
+  def parse(<<e::1, 0b010_0001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :last_storage_number_for_cyclic_storage} | ctx])
+  def parse(<<e::1, 0b010_0010::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :size_of_storage_block} | ctx])
+  def parse(<<e::1, 0b010_0011::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :descriptor_for_tariff_and_device} | ctx])
+  def parse(<<e::1, 0b010_01::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :storage_interval, unit: on_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b010_1000::7, rest::binary>>, opts,      ctx), do: Vife.parse(:fd, e, rest, opts, [%VIB{description: {:storage_interval, :month}} | ctx])
+  def parse(<<e::1, 0b010_1001::7, rest::binary>>, opts,      ctx), do: Vife.parse(:fd, e, rest, opts, [%VIB{description: {:storage_interval, :year}} | ctx])
+  def parse(<<e::1, 0b010_1010::7, rest::binary>>, opts,      ctx), do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :operator_specific_data} | ctx])
+  def parse(<<e::1, 0b010_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :time_point_second} | ctx])
   # ... skipped some vifs ...
-  def parse(<<e::1, 0b011_1010::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: :dimensionless} | ctx])
-  def parse(<<e::1, 0b011_1011::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: {:container, :wmbus}} | ctx])
-  def parse(<<e::1, 0b011_11::5, nn::2, rest::binary>>, opts, ctx), do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :period_of_nominal_data_transmissions, unit: on_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b011_1010::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :dimensionless} | ctx])
+  def parse(<<e::1, 0b011_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: {:container, :wmbus}} | ctx])
+  def parse(<<e::1, 0b011_11::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :period_of_nominal_data_transmissions, unit: on_time_unit(nn)} | ctx])
   # ... skipped some vifs ...
-  def parse(<<e::1, 0b110_0000::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: :reset_counter} | ctx])
-  def parse(<<e::1, 0b110_0001::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: :cumulation_counter} | ctx])
+  def parse(<<e::1, 0b110_0000::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :reset_counter} | ctx])
+  def parse(<<e::1, 0b110_0001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :cumulation_counter} | ctx])
   # ... skipped some vifs ...
-  def parse(<<e::1, 0b111_0001::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: :rf_level_units_dbm} | ctx])
+  def parse(<<e::1, 0b111_0001::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: :rf_level_units_dbm} | ctx])
   # ... skipped some vifs ...
-  def parse(<<e::1, 0b111_0100::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :remaining_battery_life_time_days} | ctx])
-  def parse(<<e::1, 0b111_0101::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :number_of_times_meter_was_stopped} | ctx])
-  def parse(<<e::1, 0b111_0110::7, rest::binary>>, opts, ctx),      do: vifes(e, rest, opts, [%VIB{description: {:container, :manufacturer}} | ctx])
+  def parse(<<e::1, 0b111_0100::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :remaining_battery_life_time_days} | ctx])
+  def parse(<<e::1, 0b111_0101::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{coding: fd_remark_k(ctx), description: :number_of_times_meter_was_stopped} | ctx])
+  def parse(<<e::1, 0b111_0110::7, rest::binary>>, opts, ctx),      do: Vife.parse(:fd, e, rest, opts, [%VIB{description: {:container, :manufacturer}} | ctx])
   # ... skipped some vifs ...
   def parse(<<vif, _rest::binary>>, _opts, ctx) do
     raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.u8_to_binary_str(vif)}, ctx was: #{inspect ctx}"
@@ -83,10 +84,5 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   defp on_time_unit(0b01), do: "minutes"
   defp on_time_unit(0b10), do: "hours"
   defp on_time_unit(0b11), do: "days"
-
-  # no more extensions, return
-  defp vifes(0, rest, _opts, ctx) do
-    {:ok, ctx, rest}
-  end
 
 end
