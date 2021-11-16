@@ -26,7 +26,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
     table: nil,
   ]
 
-  def parse(bin, opts, [%DIB{} | _]=ctx) do
+  def parse(bin, opts, ctx) do
     # delegate the parsing to the primary table
     VifTableMain.parse(bin, opts, ctx)
   end

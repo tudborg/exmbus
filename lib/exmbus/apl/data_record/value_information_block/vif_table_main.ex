@@ -18,8 +18,8 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
   def parse(<<e::1, 0b0001::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :energy,                 multiplier: pow10to(n),   unit: "J"} | ctx])
   def parse(<<e::1, 0b0010::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :volume,                 multiplier: pow10to(n-6), unit: "m^3"} | ctx])
   def parse(<<e::1, 0b0011::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :mass,                   multiplier: pow10to(n-6), unit: "kg"} | ctx])
-  def parse(<<e::1, 0b01000::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :on_time,                unit:  on_time_unit(n)} | ctx])
-  def parse(<<e::1, 0b01001::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :operating_time,         unit:  on_time_unit(n)} | ctx])
+  def parse(<<e::1, 0b01000::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :on_time,                unit:  decode_time_unit(n)} | ctx])
+  def parse(<<e::1, 0b01001::5, n::2, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :operating_time,         unit:  decode_time_unit(n)} | ctx])
   def parse(<<e::1, 0b0101::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :power,                  multiplier: pow10to(n-3), unit: "W"} | ctx])
   def parse(<<e::1, 0b0110::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :power,                  multiplier: pow10to(n),   unit: "J/h"} | ctx])
   def parse(<<e::1, 0b0111::4,  n::3, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :volume_flow,            multiplier: pow10to(n-6), unit: "m^3/h"} | ctx])
@@ -45,8 +45,8 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
 
   def parse(<<e::1, 0b1101110::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :units_for_hca} | ctx])
   def parse(<<e::1, 0b1101111::7, rest::binary>>, _opts, _ctx),    do: Vife.error(e, rest, {:reserved, "VIF 0b1101111 reserved for future use"})
-  def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :averaging_duration, unit: on_time_unit(nn)} | ctx])
-  def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :actuality_duration, unit: on_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :averaging_duration, unit: decode_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :actuality_duration, unit: decode_time_unit(nn)} | ctx])
   def parse(<<e::1, 0b1111000::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :fabrication_no} | ctx])
   def parse(<<e::1, 0b1111001::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :enhanced_identification} | ctx])
   def parse(<<e::1, 0b1111010::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :address} | ctx])
@@ -103,27 +103,55 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
 
 
   @doc """
-  Unparse a VIB contact from the main table
+  Unparse a VIB contact from the main table.
+
+  TODO: implement unparsing VIBs with extensions
   """
-  def unparse(_opts, [%VIB{table: :main, extensions: []} | _]) do
-    raise "not implemented"
+  def unparse(opts, [%VIB{extensions: [], table: :main} | _]=ctx) do
+    # _unparse for now just parses no-extensions VIBs from the main table
+    _unparse(opts, ctx)
   end
+  def _unparse(_opts, [%VIB{description: :energy,                 multiplier: m, unit: "Wh"} | _ctx]),      do: {:ok, <<0::1, 0b0000::4,  (log10int(m)+3)::3>>}
+  def _unparse(_opts, [%VIB{description: :energy,                 multiplier: m, unit: "J"} | _ctx]),       do: {:ok, <<0::1, 0b0001::4,  (log10int(m)+0)::3>>}
+  def _unparse(_opts, [%VIB{description: :volume,                 multiplier: m, unit: "m^3"} | _ctx]),     do: {:ok, <<0::1, 0b0010::4,  (log10int(m)+6)::3>>}
+  def _unparse(_opts, [%VIB{description: :mass,                   multiplier: m, unit: "kg"} | _ctx]),      do: {:ok, <<0::1, 0b0011::4,  (log10int(m)+6)::3>>}
+  def _unparse(_opts, [%VIB{description: :on_time,                               unit:  u} | _ctx]),        do: {:ok, <<0::1, 0b01000::5, (encode_time_unit(u))::2>>}
+  def _unparse(_opts, [%VIB{description: :operating_time,                        unit:  u} | _ctx]),        do: {:ok, <<0::1, 0b01001::5, (encode_time_unit(u))::2>>}
+  def _unparse(_opts, [%VIB{description: :power,                  multiplier: m, unit: "W"} | _ctx]),       do: {:ok, <<0::1, 0b0101::4,  (log10int(m)+3)::3>>}
+  def _unparse(_opts, [%VIB{description: :power,                  multiplier: m, unit: "J/h"} | _ctx]),     do: {:ok, <<0::1, 0b0110::4,  (log10int(m)+0)::3>>}
+  def _unparse(_opts, [%VIB{description: :volume_flow,            multiplier: m, unit: "m^3/h"} | _ctx]),   do: {:ok, <<0::1, 0b0111::4,  (log10int(m)+6)::3>>}
+  def _unparse(_opts, [%VIB{description: :volume_flow_ext,        multiplier: m, unit: "m^3/min"} | _ctx]), do: {:ok, <<0::1, 0b1000::4,  (log10int(m)+7)::3>>}
+  def _unparse(_opts, [%VIB{description: :volume_flow_ext,        multiplier: m, unit: "m^3/s"} | _ctx]),   do: {:ok, <<0::1, 0b1001::4,  (log10int(m)+9)::3>>}
+  def _unparse(_opts, [%VIB{description: :mass_flow,              multiplier: m, unit: "kg/h"} | _ctx]),    do: {:ok, <<0::1, 0b1010::4,  (log10int(m)+3)::3>>}
+  def _unparse(_opts, [%VIB{description: :flow_temperature,       multiplier: m, unit: "°C"} | _ctx]),      do: {:ok, <<0::1, 0b10110::5, (log10int(m)+3)::2>>}
+  def _unparse(_opts, [%VIB{description: :return_temperature,     multiplier: m, unit: "°C"} | _ctx]),      do: {:ok, <<0::1, 0b10111::5, (log10int(m)+3)::2>>}
+  def _unparse(_opts, [%VIB{description: :temperature_difference, multiplier: m, unit: "K"} | _ctx]),       do: {:ok, <<0::1, 0b11000::5, (log10int(m)+3)::2>>}
+  def _unparse(_opts, [%VIB{description: :external_temperature,   multiplier: m, unit: "°C"} | _ctx]),      do: {:ok, <<0::1, 0b11001::5, (log10int(m)+3)::2>>}
+  def _unparse(_opts, [%VIB{description: :pressure,               multiplier: m, unit: "bar"} | _ctx]),     do: {:ok, <<0::1, 0b11010::5, (log10int(m)+3)::2>>}
+  def _unparse(_opts, [%VIB{description: :date,           coding: :type_g} | _ctx]),                        do: {:ok, <<0::1, 0b1101100::7>>}
+  def _unparse(_opts, [%VIB{description: :time,           coding: :type_j} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
+  def _unparse(_opts, [%VIB{description: :naive_datetime, coding: :type_f} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
+  def _unparse(_opts, [%VIB{description: :naive_datetime, coding: :type_i} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
+  def _unparse(_opts, [%VIB{description: :datetime,       coding: :type_m} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
+  def _unparse(_opts, [%VIB{description: :units_for_hca} | _ctx]),                                          do: {:ok, <<0::1, 0b1101110::7>>}
+  def _unparse(_opts, [%VIB{description: :averaging_duration, unit: u} | _ctx]),                            do: {:ok, <<0::1, 0b11100::5, (encode_time_unit(u))::2>>}
+  def _unparse(_opts, [%VIB{description: :actuality_duration, unit: u} | _ctx]),                            do: {:ok, <<0::1, 0b11101::5, (encode_time_unit(u))::2>>}
+  def _unparse(_opts, [%VIB{description: :fabrication_no} | _ctx]),                                         do: {:ok, <<0::1, 0b1111000::7>>}
+  def _unparse(_opts, [%VIB{description: :enhanced_identification} | _ctx]),                                do: {:ok, <<0::1, 0b1111001::7>>}
+  def _unparse(_opts, [%VIB{description: :address} | _ctx]),                                                do: {:ok, <<0::1, 0b1111010::7>>}
 
 
 
 
+  defp decode_time_unit(0b00), do: "seconds"
+  defp decode_time_unit(0b01), do: "minutes"
+  defp decode_time_unit(0b10), do: "hours"
+  defp decode_time_unit(0b11), do: "days"
 
-
-
-
-
-
-
-
-  defp on_time_unit(0b00), do: "seconds"
-  defp on_time_unit(0b01), do: "minutes"
-  defp on_time_unit(0b10), do: "hours"
-  defp on_time_unit(0b11), do: "days"
+  defp encode_time_unit("seconds"), do: 0b00
+  defp encode_time_unit("minutes"), do: 0b01
+  defp encode_time_unit("hours"),   do: 0b10
+  defp encode_time_unit("days"),    do: 0b11
 
   # returns 10^power but makes sure it is only a float if it has to be.
   # since we know it's 10^pow we can round to integers when the result is >= 1.0
@@ -136,6 +164,10 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
       f when f < 1.0 -> f
       i when i >= 1.0 -> round(i)
     end
+  end
+
+  defp log10int(n) do
+    round(:math.log10(n))
   end
 
 end

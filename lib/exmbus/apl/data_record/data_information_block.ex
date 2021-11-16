@@ -39,7 +39,7 @@ defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
     end
   end
   # regular DIF parsing:
-  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts, _ctx) do
+  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts, ctx) do
     {:ok, device, tariff, msb_storage, rest} =
       case e do
         # if extensions, decode dife:
@@ -51,14 +51,14 @@ defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
     storage = (msb_storage <<< 1) ||| lsb_storage
     {data_type, size} = decode_data_field(df)
     {:ok,
-      %__MODULE__{
+      [%__MODULE__{
         device: device,
         tariff: tariff,
         storage: storage,
         function_field: decode_function_field(ff),
         data_type: data_type,
         size: size,
-      }, rest}
+      } | ctx], rest}
   end
 
   # decodes series of DIFE bytes.

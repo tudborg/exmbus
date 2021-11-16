@@ -21,12 +21,12 @@ defmodule Exmbus.Apl.DataRecord.Header do
         # we just return the special function. The parser upstream will have to decide what to do,
         # but there isn't a real header here. The APL layer knows what to do.
         s
-      {:ok, %DIB{}=dib, rest} ->
+      {:ok, [%DIB{} | _]=inner_ctx, rest} ->
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(rest, opts, [dib | ctx]) do
-          {:ok, [%VIB{}=vib, %DIB{}=dib | ctx], rest} ->
+        case VIB.parse(rest, opts, inner_ctx) do
+          {:ok, [%VIB{}=vib, %DIB{}=dib | _], rest} ->
             {:ok, coding} = summarize_coding(dib, vib)
             {:ok,
               # Wrap the VIB and DIB into a DataRecord.Header
