@@ -29,7 +29,12 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.Vife do
     {:error, reason, rest}
   end
 
-  # no more extensions, return
+  @doc """
+  Parse VIFEs into a %VIB{} struct.
+  The first argument is the extension bit from the previous byte.
+  When a function call sees a zero from the previous extension bit,
+  we know that `rest` isn't part of the VIFE and we can return the accumulated VIB and rest of data.
+  """
   def parse(0, rest, _opts, ctx) do
     {:ok, ctx, rest}
   end

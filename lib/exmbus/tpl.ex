@@ -58,7 +58,9 @@ defmodule Exmbus.Tpl do
   ## format frames:
   ##
   # none
-  def parse(<<0x69, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=none"
+  def parse(<<0x69, rest::binary>>, opts, ctx) do
+    finalize_tpl(:format_frame, %None{}, rest, opts, ctx)
+  end
   # short
   def parse(<<0x6A, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=short"
   # long

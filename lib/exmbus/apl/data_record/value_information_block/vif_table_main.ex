@@ -111,34 +111,34 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
     # _unparse for now just parses no-extensions VIBs from the main table
     _unparse(opts, ctx)
   end
-  def _unparse(_opts, [%VIB{description: :energy,                 multiplier: m, unit: "Wh"} | _ctx]),      do: {:ok, <<0::1, 0b0000::4,  (log10int(m)+3)::3>>}
-  def _unparse(_opts, [%VIB{description: :energy,                 multiplier: m, unit: "J"} | _ctx]),       do: {:ok, <<0::1, 0b0001::4,  (log10int(m)+0)::3>>}
-  def _unparse(_opts, [%VIB{description: :volume,                 multiplier: m, unit: "m^3"} | _ctx]),     do: {:ok, <<0::1, 0b0010::4,  (log10int(m)+6)::3>>}
-  def _unparse(_opts, [%VIB{description: :mass,                   multiplier: m, unit: "kg"} | _ctx]),      do: {:ok, <<0::1, 0b0011::4,  (log10int(m)+6)::3>>}
-  def _unparse(_opts, [%VIB{description: :on_time,                               unit:  u} | _ctx]),        do: {:ok, <<0::1, 0b01000::5, (encode_time_unit(u))::2>>}
-  def _unparse(_opts, [%VIB{description: :operating_time,                        unit:  u} | _ctx]),        do: {:ok, <<0::1, 0b01001::5, (encode_time_unit(u))::2>>}
-  def _unparse(_opts, [%VIB{description: :power,                  multiplier: m, unit: "W"} | _ctx]),       do: {:ok, <<0::1, 0b0101::4,  (log10int(m)+3)::3>>}
-  def _unparse(_opts, [%VIB{description: :power,                  multiplier: m, unit: "J/h"} | _ctx]),     do: {:ok, <<0::1, 0b0110::4,  (log10int(m)+0)::3>>}
-  def _unparse(_opts, [%VIB{description: :volume_flow,            multiplier: m, unit: "m^3/h"} | _ctx]),   do: {:ok, <<0::1, 0b0111::4,  (log10int(m)+6)::3>>}
-  def _unparse(_opts, [%VIB{description: :volume_flow_ext,        multiplier: m, unit: "m^3/min"} | _ctx]), do: {:ok, <<0::1, 0b1000::4,  (log10int(m)+7)::3>>}
-  def _unparse(_opts, [%VIB{description: :volume_flow_ext,        multiplier: m, unit: "m^3/s"} | _ctx]),   do: {:ok, <<0::1, 0b1001::4,  (log10int(m)+9)::3>>}
-  def _unparse(_opts, [%VIB{description: :mass_flow,              multiplier: m, unit: "kg/h"} | _ctx]),    do: {:ok, <<0::1, 0b1010::4,  (log10int(m)+3)::3>>}
-  def _unparse(_opts, [%VIB{description: :flow_temperature,       multiplier: m, unit: "°C"} | _ctx]),      do: {:ok, <<0::1, 0b10110::5, (log10int(m)+3)::2>>}
-  def _unparse(_opts, [%VIB{description: :return_temperature,     multiplier: m, unit: "°C"} | _ctx]),      do: {:ok, <<0::1, 0b10111::5, (log10int(m)+3)::2>>}
-  def _unparse(_opts, [%VIB{description: :temperature_difference, multiplier: m, unit: "K"} | _ctx]),       do: {:ok, <<0::1, 0b11000::5, (log10int(m)+3)::2>>}
-  def _unparse(_opts, [%VIB{description: :external_temperature,   multiplier: m, unit: "°C"} | _ctx]),      do: {:ok, <<0::1, 0b11001::5, (log10int(m)+3)::2>>}
-  def _unparse(_opts, [%VIB{description: :pressure,               multiplier: m, unit: "bar"} | _ctx]),     do: {:ok, <<0::1, 0b11010::5, (log10int(m)+3)::2>>}
-  def _unparse(_opts, [%VIB{description: :date,           coding: :type_g} | _ctx]),                        do: {:ok, <<0::1, 0b1101100::7>>}
-  def _unparse(_opts, [%VIB{description: :time,           coding: :type_j} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
-  def _unparse(_opts, [%VIB{description: :naive_datetime, coding: :type_f} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
-  def _unparse(_opts, [%VIB{description: :naive_datetime, coding: :type_i} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
-  def _unparse(_opts, [%VIB{description: :datetime,       coding: :type_m} | _ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>}
-  def _unparse(_opts, [%VIB{description: :units_for_hca} | _ctx]),                                          do: {:ok, <<0::1, 0b1101110::7>>}
-  def _unparse(_opts, [%VIB{description: :averaging_duration, unit: u} | _ctx]),                            do: {:ok, <<0::1, 0b11100::5, (encode_time_unit(u))::2>>}
-  def _unparse(_opts, [%VIB{description: :actuality_duration, unit: u} | _ctx]),                            do: {:ok, <<0::1, 0b11101::5, (encode_time_unit(u))::2>>}
-  def _unparse(_opts, [%VIB{description: :fabrication_no} | _ctx]),                                         do: {:ok, <<0::1, 0b1111000::7>>}
-  def _unparse(_opts, [%VIB{description: :enhanced_identification} | _ctx]),                                do: {:ok, <<0::1, 0b1111001::7>>}
-  def _unparse(_opts, [%VIB{description: :address} | _ctx]),                                                do: {:ok, <<0::1, 0b1111010::7>>}
+  def _unparse(_opts, [%VIB{description: :energy,                 multiplier: m, unit: "Wh"} | ctx]),      do: {:ok, <<0::1, 0b0000::4,  (log10int(m)+3)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :energy,                 multiplier: m, unit: "J"} | ctx]),       do: {:ok, <<0::1, 0b0001::4,  (log10int(m)+0)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :volume,                 multiplier: m, unit: "m^3"} | ctx]),     do: {:ok, <<0::1, 0b0010::4,  (log10int(m)+6)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :mass,                   multiplier: m, unit: "kg"} | ctx]),      do: {:ok, <<0::1, 0b0011::4,  (log10int(m)+6)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :on_time,                               unit:  u} | ctx]),        do: {:ok, <<0::1, 0b01000::5, (encode_time_unit(u))::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :operating_time,                        unit:  u} | ctx]),        do: {:ok, <<0::1, 0b01001::5, (encode_time_unit(u))::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :power,                  multiplier: m, unit: "W"} | ctx]),       do: {:ok, <<0::1, 0b0101::4,  (log10int(m)+3)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :power,                  multiplier: m, unit: "J/h"} | ctx]),     do: {:ok, <<0::1, 0b0110::4,  (log10int(m)+0)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :volume_flow,            multiplier: m, unit: "m^3/h"} | ctx]),   do: {:ok, <<0::1, 0b0111::4,  (log10int(m)+6)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :volume_flow_ext,        multiplier: m, unit: "m^3/min"} | ctx]), do: {:ok, <<0::1, 0b1000::4,  (log10int(m)+7)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :volume_flow_ext,        multiplier: m, unit: "m^3/s"} | ctx]),   do: {:ok, <<0::1, 0b1001::4,  (log10int(m)+9)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :mass_flow,              multiplier: m, unit: "kg/h"} | ctx]),    do: {:ok, <<0::1, 0b1010::4,  (log10int(m)+3)::3>>, ctx}
+  def _unparse(_opts, [%VIB{description: :flow_temperature,       multiplier: m, unit: "°C"} | ctx]),      do: {:ok, <<0::1, 0b10110::5, (log10int(m)+3)::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :return_temperature,     multiplier: m, unit: "°C"} | ctx]),      do: {:ok, <<0::1, 0b10111::5, (log10int(m)+3)::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :temperature_difference, multiplier: m, unit: "K"} | ctx]),       do: {:ok, <<0::1, 0b11000::5, (log10int(m)+3)::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :external_temperature,   multiplier: m, unit: "°C"} | ctx]),      do: {:ok, <<0::1, 0b11001::5, (log10int(m)+3)::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :pressure,               multiplier: m, unit: "bar"} | ctx]),     do: {:ok, <<0::1, 0b11010::5, (log10int(m)+3)::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :date,           coding: :type_g} | ctx]),                        do: {:ok, <<0::1, 0b1101100::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :time,           coding: :type_j} | ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :naive_datetime, coding: :type_f} | ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :naive_datetime, coding: :type_i} | ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :datetime,       coding: :type_m} | ctx]),                        do: {:ok, <<0::1, 0b1101101::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :units_for_hca} | ctx]),                                          do: {:ok, <<0::1, 0b1101110::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :averaging_duration, unit: u} | ctx]),                            do: {:ok, <<0::1, 0b11100::5, (encode_time_unit(u))::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :actuality_duration, unit: u} | ctx]),                            do: {:ok, <<0::1, 0b11101::5, (encode_time_unit(u))::2>>, ctx}
+  def _unparse(_opts, [%VIB{description: :fabrication_no} | ctx]),                                         do: {:ok, <<0::1, 0b1111000::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :enhanced_identification} | ctx]),                                do: {:ok, <<0::1, 0b1111001::7>>, ctx}
+  def _unparse(_opts, [%VIB{description: :address} | ctx]),                                                do: {:ok, <<0::1, 0b1111010::7>>, ctx}
 
 
 

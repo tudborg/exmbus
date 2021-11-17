@@ -10,7 +10,7 @@ defmodule FullFrameTest do
 
   test "wmbus, unencrypted Table P.1 from en13757-3:2003" do
     datagram = Base.decode16!("2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F")
-    assert {:ok, %Message{}=message} = Exmbus.parse(datagram, keep_layers: true)
+    assert {:ok, %{}=message, <<>>} = Exmbus.parse(datagram, keep_layers: true)
     assert [
       %Apl.FullFrame{
         records: [
@@ -102,7 +102,7 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, %Message{layers: layers, records: :encrypted}} = Exmbus.parse(datagram, keep_layers: true)
+    assert {:ok, %Message{layers: layers, records: :encrypted}, <<>>} = Exmbus.parse(datagram, keep_layers: true)
     assert [raw=%Apl.Raw{} | layers] = layers
     assert [_tpl=%Tpl{} | layers] = layers
     assert [_dll=%Wmbus{} | layers] = layers
@@ -113,7 +113,7 @@ defmodule FullFrameTest do
       plain_bytes: ""
     } = raw
 
-    assert {:ok, %Message{layers: nil, records: records}} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
+    assert {:ok, %Message{layers: nil, records: records}, <<>>} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
 

@@ -13,10 +13,10 @@ defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
     size: nil, # the size of the value in bits, or :variable_length
   ]
 
-  def unparse(_opts, [%__MODULE__{device: 0, tariff: 0, storage: s}=dib | _]) when s <= 1 do
+  def unparse(_opts, [%__MODULE__{device: 0, tariff: 0, storage: s}=dib | ctx]) when s <= 1 do
     ff_int = encode_function_field(dib.function_field)
     df_int = encode_data_field(dib.data_type, dib.size)
-    {:ok, <<0::1, s::1, ff_int::2, df_int::4>>}
+    {:ok, <<0::1, s::1, ff_int::2, df_int::4>>, ctx}
   end
 
   def parse(<<special::4, 0b1111::4, rest::binary>>, _opts, _ctx) do

@@ -39,6 +39,13 @@ defmodule Exmbus.Apl.DataRecord.Header do
     end
   end
 
+  def unparse(opts, [%__MODULE__{vib: vib, dib: dib} | ctx]) do
+    with {:ok, vib_bytes, ctx} <- VIB.unparse(opts, [vib, dib | ctx]),
+         {:ok, dib_bytes, ctx} <- DIB.unparse(opts, ctx) do
+      {:ok, <<dib_bytes::binary, vib_bytes::binary>>, ctx}
+    end
+  end
+
   defp summarize_coding(dib, %VIB{coding: nil}) do
     {:ok, DIB.default_coding(dib)}
   end

@@ -162,6 +162,11 @@ defmodule Exmbus.DataType do
     <<value::signed-little-size(bitsize), rest::binary>> = bin
     {:ok, value, rest}
   end
+
+  def encode_type_b(data, bitsize) do
+    {:ok, <<data::signed-little-size(bitsize)>>}
+  end
+
   @doc """
   Type C
   Unsigned little-endian integer
@@ -173,6 +178,11 @@ defmodule Exmbus.DataType do
     <<value::unsigned-little-size(bitsize), rest::binary>> = bin
     {:ok, value, rest}
   end
+
+  def encode_type_c(data, bitsize) do
+    {:ok, <<data::unsigned-little-size(bitsize)>>}
+  end
+
   @doc """
   Type D
   Bool list from bits.
@@ -185,6 +195,12 @@ defmodule Exmbus.DataType do
     # re-encode to bitstring now that we have the "right" order
     {:ok, bitstring_to_bool_list(<<i::size(bitsize)>>), rest}
   end
+
+  def encode_type_d(data,  bitsize) do
+    <<i::size(bitsize)>> = bool_list_to_bitstring(data)
+    {:ok, <<i::unsigned-little-size(bitsize)>>}
+  end
+
   @doc """
   Type F
   Convert 32 bits to a NaiveDateTime with seconds truncated to 0.
@@ -351,4 +367,10 @@ defmodule Exmbus.DataType do
   def bitstring_to_bool_list(<<>>), do: []
   def bitstring_to_bool_list(<<0::1, rest::bitstring>>), do: [false | bitstring_to_bool_list(rest)]
   def bitstring_to_bool_list(<<1::1, rest::bitstring>>), do: [true | bitstring_to_bool_list(rest)]
+
+
+  def bool_list_to_bitstring([]), do: <<>>
+  def bool_list_to_bitstring([false | rest]), do: <<0::1, bool_list_to_bitstring(rest)::binary>>
+  def bool_list_to_bitstring([true | rest]), do: <<1::1, bool_list_to_bitstring(rest)::binary>>
+
 end

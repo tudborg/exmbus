@@ -14,12 +14,18 @@ defmodule Exmbus.Debug do
     "0b#{u8_to_binary_str(<<n>>)}"
   end
 
-
-
-  def pow10to(power) do
-    case :math.pow(10, power) do
-      f when f < 1.0 -> f
-      i when i >= 1.0 -> round(i)
-    end
+  def bin_to_hex(bin) when is_binary(bin) do
+    bin
+    |> :binary.bin_to_list()
+    |> Enum.map(&u8_to_hex_str/1)
+    |> Enum.join(" ")
   end
+
+  def bin_to_binary_str(bin) when is_binary(bin) do
+    bin
+    |> :binary.bin_to_list()
+    |> Enum.map(&u8_to_binary_str/1)
+    |> Enum.join(" ")
+  end
+
 end

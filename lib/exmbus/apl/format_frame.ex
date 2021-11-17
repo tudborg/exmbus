@@ -1,6 +1,6 @@
 defmodule Exmbus.Apl.FormatFrame do
   defstruct [
-    headers: nil
+    headers: nil,
   ]
 
   alias Exmbus.Apl.FullFrame
@@ -16,7 +16,7 @@ defmodule Exmbus.Apl.FormatFrame do
   def format_signature(%__MODULE__{headers: headers}) when is_list(headers) do
     headers
     |> Enum.map(fn header ->
-      {:ok, header_bin} = Header.unparse(%{}, [header])
+      {:ok, header_bin, []} = Header.unparse(%{}, [header])
       header_bin
     end)
     |> Enum.into("")

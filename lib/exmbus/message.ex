@@ -25,7 +25,7 @@ defmodule Exmbus.Message do
   """
   def parse!(bin, opts \\ %{}) do
     case parse(bin, opts) do
-      {:ok, message} -> message
+      {:ok, message, <<>>} -> message
       {:error, reason, partial_ctx} -> raise "parse!/2 failed with reason=#{inspect reason} ctx=#{inspect partial_ctx}"
       {:error, reason} -> raise "parse!/2 failed with reason=#{inspect reason}"
     end
@@ -50,7 +50,7 @@ defmodule Exmbus.Message do
   The binary must be a WMBus DLL binary
   """
   def parse_wmbus(bin, opts) do
-    with {:ok, layers} <- Wmbus.parse(bin, opts, []) do
+    with {:ok, layers, <<>>} <- Wmbus.parse(bin, opts, []) do
       from_layers(layers, opts)
     end
   end
@@ -94,7 +94,7 @@ defmodule Exmbus.Message do
       identification_no: i,
       device: d,
       version: v,
-    }}
+    }, <<>>}
   end
 
 

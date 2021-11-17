@@ -33,13 +33,11 @@ defmodule DataRecordHeaderTest do
           test "non-extended dib parse/unparse storage=#{storage} function_field=#{ff} data_field=#{df}" do
             bin = unquote(dib_bytes)
             assert {:ok, [%DIB{}=dib], <<>>} = DIB.parse(bin, %{}, [])
-            assert {:ok, ^bin} = DIB.unparse(%{}, [dib])
+            assert {:ok, ^bin, []} = DIB.unparse(%{}, [dib])
           end
       end
     end
-
   end
-
 
   describe "ValueInformationBlock" do
     for i <- 0x00..0b01111010 do
@@ -60,7 +58,7 @@ defmodule DataRecordHeaderTest do
                   %DIB{data_type: :int_or_bin, size: 32}
               end
             assert {:ok, ctx, <<>>} = VIB.parse(bin, %{}, [dib])
-            assert {:ok, ^bin} = VIB.unparse(%{}, ctx)
+            assert {:ok, ^bin, [^dib]} = VIB.unparse(%{}, ctx)
           end
       end
     end
