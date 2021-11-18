@@ -111,6 +111,15 @@ defmodule Exmbus.DataType do
     decode_type_b(rest, 8*64)
   end
 
+
+  # encoder for simple lvars
+  def encode_lvar(b) when is_binary(b) and byte_size(b) < 0xC0 do
+    {:ok, <<byte_size(b), b::binary>>}
+  end
+  def encode_lvar(i) when is_integer(i) do
+    raise "encoding an integer as BCD in lvar not implemented"
+  end
+
   ##
   ## Type decoders
   ## Specification from Annex A of EN 13757-3:2018
@@ -244,6 +253,23 @@ defmodule Exmbus.DataType do
         end
     end
   end
+
+  def encode_type_f(%NaiveDateTime{}=ndt) do
+    # NOTE: We ignore summer time in this function!
+    hundred_year = div(ndt.year-1900, 100)
+    year = rem(ndt.year, 100)
+
+    year_msb = year >>> 3
+    year_lsb = year &&& 0b111
+    {:ok,
+      <<0::1, 0::1, ndt.minute::6,
+        0::1, hundred_year::2, ndt.hour::5,
+        year_lsb::3, ndt.day::5,
+        year_msb::4, ndt.month::4>>}
+  end
+
+
+
   @doc """
   Type G
   Convert 16 bits to a Date
@@ -272,8 +298,12 @@ defmodule Exmbus.DataType do
     end
   end
 
+  def encode_type_g(%Date{}) do
+    raise "encode type g not implemented"
+  end
+
   # TYPE H IEEE Float.
-  # NOTE: erlang doesn't di IEEE floats, so we don't have NaN and Infinity in our floats.
+  # NOTE: erlang doesn't do IEEE floats, so we don't have NaN and Infinity in our floats.
   # we do the next best thing and return atoms instead.
   def decode_type_h(<<value::little-float-size(32), rest::binary>>), do: {:ok, value, rest}
   # Positive infinity sign=1, exponent=all 1s, fraction=all 0s
@@ -283,6 +313,13 @@ defmodule Exmbus.DataType do
   # NaN sign=_, exponent=all 1s, fraction=Anything but all 0s
   # we just catch-all and assign NaN.
   def decode_type_h(<<_::32, rest::binary>>), do: {:ok, :nan, rest}
+
+  def encode_type_h(:nan), do: {:ok, <<(0b0_11111111_00000000000000000000001)::little-size(32)>>}
+  def encode_type_h(:positive_infinity), do: {:ok, <<(0b0_11111111_00000000000000000000000)::little-size(32)>>}
+  def encode_type_h(:negative_infinity), do: {:ok, <<(0b1_11111111_00000000000000000000000)::little-size(32)>>}
+  def encode_type_h(value) when is_integer(value), do: encode_type_h(value / 1)
+  def encode_type_h(value) when is_float(value), do: {:ok, <<value::little-float-size(32)>>}
+
 
   @doc """
   Type I
@@ -321,6 +358,11 @@ defmodule Exmbus.DataType do
       {:error, reason} -> {:error, reason, rest}
     end
   end
+
+  def encode_type_i(%NaiveDateTime{}) do
+    raise "encode type i not implemented"
+  end
+
   @doc """
   Type J
   Convert 24 bits to a Time
@@ -335,13 +377,24 @@ defmodule Exmbus.DataType do
       {:error, reason} -> {:error, reason, rest}
     end
   end
+  def encode_type_j(%Time{}) do
+    raise "encode type j not implemented"
+  end
+
 
   def decode_type_k(_bin) do
     raise "Type k (Daylight savings) not implemented"
   end
+  def encode_type_k(_) do
+    raise "type k not implemented"
+  end
+
 
   def decode_type_l(_bin) do
     raise "Type L (Listening window management) not implemented"
+  end
+  def encode_type_l(_) do
+    raise "encode type L not implemented"
   end
 
   # Type M: Date and time (CP_LVAR)
@@ -353,24 +406,27 @@ defmodule Exmbus.DataType do
 
     # returns DateTime
   end
+  def encode_type_m(_) do
+    raise "encode type m not implemented"
+  end
 
   # convert bitstring to list of bools.
-  @doc """
-  Convert a bitstring <<0b001100::size(6)>> to [false, false, true, true, false, false]
+  # @doc """
+  # Convert a bitstring <<0b001100::size(6)>> to [false, false, true, true, false, false]
 
-    iex> bitstring_to_bool_list(<<0b001100::size(6)>>)
-    [false, false, true, true, false, false]
+  #   iex> bitstring_to_bool_list(<<0b001100::size(6)>>)
+  #   [false, false, true, true, false, false]
 
-    iex> bitstring_to_bool_list(<<0b0000000011111111::size(16)>>)
-    [false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true]
-  """
-  def bitstring_to_bool_list(<<>>), do: []
-  def bitstring_to_bool_list(<<0::1, rest::bitstring>>), do: [false | bitstring_to_bool_list(rest)]
-  def bitstring_to_bool_list(<<1::1, rest::bitstring>>), do: [true | bitstring_to_bool_list(rest)]
+  #   iex> bitstring_to_bool_list(<<0b0000000011111111::size(16)>>)
+  #   [false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true]
+  # """
+  defp bitstring_to_bool_list(<<>>), do: []
+  defp bitstring_to_bool_list(<<0::1, rest::bitstring>>), do: [false | bitstring_to_bool_list(rest)]
+  defp bitstring_to_bool_list(<<1::1, rest::bitstring>>), do: [true | bitstring_to_bool_list(rest)]
 
 
-  def bool_list_to_bitstring([]), do: <<>>
-  def bool_list_to_bitstring([false | rest]), do: <<0::1, bool_list_to_bitstring(rest)::binary>>
-  def bool_list_to_bitstring([true | rest]), do: <<1::1, bool_list_to_bitstring(rest)::binary>>
+  defp bool_list_to_bitstring([]), do: <<>>
+  defp bool_list_to_bitstring([false | rest]), do: <<0::1, bool_list_to_bitstring(rest)::bitstring>>
+  defp bool_list_to_bitstring([true | rest]), do: <<1::1, bool_list_to_bitstring(rest)::bitstring>>
 
 end
