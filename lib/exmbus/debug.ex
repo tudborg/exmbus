@@ -15,10 +15,13 @@ defmodule Exmbus.Debug do
   end
 
   def bin_to_hex(bin) when is_binary(bin) do
-    bin
-    |> :binary.bin_to_list()
-    |> Enum.map(&u8_to_hex_str/1)
-    |> Enum.join(" ")
+    "0x" <>
+      (
+      bin
+      |> :binary.bin_to_list()
+      |> Enum.map(&Integer.to_string(&1, 16))
+      |> Enum.join("")
+      )
   end
 
   def bin_to_binary_str(bin) when is_binary(bin) do

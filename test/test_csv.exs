@@ -10,15 +10,18 @@ defmodule TestCSV do
       # ask for key preloads
       csv_file
       |> parse_export()
-      |> Enum.map(fn [m,s,_] -> {m,s} end)
-      |> Enum.each(fn {m,s} -> KeyLoader.preload_keys(m, s) end)
+      |> Stream.chunk(1000)
+      |> Enum.each(fn chunk ->
+        # preload for chunk
+        chunk
+        |> Stream.map(fn [m,s,_] -> {m,s} end)
+        |> Enum.each(fn {m,s} -> KeyLoader.preload_keys(m, s) end)
 
-      KeyLoader.sync()
-
-      # start parsing
-      csv_file
-      |> parse_export()
-      |> Enum.map(&handle_csv_line/1)
+        # wait until preloaded
+        KeyLoader.wait_until_ready()
+        # handle chunk lines
+        Enum.map(chunk, &handle_csv_line/1)
+      end)
     end
   end
 
@@ -30,13 +33,19 @@ defmodule TestCSV do
 
   defp handle_csv_line([expected_manufacturer, expected_serial, hexdata]) do
     try do
+      IO.write(".")
       hexdata
       |> Base.decode16!()
       |> Exmbus.simplified!(length: false, key: Exmbus.Key.by_fn(&get_keys/2))
-      IO.write(".")
     rescue
       e ->
-        Logger.debug("Failing frame: #{expected_manufacturer} #{expected_serial} #{hexdata}")
+        {int_serial, ""} = Integer.parse(expected_serial)
+        {:ok, keys} = KeyLoader.get_keys(expected_manufacturer, int_serial)
+        hex_keys_str =
+          keys
+          |> Enum.map(&Exmbus.Debug.bin_to_hex/1)
+          |> Enum.join(", ")
+        Logger.debug("Failing frame: #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
         reraise e, __STACKTRACE__
     end
   end
@@ -82,8 +91,8 @@ defmodule KeyLoader do
     GenServer.call(__MODULE__, {:get_keys, {manufacturer, serial}})
   end
 
-  def sync() do
-    GenServer.call(__MODULE__, :sync)
+  def wait_until_ready() do
+    GenServer.call(__MODULE__, :wait_until_ready, 60_000)
   end
 
   ##
@@ -111,8 +120,12 @@ defmodule KeyLoader do
     end
   end
 
-  def handle_call(:sync, _from, state) do
+  def handle_call(:wait_until_ready, _from, %{queue: [], download_pid: nil}=state) do
     {:reply, :ok, state}
+  end
+  def handle_call(:wait_until_ready, from, %{}=state) do
+    send(self(), {:wait_until_ready, from})
+    {:noreply, state}
   end
 
   @impl true
@@ -130,6 +143,7 @@ defmodule KeyLoader do
 
   @impl true
   def handle_info({:downloaded, pid, old_queue, resp}, %{pending: pending, download_pid: pid}=state) do
+    Logger.debug("downloaded for #{Enum.count(old_queue)} pairs")
     # something was downloaded, first insert into cache
     cache =
       resp
@@ -170,13 +184,14 @@ defmodule KeyLoader do
   def handle_info(:download, %{queue: [_|_]=queue, download_pid: nil}=state) do
     # queue is >0 and download is not running, start downloader
     parent = self()
+    {download_queue, new_queue} = Enum.split(queue, 1000)
     bearer = state.bearer_token || raise "missing bearer_token from state"
     base_uri = state.base_uri || raise "missing base_uri from state"
     download_pid =
       spawn_link(fn ->
         url = "#{base_uri}/api/meters/search"
         body =
-          %{meters: Enum.map(queue, fn {m,s} -> %{manufacturer: m, serial: "#{s}"} end)}
+          %{meters: Enum.map(download_queue, fn {m,s} -> %{manufacturer: m, serial: "#{s}"} end)}
           |> Jason.encode!()
         headers = [
           {"Content-Type", "application/json"},
@@ -194,11 +209,19 @@ defmodule KeyLoader do
                   end)
                   |> Enum.into(%{})
 
-                send(parent, {:downloaded, self(), queue, response})
+                send(parent, {:downloaded, self(), download_queue, response})
             end
         end
       end)
-    {:noreply, %{state | queue: [], download_pid: download_pid}}
+    {:noreply, %{state | queue: new_queue, download_pid: download_pid}}
+  end
+  def handle_info({:wait_until_ready, from}, %{queue: [], download_pid: nil}=state) do
+    GenServer.reply(from, :ok)
+    {:noreply, state}
+  end
+  def handle_info({:wait_until_ready, _from}=q, state) do
+    Process.send_after(self(), q, 50) #hacky. can't be bothered implementing this correctly.
+    {:noreply, state}
   end
 
   # if queue was empty and download pid was not set, schedule download
