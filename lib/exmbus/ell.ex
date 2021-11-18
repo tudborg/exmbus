@@ -34,7 +34,7 @@ defmodule Exmbus.Ell do
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
   # > Table 45 below, shows the complete extension block in this case.
   # Fields: CC, ACC, SN, PayloadCRC (the payload is part of encrypted)
-  def parse(<<0x8D, cc::binary-size(1), acc, sn::binary-size(4), payload_crc::binary-size(2), rest::binary>>, opts, ctx) do
+  def parse(<<0x8D, cc::binary-size(1), acc, sn::binary-size(4), payload_crc::size(16), rest::binary>>, opts, ctx) do
     {:ok, control} = CommunicationControl.decode(cc)
     {:ok, session_number} = SessionNumber.decode(sn)
 
@@ -43,7 +43,7 @@ defmodule Exmbus.Ell do
       access_no: acc,
       session_number: session_number,
     }
-    with {:ok, plain} <- decrypt(<<payload_crc::binary, rest::binary>>, opts, [ell | ctx]) do
+    with {:ok, plain} <- decrypt(<<payload_crc::size(16), rest::binary>>, opts, [ell | ctx]) do
       CI.parse(plain, opts, [ell | ctx])
     end
   end
@@ -78,8 +78,14 @@ defmodule Exmbus.Ell do
     frame_number = 0
     block_counter = 0
 
+    # 13.2.12.4Communication Control Field (CC-field)
+    # The value is retrieved from the Extended Link Layer, see 13.2.7.
+    # The bits of the Communication Control Field handled by the repeater
+    # (R-field and H-field) are always set to zero in the Initial Counter Block.
+    cc_for_icb = %{ell.communication_control | hop_count: false, repeated_access: false}
+
     {:ok, identification_bytes} = identity_from_ctx(ctx)
-    {:ok, cc_bytes} = CommunicationControl.encode(ell.communication_control)
+    {:ok, cc_bytes} = CommunicationControl.encode(cc_for_icb)
     {:ok, sn_bytes} = SessionNumber.encode(ell.session_number)
 
     # initial counter block
@@ -94,23 +100,42 @@ defmodule Exmbus.Ell do
     >>
 
     case Exmbus.Key.from_options(opts, ctx) do
-      # when we find at least one key, try the first one (TODO, try all)
-      {:ok, [aes_key_bytes | _]} ->
-        {{_, _}, <<payload_crc::little-size(16), plain::binary>>} =
-          :crypto.stream_init(:aes_ctr, aes_key_bytes, icb)
-          |> :crypto.stream_decrypt(bin)
-
-        case CRC.crc(:crc_16_en_13757, plain) do
-          ^payload_crc ->
-            {:ok, plain}
-          bad_payload_crc ->
-            {:error, {:decryption_failed, {:bad_payload_crc, bad_payload_crc}}, ctx}
-        end
-      # when we find no keys, return :decryption_failed
+      # when we find no keys, return :ell_decryption_failed
       {:ok, []} ->
-        {:error, {:decryption_failed, :key_not_found}, ctx}
+        {:error, {:ell_decryption_failed, :key_not_found}, ctx}
+      # when we find at least one key, try the first one (TODO, try all)
+      {:ok, [_|_]=keys} ->
+        reducer = fn
+          (_key, {:ok, _}=ok) ->
+            ok
+          (key, errors) ->
+            case _decrypt_by_key(bin, icb, key) do
+              {:ok, _plain}=ok -> ok
+              # NOTE: include key in error reason?
+              # Useful for debugging bug dangerous if exposed externally. hm.
+              {:error, reason} -> [%{key: key, reason: reason} | errors]
+            end
+        end
+        case Enum.reduce(keys, [], reducer) do
+          {:ok, _}=ok ->
+            ok
+          error_reasons when is_list(error_reasons) ->
+            {:error, {:ell_decryption_failed, error_reasons}, ctx}
+        end
     end
+  end
 
+  # Try to decrypt bin with key.
+  defp _decrypt_by_key(bin, icb, key) do
+    {{_, _}, <<payload_crc::little-size(16), plain::binary>>} =
+      :crypto.stream_init(:aes_ctr, key, icb)
+      |> :crypto.stream_decrypt(bin)
+    case CRC.crc(:crc_16_en_13757, plain) do
+      ^payload_crc ->
+        {:ok, plain}
+      bad_payload_crc ->
+        {:error, {:bad_payload_crc, bad_payload_crc}}
+    end
   end
 
   defp identity_from_ctx([%Exmbus.Dll.Wmbus{manufacturer: m, identification_no: i, version: v, device: d} | _]) do

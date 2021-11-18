@@ -47,10 +47,9 @@ defmodule Exmbus.Apl do
     parse_records(bin, opts, ctx)
   end
   # when encryption mode is 5 and key option is set:
-  defp parse_apl(%{key: %Key{}}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
-    case decrypt_mode_5(enc, opts, ctx) do
-      {:ok, decrypted} ->
-        parse_records(<<decrypted::binary, plain::binary>>, opts, ctx)
+  defp parse_apl(%{key: _}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
+    with {:ok, decrypted} <- decrypt_mode_5(enc, opts, ctx) do
+      parse_records(<<decrypted::binary, plain::binary>>, opts, ctx)
     end
   end
   # when no key is supplied or we don't understand how to decrypt, return parse context
@@ -163,16 +162,20 @@ defmodule Exmbus.Apl do
     {:ok, byte_keys} = Key.from_options(opts, ctx)
 
     answer =
-      Enum.find_value(byte_keys, fn(byte_key) ->
-        case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
-          <<0x2f, 0x2f, rest::binary>> -> rest
-          _ -> nil
-        end
+      Enum.find_value(byte_keys, fn
+        (byte_key) when byte_size(byte_key) == 16 ->
+          case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
+            <<0x2f, 0x2f, rest::binary>> -> {:ok, rest}
+            _ -> nil # not the valid key
+          end
+        (byte_key) ->
+          {:error, {:invalid_key, {:not_16_bytes, byte_key}}, ctx}
       end)
 
     case answer do
-      nil -> {:error, {:no_valid_keys, byte_keys}}
-      bin -> {:ok, bin}
+      {:ok, bin}=ok -> ok
+      {:error, _reason, _ctx}=e -> e
+      nil -> {:error, {:mode_5_decryption_failed, byte_keys}, ctx}
     end
   end
 

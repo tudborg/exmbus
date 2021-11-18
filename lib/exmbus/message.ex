@@ -9,6 +9,12 @@ defmodule Exmbus.Message do
   alias Exmbus.Ell
   alias Exmbus.Dll.Wmbus
 
+  defmodule MessageError do
+    defexception [
+      :message
+    ]
+  end
+
   defstruct [
     layers: nil, # internal parsed layer list
 
@@ -26,8 +32,8 @@ defmodule Exmbus.Message do
   def parse!(bin, opts \\ %{}) do
     case parse(bin, opts) do
       {:ok, message, <<>>} -> message
-      {:error, reason, partial_ctx} -> raise "parse!/2 failed with reason=#{inspect reason} ctx=#{inspect partial_ctx}"
-      {:error, reason} -> raise "parse!/2 failed with reason=#{inspect reason}"
+      {:error, reason, partial_ctx} -> raise MessageError, message: "parse!/2 failed with reason=#{inspect reason} ctx=#{inspect partial_ctx}"
+      {:error, reason} -> raise MessageError, message: "parse!/2 failed with reason=#{inspect reason}"
     end
   end
 

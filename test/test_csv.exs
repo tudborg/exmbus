@@ -1,7 +1,7 @@
 defmodule TestCSV do
   NimbleCSV.define(CSV, separator: ",", escape: "\"")
   require Logger
-
+  alias Exmbus.Message.MessageError
 
   def main(csv_files) do
     {:ok, _pid} = KeyLoader.start_link()
@@ -32,19 +32,23 @@ defmodule TestCSV do
   end
 
   defp handle_csv_line([expected_manufacturer, expected_serial, hexdata]) do
+    {int_serial, ""} = Integer.parse(expected_serial)
+    {:ok, keys} = KeyLoader.get_keys(expected_manufacturer, int_serial)
+    hex_keys_str =
+      keys
+      |> Enum.map(&Exmbus.Debug.bin_to_hex/1)
+      |> Enum.join(", ")
+
     try do
       IO.write(".")
       hexdata
       |> Base.decode16!()
       |> Exmbus.simplified!(length: false, key: Exmbus.Key.by_fn(&get_keys/2))
     rescue
+      e in MessageError ->
+        Logger.debug("Failing frame: #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
+        Logger.warn("message error during parse: #{e.message}, NOTE: this failure is not fatal")
       e ->
-        {int_serial, ""} = Integer.parse(expected_serial)
-        {:ok, keys} = KeyLoader.get_keys(expected_manufacturer, int_serial)
-        hex_keys_str =
-          keys
-          |> Enum.map(&Exmbus.Debug.bin_to_hex/1)
-          |> Enum.join(", ")
         Logger.debug("Failing frame: #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
         reraise e, __STACKTRACE__
     end
