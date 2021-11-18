@@ -82,6 +82,7 @@ defmodule DataTypeTest do
 
 
 
+
   # Type H
   for value <- [0.0, 1.0, 2.0, 0.5, 1.5, :nan, :positive_infinity, :negative_infinity] do
     test "test encode_type_h/1 and decode_type_h/1 for value #{value}" do
@@ -112,7 +113,16 @@ defmodule DataTypeTest do
   # Type M
 
 
+  #
+  # Regressions and similar, related to DataType
+  #
 
+  describe "Regressions" do
+    test "Type G from a DME telegram" do
+      bytes = <<0x00, 0x00>>
+      {:ok, {:periodic, :every_day}, <<>>} = DataType.decode_type_g(bytes)
+    end
+  end
 
 
 

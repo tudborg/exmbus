@@ -283,18 +283,27 @@ defmodule Exmbus.DataType do
     {:ok, :invalid, rest}
   end
   def decode_type_g(<<year_lsb::3, day::5,year_msb::4, month::4, rest::binary>>) do
-    year = case ((year_msb <<< 3) ||| year_lsb) do
-      year when year > 80 -> 1900 + year
-      year -> 2000 + year # Compatibility hack as recommended in the manual in Table A.5 — Type F: Date and time (CP32)
-    end
+    year = ((year_msb <<< 3) ||| year_lsb)
+
     # the standard supports indicating periodicity in this type but that's really annoying
     # to do since it doesn't fit in our normal type for time.
-    # instead, I guard for it and raise if we see it. I suspect noone actually uses this feature.
-    has_periodicity = day == 0 or month == 15 or year == 127
-    if has_periodicity, do: raise "timestamp of Type G indicated periodicity but that is not supported by this library. Contact author."
-    case Date.new(year, month, day) do
-      {:ok, date} -> {:ok, date, rest}
-      {:error, reason} -> {:error, reason, rest}
+    # for now we just return a tuple with some atoms to indicate this
+    cond do
+      day   == 0   -> {:ok, {:periodic, :every_day}, rest}
+      month == 15  -> {:ok, {:periodic, :every_month}, rest}
+      year  == 127 -> {:ok, {:periodic, :every_year}, rest}
+      # otherwise, not periodic, normal date:
+      true ->
+        year =
+          case year do
+            year when year > 80 -> 1900 + year
+            year -> 2000 + year # Compatibility hack as recommended in the manual in Table A.5 — Type F: Date and time (CP32)
+          end
+
+        case Date.new(year, month, day) do
+          {:ok, date} -> {:ok, date, rest}
+          {:error, reason} -> {:error, reason, rest}
+        end
     end
   end
 
