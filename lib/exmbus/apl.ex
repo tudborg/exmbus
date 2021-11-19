@@ -86,7 +86,7 @@ defmodule Exmbus.Apl do
         finalize_full_frame(rest, opts, ctx)
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
         finalize_full_frame(rest, opts, ctx)
-      {:error, _reason, _ctx}=e ->
+      {:error, _reason, _rest}=e ->
         e
     end
   end

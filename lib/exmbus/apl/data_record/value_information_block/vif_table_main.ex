@@ -38,13 +38,14 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
   # - Data field 0b0110, type I
   # - Data field 0b1101, type M (LVAR)
   def parse(<<e::1, 0b1101100::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 16} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :date, coding: :type_g} | ctx])
+  def parse(<<e::1, 0b1101100::7, rest::binary>>, _pts, [%DIB{data_type: _, size: _}            | _]=ctx), do: Vife.error(e, rest, {:invalid, "data field must be 0b0010 from Table 10 in EN 13757-3:2018 \"Meaning depends on data field. Other data fields shall be handled as invalid\""}, ctx)
   def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 24} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :time, coding: :type_j} | ctx])
   def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 32} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :naive_datetime, coding: :type_f} | ctx])
   def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :int_or_bin, size: 48} | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :naive_datetime, coding: :type_i} | ctx])
   def parse(<<e::1, 0b1101101::7, rest::binary>>, opts, [%DIB{data_type: :variable_length     } | _]=ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :datetime, coding: :type_m} | ctx])
 
   def parse(<<e::1, 0b1101110::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :units_for_hca} | ctx])
-  def parse(<<e::1, 0b1101111::7, rest::binary>>, _opts, _ctx),    do: Vife.error(e, rest, {:reserved, "VIF 0b1101111 reserved for future use"})
+  def parse(<<e::1, 0b1101111::7, rest::binary>>, _opts, ctx),     do: Vife.error(e, rest, {:reserved, "VIF 0b1101111 reserved for future use"}, ctx)
   def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :averaging_duration, unit: decode_time_unit(nn)} | ctx])
   def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :actuality_duration, unit: decode_time_unit(nn)} | ctx])
   def parse(<<e::1, 0b1111000::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :main, description: :fabrication_no} | ctx])
@@ -76,7 +77,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain do
     end
   end
 
-  def parse(<<e::1, 0b111_1110::7, rest::binary>>, _opts, _ctx), do: Vife.error(e, rest, "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d.")
+  def parse(<<e::1, 0b111_1110::7, rest::binary>>, _opts, ctx), do: Vife.error(e, rest, "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d.", ctx)
 
   def parse(<<e::1, 0b111_1111::7, rest::binary>>, _opts, ctx) do
   # Manufacturer specific encoding, 7F / FF.

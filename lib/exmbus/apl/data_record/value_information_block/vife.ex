@@ -20,12 +20,12 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.Vife do
   @doc """
   Ignore VIFE and return {:error, reason, rest}
   """
-  def error(1, rest, reason) do
+  def error(1, rest, reason, _ctx) do
     case consume(rest, []) do
       {:ok, _, rest} -> {:error, reason, rest}
     end
   end
-  def error(0, rest, reason) do
+  def error(0, rest, reason, _ctx) do
     {:error, reason, rest}
   end
 

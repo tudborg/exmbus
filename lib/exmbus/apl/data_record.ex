@@ -3,6 +3,7 @@ defmodule Exmbus.Apl.DataRecord do
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl.DataRecord.Header
   alias Exmbus.Apl.DataRecord.ValueInformationBlock, as: VIB
+  alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.DataType
 
   defstruct [
@@ -17,13 +18,13 @@ defmodule Exmbus.Apl.DataRecord do
   """
   def parse(bin, opts, ctx) do
     case Header.parse(bin, opts, ctx) do
-      {:ok, [header | ctx]=ctx_with_header, rest} ->
+      {:ok, [header | ctx], rest} ->
         # parse data from rest
         case parse_data(header, rest) do
           {:ok, data, rest} ->
             {:ok, [%__MODULE__{header: header, data: data} | ctx], rest}
-          {:error, {:cannot_parse_data, _}, rest} ->
-            {:error, {:cannot_parse_data, rest}, ctx_with_header}
+          {:error, {:cannot_parse_data, _}, _rest}=e ->
+            e
         end
       # see Exmbus.Apl.DataRecord.DataInformationBlock for more on what
       # this is. But it's basically signal bytes and seperators disguised as DataInformationBlocks.
@@ -31,6 +32,10 @@ defmodule Exmbus.Apl.DataRecord do
       # only place that should know about what to do about them.
       {:special_function, _type, _rest}=s ->
         s
+      {:error, {:invalid_block, reason, %DIB{size: size}=dib}, rest} ->
+        # try to skip over the data of the header fails to parse
+        <<_::size(size), rest::binary>> = rest
+        {:error, {:invalid_block, reason, dib}, rest}
     end
   end
 
@@ -156,8 +161,6 @@ defmodule Exmbus.Apl.DataRecord do
   def parse_data(%{coding: :type_m, dib: %{size: :variable_length}}, bin), do: DataType.decode_type_m(bin)
   # Variable length data_type (LVAR)
   def parse_data(%{dib: %{size: :variable_length}}, bin), do: DataType.decode_lvar(bin)
-
-
 
 
   # No data:
