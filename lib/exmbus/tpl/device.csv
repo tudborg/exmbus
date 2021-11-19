@@ -1,38 +1,39 @@
-Byte; Atom                        ; Description
-0x00; :other                      ; other
-0x01; :oil                        ; oil
-0x02; :electricity                ; electricity
-0x03; :gas                        ; gas
-0x04; :heat                       ; heat
-0x05; :steam                      ; steam
-0x06; :warm_water                 ; warm_water
-0x07; :water                      ; water
-0x08; :heat_cost_allocator        ; heat_cost_allocator
-0x09; :compressed_air             ; compressed_air
-0x0A; :cooling_load_meter_outlet  ; cooling_load_meter_outlet
-0x0B; :cooling_load_meter_inlet   ; cooling_load_meter_inlet
-0x0C; :heat_inlet                 ; heat_inlet
-0x0D; :heat_cooling_load_meter    ; heat_cooling_load_meter
-0x0E; :bus                        ; bus
-0x0F; :unknown                    ; unknown
-0x14; :calorific_value            ; calorific_value
-0x15; :hot_water                  ; hot_water
-0x16; :cold_water                 ; cold_water
-0x17; :hot_cold_water             ; hot_cold_water
-0x18; :pressure                   ; pressure
-0x19; :ad_converter               ; ad_converter
-0x1A; :smoke_detector             ; smoke_detector
-0x1B; :room_sensor                ; room_sensor
-0x1C; :gas_detector               ; gas_detector
-0x20; :electricity_breaker        ; electricity_breaker
-0x21; :valve                      ; valve
-0x25; :display_device             ; display_device
-0x28; :waste_water                ; waste_water
-0x29; :garbage                    ; garbage
-0x2A; :co2                        ; co2
-0x31; :communication_controller   ; communication_controller
-0x32; :unidirectional_repeater    ; unidirectional_repeater
-0x33; :bidirectional_repeater     ; bidirectional_repeater
-0x36; :radio_converter_system_side; radio_converter_system_side
-0x37; :radio_converter_meter_side ; radio_converter_meter_side
-0x38; :wired_adapter              ; wired_adapter
+Byte      ; Atom                         ; Description
+0x00      ; :other                       ; other
+0x01      ; :oil                         ; oil
+0x02      ; :electricity                 ; electricity
+0x03      ; :gas                         ; gas
+0x04      ; :heat                        ; heat
+0x05      ; :steam                       ; steam
+0x06      ; :warm_water                  ; warm_water
+0x07      ; :water                       ; water
+0x08      ; :heat_cost_allocator         ; heat_cost_allocator
+0x09      ; :compressed_air              ; compressed_air
+0x0A      ; :cooling_load_meter_outlet   ; cooling_load_meter_outlet
+0x0B      ; :cooling_load_meter_inlet    ; cooling_load_meter_inlet
+0x0C      ; :heat_inlet                  ; heat_inlet
+0x0D      ; :heat_cooling_load_meter     ; heat_cooling_load_meter
+0x0E      ; :bus                         ; bus
+0x0F      ; :unknown                     ; unknown
+0x14      ; :calorific_value             ; calorific_value
+0x15      ; :hot_water                   ; hot_water
+0x16      ; :cold_water                  ; cold_water
+0x17      ; :hot_cold_water              ; hot_cold_water
+0x18      ; :pressure                    ; pressure
+0x19      ; :ad_converter                ; ad_converter
+0x1A      ; :smoke_detector              ; smoke_detector
+0x1B      ; :room_sensor                 ; room_sensor
+0x1C      ; :gas_detector                ; gas_detector
+0x1D..0x1F; :generic_sensor              ; generic_sensor
+0x20      ; :electricity_breaker         ; electricity_breaker
+0x21      ; :valve                       ; valve
+0x25      ; :display_device              ; display_device
+0x28      ; :waste_water                 ; waste_water
+0x29      ; :garbage                     ; garbage
+0x2A      ; :co2                         ; co2
+0x31      ; :communication_controller    ; communication_controller
+0x32      ; :unidirectional_repeater     ; unidirectional_repeater
+0x33      ; :bidirectional_repeater      ; bidirectional_repeater
+0x36      ; :radio_converter_system_side ; radio_converter_system_side
+0x37      ; :radio_converter_meter_side  ; radio_converter_meter_side
+0x38      ; :wired_adapter               ; wired_adapter

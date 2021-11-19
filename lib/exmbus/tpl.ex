@@ -178,7 +178,7 @@ defmodule Exmbus.Tpl do
     # the ident_bytes is 32 bits of BCD (Type A):
     {:ok, identification_no, <<>>} = DataType.decode_type_a(ident_bytes, 32)
     status = Status.decode(status_byte)
-    device = Device.decode!(device_byte)
+    {:ok, device} = Device.decode(device_byte)
     {:ok, manufacturer} = Manufacturer.decode(man_bytes)
     {:ok, configuration_field, rest} = ConfigurationField.decode(rest)
     header = %Long{

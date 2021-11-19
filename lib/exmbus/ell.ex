@@ -141,7 +141,7 @@ defmodule Exmbus.Ell do
   defp identity_from_ctx([%Exmbus.Dll.Wmbus{manufacturer: m, identification_no: i, version: v, device: d} | _]) do
     {:ok, m_bytes} = Manufacturer.encode(m)
     {:ok, i_bytes} = DataType.encode_type_a(i, 32)
-    d_byte = Device.encode(d)
+    {:ok, d_byte} = Device.encode(d)
     {:ok, <<m_bytes::binary, i_bytes::binary, v, d_byte::binary>>}
   end
   defp identity_from_ctx([_ | rest]) do

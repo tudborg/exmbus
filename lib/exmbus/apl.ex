@@ -1,6 +1,5 @@
 defmodule Exmbus.Apl do
 
-  alias Exmbus.Apl
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Tpl
   alias Exmbus.Key
@@ -56,8 +55,6 @@ defmodule Exmbus.Apl do
   defp parse_apl(%{}, [%Raw{} | _]=ctx) do
     {:ok, ctx, <<>>}
   end
-
-
 
   # assume decrypted apl bytes as first argument, parse data fields
   # an return an {:ok, [Apl|ctx]}
@@ -173,7 +170,7 @@ defmodule Exmbus.Apl do
       end)
 
     case answer do
-      {:ok, bin}=ok -> ok
+      {:ok, _bin}=ok -> ok
       {:error, _reason, _ctx}=e -> e
       nil -> {:error, {:mode_5_decryption_failed, byte_keys}, ctx}
     end
@@ -198,7 +195,7 @@ defmodule Exmbus.Apl do
     %Wmbus{manufacturer: m, identification_no: i, version: v, device: d} = wmbus
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(i, 32)
-    device_byte = Device.encode(d)
+    {:ok, device_byte} = Device.encode(d)
     {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
@@ -206,7 +203,7 @@ defmodule Exmbus.Apl do
     %Tpl.Long{manufacturer: m, identification_no: id, version: v, device: d, access_no: a_no} = header
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(id, 32)
-    device_byte = Device.encode(d)
+    {:ok, device_byte} = Device.encode(d)
     {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
