@@ -65,13 +65,13 @@ defmodule Exmbus.Dll.Wmbus do
 
   def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x0::4>>), do: raise "SND-NKE not implemented"
   def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x3::4>>), do: raise "SND-UD/SND-UD2 not implemented"
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x4::4>>), do: {:ok, :snd_nr}
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x5::4>>), do: raise "SND-UD3 not implemented"
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x6::4>>), do: raise "SND-IR not implemented"
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x7::4>>), do: raise "ACC-NR not implemented"
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x8::4>>), do: raise "ACC-DMD not implemented"
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0xA::4>>), do: raise "REQ-UD1 not implemented"
-  def decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0xB::4>>), do: raise "REQ-UD2 not implemented"
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 0::1,    0x4::4>>), do: {:ok, :snd_nr}
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 0::1,    0x5::4>>), do: raise "SND-UD3 not implemented"
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 0::1,    0x6::4>>), do: {:ok, :snd_ir}
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 0::1,    0x7::4>>), do: raise "ACC-NR not implemented"
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 0::1,    0x8::4>>), do: raise "ACC-DMD not implemented"
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 1::1,    0xA::4>>), do: raise "REQ-UD1 not implemented"
+  def decode_c_field(<<0::1, 1::1, _fcb::1, 1::1,    0xB::4>>), do: raise "REQ-UD2 not implemented"
 
   def decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x0::4>>), do: raise "ACK not implemented"
   def decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x1::4>>), do: raise "NACK not implemented"

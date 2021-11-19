@@ -3,23 +3,27 @@ defmodule TestCSV do
   require Logger
   alias Exmbus.Message.MessageError
 
-  def main(csv_files) do
+  def main(argv) do
+    {options, args, []} =
+      OptionParser.parse(argv, switches: [drop: :integer])
+
     {:ok, _pid} = KeyLoader.start_link()
-    for csv_file <- csv_files do
+    for csv_file <- args do
       Logger.info("Handling CSV file #{csv_file}")
       # ask for key preloads
       csv_file
       |> parse_export()
-      |> Stream.chunk(1000)
+      |> Stream.with_index(1)
+      |> Stream.drop(Keyword.get(options, :drop, 0))
+      |> Stream.chunk_every(1000)
       |> Enum.each(fn chunk ->
         # preload for chunk
-        chunk
-        |> Stream.map(fn [m,s,_] -> {m,s} end)
-        |> Enum.each(fn {m,s} -> KeyLoader.preload_keys(m, s) end)
-
+        Enum.each(chunk, fn {[m,s,_], _} -> KeyLoader.preload_keys(m, s) end)
         # wait until preloaded
         KeyLoader.wait_until_ready()
         # handle chunk lines
+        [{_, idx} | _rest] = chunk
+        Logger.info("got to line #{idx}")
         Enum.map(chunk, &handle_csv_line/1)
       end)
     end
@@ -31,7 +35,7 @@ defmodule TestCSV do
     |> CSV.parse_stream(skip_headers: false)
   end
 
-  defp handle_csv_line([expected_manufacturer, expected_serial, hexdata]) do
+  defp handle_csv_line({[expected_manufacturer, expected_serial, hexdata], idx}) do
     {int_serial, ""} = Integer.parse(expected_serial)
     {:ok, keys} = KeyLoader.get_keys(expected_manufacturer, int_serial)
     hex_keys_str =
@@ -46,10 +50,10 @@ defmodule TestCSV do
       |> Exmbus.simplified!(length: false, key: Exmbus.Key.by_fn(&get_keys/2))
     rescue
       e in MessageError ->
-        Logger.debug("Failing frame: #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
+        Logger.debug("Failing CSV line=#{idx} #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
         Logger.warn("message error during parse: #{e.message}, NOTE: this failure is not fatal")
       e ->
-        Logger.debug("Failing frame: #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
+        Logger.debug("Failing CSV line=#{idx}: #{expected_manufacturer} #{expected_serial} keys: #{hex_keys_str} frame: #{hexdata}")
         reraise e, __STACKTRACE__
     end
   end

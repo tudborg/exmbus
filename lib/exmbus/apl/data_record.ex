@@ -2,7 +2,6 @@
 defmodule Exmbus.Apl.DataRecord do
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl.DataRecord.Header
-  alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.DataType
 
@@ -18,13 +17,13 @@ defmodule Exmbus.Apl.DataRecord do
   """
   def parse(bin, opts, ctx) do
     case Header.parse(bin, opts, ctx) do
-      {:ok, [header | ctx], rest} ->
+      {:ok, [header | ctx]=ctx_with_header, rest} ->
         # parse data from rest
         case parse_data(header, rest) do
           {:ok, data, rest} ->
             {:ok, [%__MODULE__{header: header, data: data} | ctx], rest}
-          {:error, _reason, _rest}=e ->
-            e
+          {:error, {:cannot_parse_data, _}, rest} ->
+            {:error, {:cannot_parse_data, rest}, ctx_with_header}
         end
       # see Exmbus.Apl.DataRecord.DataInformationBlock for more on what
       # this is. But it's basically signal bytes and seperators disguised as DataInformationBlocks.
@@ -133,6 +132,8 @@ defmodule Exmbus.Apl.DataRecord do
   def parse_data(%{dib: %{data_type: :no_data, size: 0}}, bin), do: {:ok, :no_data, bin}
   # Selection for readout:
   def parse_data(%{dib: %{data_type: :selection_for_readout, size: 0}}, bin), do: {:ok, :selection_for_readout, bin}
+  # Size is > 0 but bin is zero. No data to parse, invalid.
+  def parse_data(%{dib: %{size: size}}=header, <<>>) when size > 0, do: {:error, {:cannot_parse_data, header}, <<>>}
   # BCD of any size (Type A)
   def parse_data(%{coding: :type_a, dib: %{size: size}}, bin), do: DataType.decode_type_a(bin, size)
   # Signed integer (Type B)
