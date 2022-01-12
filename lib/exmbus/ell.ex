@@ -43,7 +43,7 @@ defmodule Exmbus.Ell do
       access_no: acc,
       session_number: session_number,
     }
-    with {:ok, plain} <- decrypt(<<payload_crc::size(16), rest::binary>>, opts, [ell | ctx]) do
+    with {:ok, plain} <- decrypt_and_verify(<<payload_crc::size(16), rest::binary>>, opts, [ell | ctx]) do
       CI.parse(plain, opts, [ell | ctx])
     end
   end
@@ -72,9 +72,13 @@ defmodule Exmbus.Ell do
     raise "TODO: ELL V"
   end
 
+  defp decrypt_and_verify(<<payload_crc::little-size(16), plain::binary>>, _opts, [%__MODULE__{session_number: %{encryption: :none}} | _]) do
+    # encryption mode is none, so we just need to verify the payload crc
+    # assuming that this was a CI=8D or CI=8F
+    verify_crc(payload_crc, plain)
+  end
 
-
-  defp decrypt(bin, opts, [%__MODULE__{}=ell | _]=ctx) do
+  defp decrypt_and_verify(bin, opts, [%__MODULE__{session_number: %{encryption: :aes_128_ctr}}=ell | _]=ctx) do
     frame_number = 0
     block_counter = 0
 
@@ -109,8 +113,10 @@ defmodule Exmbus.Ell do
           (_key, {:ok, _}=ok) ->
             ok
           (key, errors) ->
-            case _decrypt_by_key(bin, icb, key) do
-              {:ok, _plain}=ok -> ok
+            with {:ok, <<payload_crc::little-size(16), plain::binary>>} <- _decrypt_aes(bin, icb, key),
+                 {:ok, plain} <- verify_crc(payload_crc, plain) do
+              {:ok, plain}
+            else
               # NOTE: include key in error reason?
               # Useful for debugging bug dangerous if exposed externally. hm.
               {:error, reason} -> [%{key: key, reason: reason} | errors]
@@ -126,10 +132,15 @@ defmodule Exmbus.Ell do
   end
 
   # Try to decrypt bin with key.
-  defp _decrypt_by_key(bin, icb, key) do
-    {{_, _}, <<payload_crc::little-size(16), plain::binary>>} =
-      :crypto.stream_init(:aes_ctr, key, icb)
-      |> :crypto.stream_decrypt(bin)
+  defp _decrypt_aes(bin, icb, key) do
+    result = :crypto.stream_init(:aes_ctr, key, icb) |> :crypto.stream_decrypt(bin)
+    case result do
+      {_newState, plain} -> {:ok, plain}
+      :run_time_error -> {:error, :run_time_error}
+    end
+  end
+
+  defp verify_crc(payload_crc, plain) when is_integer(payload_crc) and is_binary(plain) do
     case CRC.crc(:crc_16_en_13757, plain) do
       ^payload_crc ->
         {:ok, plain}
