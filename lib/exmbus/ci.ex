@@ -58,7 +58,7 @@ defmodule Exmbus.CI do
       end
     ret =
       case answer do
-        :error -> {:error, {layer, {ci_low, ci_high}}}
+        :error -> {:error, {:ci_lookup, {layer, {ci_low, ci_high}}}}
         :ok -> {:ok, {layer, tpl_header, direction, note}}
       end
     def lookup(n) when n >= unquote(ci_low) and n <= unquote(ci_high) do
