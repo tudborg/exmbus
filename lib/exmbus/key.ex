@@ -27,7 +27,7 @@ defmodule Exmbus.Key do
 
   See get/3
   """
-  def get(%{key: _}=opts, ctx) do
+  def get(%{}=opts, ctx) do
     with key <- from_options!(opts) do
       get(key, opts, ctx)
     end

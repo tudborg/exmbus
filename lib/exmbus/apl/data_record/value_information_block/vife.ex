@@ -56,12 +56,21 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.Vife do
         end
     end
   end
+  #E100 u001 Number of exceeds of lower u = 0)/upper (U = 1) limit
+  def parse(1, <<e::1, 0b100::3, u::1, 0b001::3, rest::binary>>, opts, [%VIB{extensions: exts}=vib | ctx]) do
+    name =
+      case u do
+        0 -> :number_of_exceeds_of_lower_limit
+        1 -> :number_of_exceeds_of_upper_limit
+      end
+    parse(e, rest, opts, [%VIB{vib | extensions: [name | exts]} | ctx])
+  end
   # next VIFE and rest of block is manufacturer specific
   def parse(1, <<e::1, 0b111_1111::7, rest::binary>>, opts, ctx) do
     parse_manufacturer_specific_vifes(e, rest, opts, ctx)
   end
-  def parse(1, <<e::1, vife::7, rest::binary>>, opts, [%VIB{extensions: exts}=vib | ctx]) do
-    parse(e, rest, opts, [%VIB{vib | extensions: [{:unknown_vife, vife}| exts]} | ctx])
+  def parse(1, <<e::1, vife::7, rest::binary>>, opts, [%VIB{table: table, extensions: exts}=vib | ctx]) do
+    parse(e, rest, opts, [%VIB{vib | extensions: [{:unknown_vife, table, vife}| exts]} | ctx])
   end
 
   defp parse_manufacturer_specific_vifes(0, rest, opts, ctx) do

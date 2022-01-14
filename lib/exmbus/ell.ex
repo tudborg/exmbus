@@ -103,36 +103,29 @@ defmodule Exmbus.Ell do
       block_counter
     >>
 
-    case Exmbus.Key.from_options(opts, ctx) do
-      # when we find no keys, return :ell_decryption_failed
-      {:ok, []} ->
-        {:error, {:ell_decryption_failed, :key_not_found}, ctx}
-      # when we find at least one key, try the first one (TODO, try all)
-      {:ok, [_|_]=keys} ->
-        reducer = fn
-          (_key, {:ok, _}=ok) ->
-            ok
-          (key, errors) ->
-            with {:ok, <<payload_crc::little-size(16), plain::binary>>} <- _decrypt_aes(bin, icb, key),
-                 {:ok, plain} <- verify_crc(payload_crc, plain) do
-              {:ok, plain}
-            else
-              # NOTE: include key in error reason?
-              # Useful for debugging bug dangerous if exposed externally. hm.
-              {:error, reason} -> [%{key: key, reason: reason} | errors]
-            end
-        end
-        case Enum.reduce(keys, [], reducer) do
-          {:ok, _}=ok ->
-            ok
-          error_reasons when is_list(error_reasons) ->
-            {:error, {:ell_decryption_failed, error_reasons}, ctx}
-        end
+    with {:ok, keys} <- Exmbus.Key.get(opts, ctx) do
+      try_decrypt_and_verify(bin, icb, ctx, keys, [])
+    end
+  end
+
+  # no keys, no errors (so no keys was tried)
+  defp try_decrypt_and_verify(_bin, _icb, ctx, [], []) do
+    {:error, {:ell_decryption_failed, :no_keys_available}, ctx}
+  end
+  defp try_decrypt_and_verify(_bin, _icb, ctx, [], error_acc) do
+    {:error, {:ell_decryption_failed, Enum.reverse(error_acc)}, ctx}
+  end
+  defp try_decrypt_and_verify(bin, icb, ctx, [key | keys], error_acc) do
+    with {:ok, <<payload_crc::little-size(16), rest::binary>>} <- decrypt_aes(bin, icb, key),
+         {:ok, plain} = verify_crc(payload_crc, rest) do
+      {:ok, plain}
+    else
+      {:error, reason} -> try_decrypt_and_verify(bin, icb, ctx, keys, [%{key: key, reason: reason} | error_acc])
     end
   end
 
   # Try to decrypt bin with key.
-  defp _decrypt_aes(bin, icb, key) do
+  defp decrypt_aes(bin, icb, key) do
     result = :crypto.stream_init(:aes_ctr, key, icb) |> :crypto.stream_decrypt(bin)
     case result do
       {_newState, plain} -> {:ok, plain}
@@ -141,7 +134,7 @@ defmodule Exmbus.Ell do
   end
 
   defp verify_crc(payload_crc, plain) when is_integer(payload_crc) and is_binary(plain) do
-    case CRC.crc(:crc_16_en_13757, plain) do
+    case Exmbus.crc!(plain) do
       ^payload_crc ->
         {:ok, plain}
       bad_payload_crc ->

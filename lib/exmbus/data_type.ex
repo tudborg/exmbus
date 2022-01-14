@@ -282,7 +282,7 @@ defmodule Exmbus.DataType do
     # manual Table A.6 — Type G: Date (CP16) "A value of FFh in both bytes (that means FFFFh) shall be interpreted as invalid."
     {:ok, :invalid, rest}
   end
-  def decode_type_g(<<year_lsb::3, day::5,year_msb::4, month::4, rest::binary>>) do
+  def decode_type_g(<<year_lsb::3, day::5, year_msb::4, month::4, rest::binary>>) do
     year = ((year_msb <<< 3) ||| year_lsb)
 
     # the standard supports indicating periodicity in this type but that's really annoying
@@ -307,8 +307,23 @@ defmodule Exmbus.DataType do
     end
   end
 
-  def encode_type_g(%Date{}) do
-    raise "encode type g not implemented"
+  @doc """
+  Encode a Date to type G (16 bit)
+
+    # <<161, 34>> = <<5::3, 1::5, 2::4, 2::4>>
+    iex> {:ok, <<161, 34>>} = encode_type_g(~D[2021-02-01])
+  """
+  def encode_type_g(%Date{year: year, month: month, day: day}) do
+    # See note on compatibility as recommended in the manual in Table A.5 — Type F: Date and time (CP32)
+    year =
+      if year >= 2000 do
+        year - 2000
+      else
+        year - 1900
+      end
+    year_msb = year >>> 3 &&& 0b1111
+    year_lsb = year &&& 0b111
+    {:ok, <<year_lsb::3, day::5, year_msb::4, month::4>>}
   end
 
   # TYPE H IEEE Float.

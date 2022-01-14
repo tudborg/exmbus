@@ -1,6 +1,7 @@
 defmodule Exmbus.Apl do
 
   alias Exmbus.Apl.DataRecord
+  alias Exmbus.Apl.DataRecord.InvalidDataRecord
   alias Exmbus.Tpl
   alias Exmbus.Key
   alias Exmbus.Dll.Wmbus
@@ -42,13 +43,16 @@ defmodule Exmbus.Apl do
     %{records: Enum.map(records, &DataRecord.to_map!/1)}
   end
 
-  defp parse_apl(opts, [%Raw{mode: 0, plain_bytes: bin} | ctx]) do
+  # It is possible to disable parsing of the APL by setting parse_apl: false in options.
+  defp parse_apl(%{parse_apl: false}, [%Raw{mode: 0, plain_bytes: _} | _]=ctx), do: {:ok, ctx, <<>>}
+  defp parse_apl(opts, [%Raw{mode: 0, plain_bytes: bin, encrypted_bytes: <<>>} | ctx]) do
     parse_records(bin, opts, ctx)
   end
+
   # when encryption mode is 5 and key option is set:
   defp parse_apl(%{key: _}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
     with {:ok, decrypted} <- decrypt_mode_5(enc, opts, ctx) do
-      parse_records(<<decrypted::binary, plain::binary>>, opts, ctx)
+      parse_apl(opts, [%Raw{mode: 0, plain_bytes: <<decrypted::binary, plain::binary>>, encrypted_bytes: <<>>} | ctx])
     end
   end
   # when no key is supplied or we don't understand how to decrypt, return parse context
@@ -59,6 +63,10 @@ defmodule Exmbus.Apl do
   # assume decrypted apl bytes as first argument, parse data fields
   # an return an {:ok, [Apl|ctx]}
   defp parse_records(bin, opts, [%Tpl{frame_type: :full_frame} | _]=ctx) do
+    # NOTE:
+    # Should we possibly calculate the format signature here and attach it to the FullFrame struct?
+    # That way we don't need the expensive unparse operation to get the format signature,
+    # BUT we'd calculate it on every single parse? Option to turn off maybe?
     parse_full_frame(bin, opts, ctx)
   end
   defp parse_records(bin, opts, [%Tpl{frame_type: :format_frame} | _]=ctx) do
@@ -78,6 +86,8 @@ defmodule Exmbus.Apl do
     case DataRecord.parse(bin, opts, ctx) do
       {:ok, [%DataRecord{} | _]=ctx, rest} ->
         parse_full_frame(rest, opts, ctx)
+      {:ok, [%InvalidDataRecord{} | _]=ctx, rest} ->
+        parse_full_frame(rest, opts, ctx)
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
         parse_full_frame(rest, opts, ctx)
@@ -96,6 +106,7 @@ defmodule Exmbus.Apl do
       ctx
       |> Enum.split_while(fn
         %DataRecord{} -> true
+        %InvalidDataRecord{} -> true
         _ -> false
       end)
     {:ok, [
@@ -131,7 +142,8 @@ defmodule Exmbus.Apl do
     end
   end
 
-  defp finalize_format_frame({_len, format_signature}, <<>>, _opts, ctx) do
+  # TODO: should we check length?
+  defp finalize_format_frame({_len, format_signature}, <<>>, opts, ctx) do
     {rev_headers, ctx} =
       ctx
       |> Enum.split_while(fn
@@ -143,9 +155,18 @@ defmodule Exmbus.Apl do
       headers: Enum.reverse(rev_headers)
     }
 
-    {:ok, ^format_signature} = FormatFrame.format_signature(full_frame)
-
-    {:ok, [full_frame | ctx], <<>>}
+    check_result =
+      if Map.get(opts, :verify_format_signature, true) do
+        case FormatFrame.format_signature(full_frame) do
+          {:ok, ^format_signature} ->
+            :ok
+          {:ok, differing_format_signature} ->
+            {:error, {:format_signature_mismatch, %{expected: format_signature, got: differing_format_signature}}, ctx}
+        end
+      end
+    with :ok <- check_result do
+      {:ok, [full_frame | ctx], <<>>}
+    end
   end
   #
   # Compact Frame
@@ -158,7 +179,7 @@ defmodule Exmbus.Apl do
   # decrypt mode 5 bytes
   defp decrypt_mode_5(enc, opts, ctx) do
     {:ok, iv} = ctx_to_mode_5_iv(ctx)
-    {:ok, byte_keys} = Key.from_options(opts, ctx)
+    {:ok, byte_keys} = Key.get(opts, ctx)
 
     answer =
       Enum.find_value(byte_keys, fn
@@ -189,6 +210,14 @@ defmodule Exmbus.Apl do
         mode: m,
         encrypted_bytes: enc,
         plain_bytes: plain,
+      } | ctx]}
+  end
+  defp append_raw(bin, _opts, ctx) when is_list(ctx) do
+    {:ok,
+      [%Raw{
+        mode: 0,
+        encrypted_bytes: <<>>,
+        plain_bytes: bin,
       } | ctx]}
   end
 

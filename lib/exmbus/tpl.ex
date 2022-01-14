@@ -53,18 +53,24 @@ defmodule Exmbus.Tpl do
   This function will return an error if the first byte
   is not a CI field describing a transport layer.
   """
-  @spec parse(binary(), [any()], [map()]) :: {:ok, [map()]} | {:error, {:ci, integer()} | (reason :: any())}
+
   ##
-  ## format frames:
+  ## Format frames:
   ##
   # none
   def parse(<<0x69, rest::binary>>, opts, ctx) do
     finalize_tpl(:format_frame, %None{}, rest, opts, ctx)
   end
   # short
-  def parse(<<0x6A, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=short"
+  def parse(<<0x6A, rest::binary>>, opts, ctx) do
+    {:ok, header, rest} = parse_tpl_header_short(rest)
+    finalize_tpl(:format_frame, header, rest, opts, ctx)
+  end
   # long
-  def parse(<<0x6B, _rest::binary>>, _opts, _ctx), do: raise "TODO: MBus format frame tpl header=long"
+  def parse(<<0x6B, rest::binary>>, opts, ctx) do
+    {:ok, header, rest} = parse_tpl_header_long(rest)
+    finalize_tpl(:format_frame, header, rest, opts, ctx)
+  end
 
   ##
   ## Full frames:
@@ -83,6 +89,10 @@ defmodule Exmbus.Tpl do
     {:ok, header, rest} = parse_tpl_header_long(rest)
     finalize_tpl(:full_frame, header, rest, opts, ctx)
   end
+
+  ##
+  ## Compact frames:
+  ##
 
   # MBus compact long
   def parse(<<0x73, rest::binary>>, opts, ctx) do

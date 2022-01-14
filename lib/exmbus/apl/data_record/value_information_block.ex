@@ -3,7 +3,6 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock do
   The Value Information Block utilities
   """
 
-  alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
   alias __MODULE__, as: VIB
   alias Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableMain
 

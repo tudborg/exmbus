@@ -79,9 +79,11 @@ defmodule DataTypeTest do
   end
 
   # Type G
-
-
-
+  test "test encode_type_g/1 and decode_type_g/1" do
+    {:ok, ndt} = Date.new(2021, 12, 31)
+    {:ok, <<data::binary-size(2)>>} = DataType.encode_type_g(ndt)
+    {:ok, ^ndt, <<>>} = DataType.decode_type_g(data)
+  end
 
   # Type H
   for value <- [0.0, 1.0, 2.0, 0.5, 1.5, :nan, :positive_infinity, :negative_infinity] do

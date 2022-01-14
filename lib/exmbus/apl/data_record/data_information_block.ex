@@ -32,7 +32,7 @@ defmodule Exmbus.Apl.DataRecord.DataInformationBlock do
       # Idle filler, following byte is DIF, we could just recurse directly but let's keep the structure and return a special
       0x2 -> {:special_function, :idle_filler, rest}
       # special function range reserved for future use
-      r when r >= 0x3 and r <= 0x6 -> {:error, {:reserved, (r <<< 4) ||| 0xF}}
+      r when r >= 0x3 and r <= 0x6 -> {:error, {:reserved_special_function, (r <<< 4) ||| 0xF}, rest}
       # Global readout request (all storage numbers, units, tariffs, function fields)
       # TODO what does this mean exactly?
       0x7 -> {:special_function, :global_readout_request, rest}

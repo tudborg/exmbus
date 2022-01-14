@@ -2,6 +2,7 @@
 defmodule Exmbus.Apl.DataRecord do
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl.DataRecord.Header
+  alias Exmbus.Apl.DataRecord.Header.InvalidHeader
   alias Exmbus.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.DataType
@@ -13,12 +14,19 @@ defmodule Exmbus.Apl.DataRecord do
     data: nil,
   ]
 
+  defmodule InvalidDataRecord do
+    defstruct [
+      header: nil,
+      data: nil,
+    ]
+  end
+
   @doc """
   Decodes a single DataRecord from a binary.
   """
   def parse(bin, opts, ctx) do
     case Header.parse(bin, opts, ctx) do
-      {:ok, [header | ctx], rest} ->
+      {:ok, [%Header{}=header | ctx], rest} ->
         # parse data from rest
         case parse_data(header, rest) do
           {:ok, data, rest} ->
@@ -32,10 +40,12 @@ defmodule Exmbus.Apl.DataRecord do
       # only place that should know about what to do about them.
       {:special_function, _type, _rest}=s ->
         s
-      {:error, {:invalid_block, reason, %DIB{size: size}=dib}, rest} ->
-        # try to skip over the data of the header fails to parse
-        <<_::size(size), rest::binary>> = rest
-        {:error, {:invalid_block, reason, dib}, rest}
+      {:ok, [%InvalidHeader{}=header | ctx], rest} ->
+        case consume_data(header, rest) do
+          {:ok, raw, rest} ->
+            {:ok, [%InvalidDataRecord{header: header, data: raw} | ctx], rest}
+        end
+
     end
   end
 
@@ -45,7 +55,6 @@ defmodule Exmbus.Apl.DataRecord do
       {:ok, <<h_bytes::binary, d_bytes::binary>>, ctx}
     end
   end
-
 
   @doc """
   Retrieve the value of the DataRecord.
@@ -128,6 +137,12 @@ defmodule Exmbus.Apl.DataRecord do
       function_field: header.dib.function_field,
       description: header.vib.description,
     }
+  end
+
+  defp consume_data(%InvalidHeader{dib: %{size: size}}, bin) do
+    s = div(size, 8)
+    <<head::binary-size(s), rest::binary>> = bin
+    {:ok, head, rest}
   end
 
   @doc """

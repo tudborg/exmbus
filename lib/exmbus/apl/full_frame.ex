@@ -21,6 +21,6 @@ defmodule Exmbus.Apl.FullFrame do
         bytes
       end)
       |> Enum.into("")
-    {:ok, CRC.crc(:crc_16_en_13757, record_bytes)}
+    {:ok, Exmbus.crc!(record_bytes)}
   end
 end

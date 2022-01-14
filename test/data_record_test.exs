@@ -28,7 +28,7 @@ defmodule DataRecordTest do
     end
   end
 
-  describe "Regression: ABB-style energy reading" do
+  test "Regression: ABB-style energy reading" do
     record = %Exmbus.Apl.DataRecord{
       data: 455224,
       header: %Exmbus.Apl.DataRecord.Header{
