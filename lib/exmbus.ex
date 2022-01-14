@@ -3,30 +3,19 @@ defmodule Exmbus do
   Documentation for `Exmbus`.
   """
 
-  alias Exmbus.Message
-  alias Exmbus.Apl.DataRecord
-
-  def simplified!(bin, opts \\ %{})
-  def simplified!(bin, opts) when is_binary(bin) do
-    simplified!(parse!(bin, opts), opts)
+  def parse!(bin, opts \\ %{}) do
+    case parse(bin, opts) do
+      {:ok, result, <<>>} -> result
+      {:error, reason} -> raise "failed to parse: #{inspect reason}"
+    end
   end
-  def simplified!(%Message{manufacturer: manufacturer, identification_no: identification_no, device: device, version: version, records: records}, _opts) do
-    %{
-      manufacturer: manufacturer,
-      identification_no: identification_no,
-      device: device,
-      version: version,
-      records: case records do
-        a when is_atom(a) -> a
-        r -> Enum.map(r, &DataRecord.to_map!/1)
-      end
-    }
+  def parse(bin, opts \\ %{}, ctx \\ [])
+  def parse(bin, opts, ctx) when not is_map(opts) do
+    parse(bin, Enum.into(opts, %{}), ctx)
   end
-
-  def parse!(bin, opts \\ %{}), do: Message.parse!(bin, opts)
-  def parse(bin, opts \\ %{}), do: Message.parse(bin, opts)
-
-
+  def parse(bin, opts, ctx) when is_map(opts) and is_list(ctx) do
+    Exmbus.Dll.parse(bin, opts, ctx)
+  end
 
   @doc """
   Calculate the CRC relevant for mbus (crc_16_en_13757)

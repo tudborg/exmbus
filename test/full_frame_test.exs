@@ -1,7 +1,6 @@
 defmodule FullFrameTest do
   use ExUnit.Case
 
-  alias Exmbus.Message
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl
   alias Exmbus.Tpl
@@ -10,7 +9,7 @@ defmodule FullFrameTest do
 
   test "wmbus, unencrypted Table P.1 from en13757-3:2003" do
     datagram = Base.decode16!("2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F")
-    assert {:ok, %{}=message, <<>>} = Exmbus.parse(datagram, keep_layers: true)
+    assert {:ok, ctx, <<>>} = Exmbus.parse(datagram)
     assert [
       %Apl.FullFrame{
         records: [
@@ -90,7 +89,7 @@ defmodule FullFrameTest do
         },
       },
       %Wmbus{manufacturer: "ELS", identification_no: 12345678, device: :gas, version: 51, control: :snd_nr},
-    ] = message.layers
+    ] = ctx
   end
 
   test "wmbus, encrypted: mode 5 Table P.1 from en13757-3:2003" do
@@ -102,7 +101,7 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, %Message{layers: layers, records: :encrypted}, <<>>} = Exmbus.parse(datagram, keep_layers: true)
+    assert {:ok, layers, <<>>} = Exmbus.parse(datagram)
     assert [raw=%Apl.Raw{} | layers] = layers
     assert [_tpl=%Tpl{} | layers] = layers
     assert [_dll=%Wmbus{} | layers] = layers
@@ -113,7 +112,7 @@ defmodule FullFrameTest do
       plain_bytes: ""
     } = raw
 
-    assert {:ok, %Message{layers: nil, records: records}, <<>>} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
+    assert {:ok, [%Apl.FullFrame{records: records} | _], ""} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
 
@@ -134,7 +133,7 @@ defmodule FullFrameTest do
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :units_for_hca,    unit: nil,  value: 23456},
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25},
       ],
-    } = Exmbus.simplified!(datagram, key: Key.by_fn(keyfn))
+    } = Exmbus.Message.to_map!(datagram, key: Key.by_fn(keyfn))
   end
 
 end
