@@ -112,7 +112,7 @@ defmodule FullFrameTest do
       plain_bytes: ""
     } = raw
 
-    assert {:ok, [%Apl.FullFrame{records: records} | _], ""} = Exmbus.parse(datagram, key: Key.by_fn(keyfn))
+    assert {:ok, [%Apl.FullFrame{records: records} | _], ""} = Exmbus.parse(datagram, key: Key.by_fn!(keyfn))
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
 
