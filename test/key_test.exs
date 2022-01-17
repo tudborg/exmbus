@@ -32,6 +32,8 @@ defmodule KeyTest do
 
     # assert given a list of binary keys will return that list
     assert {:ok, [^key, ^key]} = Key.from_options!(%{key: [key, key]}).keyfn.(%{}, [])
+    # assert given an empty list returns an empty list
+    assert {:ok, []} = Key.from_options!(%{key: []}).keyfn.(%{}, [])
     # assert given a list of non-binary keys will FunctionClauseError
     assert_raise FunctionClauseError, fn -> Key.from_options!(%{key: [1,2]}).keyfn.(%{}, []) end
 

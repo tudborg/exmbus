@@ -45,6 +45,9 @@ defmodule Exmbus.Key do
   def from_options!(%{key: list_of_key_bytes}) when is_list(list_of_key_bytes) and is_binary(hd(list_of_key_bytes)) do
     %__MODULE__{keyfn: fn(_,_) -> {:ok, list_of_key_bytes} end}
   end
+  def from_options!(%{key: []}) do
+    %__MODULE__{keyfn: fn(_,_) -> {:ok, []} end}
+  end
   def from_options!(%{}=opts) when not is_map_key(opts, :key) do
     raise "the map key :key not found in options: #{inspect opts}"
   end
