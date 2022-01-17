@@ -1,5 +1,5 @@
-defmodule AplTest do
-  use ExUnit.Case
+defmodule KeyTest do
+  use ExUnit.Case, async: true
   alias Exmbus.Key
 
   doctest Exmbus.Key, import: true

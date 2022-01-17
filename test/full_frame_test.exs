@@ -1,5 +1,5 @@
 defmodule FullFrameTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl
@@ -133,7 +133,7 @@ defmodule FullFrameTest do
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :units_for_hca,    unit: nil,  value: 23456},
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25},
       ],
-    } = Exmbus.Message.to_map!(datagram, key: Key.by_fn(keyfn))
+    } = Exmbus.Message.to_map!(datagram, key: Key.by_fn!(keyfn))
   end
 
 end

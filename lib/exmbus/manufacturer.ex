@@ -10,6 +10,11 @@ defmodule Exmbus.Manufacturer do
     {:ok, int_to_manufacturer(man)}
   end
 
+  @doc """
+  Encode 3-letter manufacturer
+
+    iex> {:ok, <<0x93, 0x44>>} = encode("QDS")
+  """
   def encode(<<_,_,_>>=m) do
     i = manufacturer_to_int(m)
     {:ok, <<i::little-size(16)>>}

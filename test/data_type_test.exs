@@ -1,5 +1,5 @@
 defmodule DataTypeTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   alias Exmbus.DataType
 
   doctest Exmbus.DataType, import: true

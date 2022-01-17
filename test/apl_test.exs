@@ -1,5 +1,5 @@
 defmodule AplTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   # alias Exmbus.Apl
   # alias Exmbus.Tpl
 

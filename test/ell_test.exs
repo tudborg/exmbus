@@ -1,5 +1,5 @@
 defmodule EllTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   # alias Exmbus.Ell
 
   doctest Exmbus.Ell, import: true

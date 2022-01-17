@@ -1,5 +1,5 @@
 defmodule TplTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   doctest Exmbus.Tpl, import: true
 

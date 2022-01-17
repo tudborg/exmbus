@@ -1,5 +1,5 @@
 defmodule CompactFrameTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Exmbus.Tpl
   alias Exmbus.Apl

@@ -1,6 +1,6 @@
 defmodule OMSVol2AnnexNTest do
   # OMS Spec Vol2 Annex N D103 2020-10-22
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Exmbus.Apl.FullFrame
   alias Exmbus.Apl.DataRecord

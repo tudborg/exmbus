@@ -1,5 +1,5 @@
 defmodule DataRecordTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Exmbus.Apl.DataRecord
   alias Exmbus.Apl.DataRecord.Header
