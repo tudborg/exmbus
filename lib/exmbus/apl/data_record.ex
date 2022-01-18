@@ -82,6 +82,13 @@ defmodule Exmbus.Apl.DataRecord do
     {:error, {:unhandled_extension, ext}}
   end
 
+  def value!(record) do
+    case value(record) do
+      {:ok, value} -> value
+      {:error, reason} -> raise "could not get value from DataRecord, reason=#{inspect reason} record=#{inspect record}"
+    end
+  end
+
   @doc """
   Returns the unit for a DataRecord as a string.
   This string will have any relevant extensions added it to, so it might differ from the
