@@ -39,6 +39,9 @@ defmodule Exmbus.Key do
   def from_options!(%{key: %__MODULE__{}=key}) do
     key
   end
+  def from_options!(%{key: fun}) when is_function(fun, 2) do
+    __MODULE__.by_fn!(fun)
+  end
   def from_options!(%{key: key_bytes}) when is_binary(key_bytes) do
     %__MODULE__{keyfn: fn(_,_) -> {:ok, [key_bytes]} end}
   end
