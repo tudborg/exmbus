@@ -19,8 +19,8 @@ defmodule Exmbus.Key do
   def get(%__MODULE__{keyfn: keyfn}, opts, ctx) do
     case keyfn.(opts, ctx) do
       {:ok, keys} when is_list(keys) -> {:ok, keys}
-      {:error, reason} -> {:error, reason, ctx}
-      {:error, _e, error_ctx}=e when is_list(error_ctx) -> e
+      {:error, reason} -> {:error, {:keyfn_error, reason}, ctx}
+      {:error, reason, error_ctx} when is_list(error_ctx) -> {:error, {:keyfn_error, reason}, ctx}
     end
   end
 
