@@ -13,4 +13,20 @@ defmodule Exmbus.Dll do
     Wmbus.parse(bin, opts, ctx)
   end
 
+  # getters
+  def manufacturer([%Wmbus{manufacturer: m} | _]), do: m
+  def manufacturer([_ | ctx]), do: manufacturer(ctx)
+  def manufacturer([]), do: nil
+
+  def identification_no([%Wmbus{identification_no: m} | _]), do: m
+  def identification_no([_ | ctx]), do: identification_no(ctx)
+  def identification_no([]), do: nil
+
+  def version([%Wmbus{version: m} | _]), do: m
+  def version([_ | ctx]), do: version(ctx)
+  def version([]), do: nil
+
+  def device([%Wmbus{device: m} | _]), do: m
+  def device([_ | ctx]), do: device(ctx)
+  def device([]), do: nil
 end

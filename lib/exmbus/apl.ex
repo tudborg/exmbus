@@ -50,8 +50,8 @@ defmodule Exmbus.Apl do
   end
 
   # when encryption mode is 5 and key option is set:
-  defp parse_apl(%{key: _}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]) do
-    with {:ok, decrypted} <- decrypt_mode_5(enc, opts, ctx) do
+  defp parse_apl(%{key: _}=opts, [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx]=full_ctx) do
+    with {:ok, decrypted} <- decrypt_mode_5(enc, opts, full_ctx) do
       parse_apl(opts, [%Raw{mode: 0, plain_bytes: <<decrypted::binary, plain::binary>>, encrypted_bytes: <<>>} | ctx])
     end
   end
@@ -179,24 +179,26 @@ defmodule Exmbus.Apl do
   # decrypt mode 5 bytes
   defp decrypt_mode_5(enc, opts, ctx) do
     {:ok, iv} = ctx_to_mode_5_iv(ctx)
-    {:ok, byte_keys} = Key.get(opts, ctx)
 
-    answer =
-      Enum.find_value(byte_keys, fn
-        (byte_key) when byte_size(byte_key) == 16 ->
-          case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
-            <<0x2f, 0x2f, rest::binary>> -> {:ok, rest}
-            _ -> nil # not the valid key
-          end
-        (byte_key) ->
-          {:error, {:invalid_key, {:not_16_bytes, byte_key}}, ctx}
-      end)
+    with {:ok, byte_keys} <- Key.get(opts, ctx) do
+      answer =
+        Enum.find_value(byte_keys, fn
+          (byte_key) when byte_size(byte_key) == 16 ->
+            case :crypto.block_decrypt(:aes_cbc, byte_key, iv, enc) do
+              <<0x2f, 0x2f, rest::binary>> -> {:ok, rest}
+              _ -> nil # not the valid key
+            end
+          (byte_key) ->
+            {:error, {:invalid_key, {:not_16_bytes, byte_key}}, ctx}
+        end)
 
-    case answer do
-      {:ok, _bin}=ok -> ok
-      {:error, _reason, _ctx}=e -> e
-      nil -> {:error, {:mode_5_decryption_failed, byte_keys}, ctx}
+      case answer do
+        {:ok, _bin}=ok -> ok
+        {:error, _reason, _ctx}=e -> e
+        nil -> {:error, {:mode_5_decryption_failed, byte_keys}, ctx}
+      end
     end
+
   end
 
 
@@ -222,7 +224,7 @@ defmodule Exmbus.Apl do
   end
 
   # Generate the IV for mode 5 encryption
-  defp ctx_to_mode_5_iv([%Tpl{header: %Tpl.Short{access_no: a_no}}, %Wmbus{}=wmbus | _]) do
+  defp ctx_to_mode_5_iv([_, %Tpl{header: %Tpl.Short{access_no: a_no}}, %Wmbus{}=wmbus | _]) do
     %Wmbus{manufacturer: m, identification_no: i, version: v, device: d} = wmbus
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(i, 32)
@@ -230,7 +232,7 @@ defmodule Exmbus.Apl do
     {:ok, <<man_bytes::binary, id_bytes::binary, v, device_byte::binary,
             a_no, a_no, a_no, a_no, a_no, a_no, a_no, a_no>>}
   end
-  defp ctx_to_mode_5_iv([%Tpl{header: %Tpl.Long{}=header} | _]) do
+  defp ctx_to_mode_5_iv([_, %Tpl{header: %Tpl.Long{}=header} | _]) do
     %Tpl.Long{manufacturer: m, identification_no: id, version: v, device: d, access_no: a_no} = header
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(id, 32)
