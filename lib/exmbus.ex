@@ -6,7 +6,8 @@ defmodule Exmbus do
   def parse!(bin, opts \\ %{}) do
     case parse(bin, opts) do
       {:ok, result, <<>>} -> result
-      {:error, reason} -> raise "failed to parse: #{inspect reason}"
+      {:error, reason} -> raise "failed to parse. reason=#{inspect reason}"
+      {:error, reason, ctx} -> raise "failed to parse. reason=#{inspect reason} ctx=#{inspect ctx}"
     end
   end
   def parse(bin, opts \\ %{}, ctx \\ [])
