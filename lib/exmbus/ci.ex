@@ -29,8 +29,8 @@ defmodule Exmbus.CI do
         raise "Not implemented: CI=#{Exmbus.Debug.u8_to_hex_str(ci)} #{what} (symbol=#{symbol}), #{note}."
 
       # lookup error:
-      {:error, _reason}=e ->
-        e
+      {:error, reason} ->
+        {:error, reason, ctx}
     end
   end
 
