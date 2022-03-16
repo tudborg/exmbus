@@ -6,7 +6,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFB do
 
   # Table 0xFB from table 14 in EN 13757-3:2018 section 6.4.5
   def parse(<<e::1, 0b000000::6, n::1, rest::binary>>, opts, ctx),   do: Vife.parse(e, rest, opts, [%VIB{table: :fb, description: :energy, multiplier: pow10to(n-1), unit: "MWh"} | ctx])
-  def parse(<<e::1, 0b000001::6, n::1, rest::binary>>, opts, ctx),   do: Vife.parse(e, rest, opts, [%VIB{table: :fb, description: :reactive_energy, multiplier: pow10to(n), unit: "kvarh"} | ctx])
+  def parse(<<e::1, 0b000001::6, n::1, rest::binary>>, opts, ctx),   do: Vife.parse(e, rest, opts, [%VIB{table: :fb, description: :reactive_energy, multiplier: pow10to(n), unit: "kVARh"} | ctx])
   def parse(<<e::1, 0b000010::6, n::1, rest::binary>>, opts, ctx),   do: Vife.parse(e, rest, opts, [%VIB{table: :fb, description: :apparent_energy, multiplier: pow10to(n), unit: "kVAh"} | ctx])
   def parse(<<e::1, 0b000011::6, _::1, rest::binary>>, _opts, ctx),  do: Vife.error(e, rest, {:reserved, "VIF E000011n reserved"}, ctx)
   def parse(<<e::1, 0b000100::6, n::1, rest::binary>>, opts, ctx),   do: Vife.parse(e, rest, opts, [%VIB{table: :fb, description: :energy, multiplier: pow10to(n-1), unit: "GJ"} | ctx])

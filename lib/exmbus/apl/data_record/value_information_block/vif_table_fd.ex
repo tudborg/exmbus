@@ -46,6 +46,8 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   def parse(<<e::1, 0b011_1010::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :dimensionless} | ctx])
   def parse(<<e::1, 0b011_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: {:container, :wmbus}} | ctx])
   def parse(<<e::1, 0b011_11::5, nn::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: :period_of_nominal_data_transmissions, unit: on_time_unit(nn)} | ctx])
+  def parse(<<e::1, 0b100::3, nnnn::4, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :volts, multiplier: pow10to(nnnn-9), unit: "V"} | ctx])
+  def parse(<<e::1, 0b101::3, nnnn::4, rest::binary>>, opts, ctx),  do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :amperes, multiplier: pow10to(nnnn-12), unit: "A"} | ctx])
   # ... skipped some vifs ...
   def parse(<<e::1, 0b110_0000::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :reset_counter} | ctx])
   def parse(<<e::1, 0b110_0001::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :cumulation_counter} | ctx])
@@ -85,4 +87,17 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   defp on_time_unit(0b10), do: "hours"
   defp on_time_unit(0b11), do: "days"
 
+
+  # returns 10^power but makes sure it is only a float if it has to be.
+  # since we know it's 10^pow we can round to integers when the result is >= 1.0
+  # we do this because that way we can maintain the appearance (and infinite precision) of BEAM integers
+  # where possible, however this also means that the datatype of the final multiplication differs
+  # depending on the datatype, allowing the same kind of value to be both float and integer.
+  # If this is relevant, the user can coerce from int to float where needed. The other way is harder.
+  defp pow10to(power) do
+    case :math.pow(10, power) do
+      f when f < 1.0 -> f
+      i when i >= 1.0 -> round(i)
+    end
+  end
 end
