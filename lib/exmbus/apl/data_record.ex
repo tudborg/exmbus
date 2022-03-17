@@ -57,13 +57,24 @@ defmodule Exmbus.Apl.DataRecord do
   end
 
   @doc """
-  Retrieve the value of the DataRecord.
+  Retrieve the simplified value of the DataRecord.
   The value is calculated from the decoded data, modified with added extensions
   found in the header.
   """
   @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
   def value(%DataRecord{header: _, data: {:invalid, _}}) do
     {:ok, :invalid}
+  end
+  def value(%DataRecord{header: %{vib: %{extensions: vib_extensions, multiplier: mul}}, data: data}) do
+    try do
+      value =
+        data
+        |> value_vib_multiplier(mul)
+        |> value_vib_extensions(vib_extensions)
+      {:ok, value}
+    catch
+      {:error, _}=e -> e
+    end
   end
   # The trivial case, no extensions, no multiplier. The data is the data.
   def value(%DataRecord{header: %{vib: %{extensions: [], multiplier: nil}}, data: data}) do
@@ -82,6 +93,16 @@ defmodule Exmbus.Apl.DataRecord do
     {:error, {:unhandled_extension, ext}}
   end
 
+  defp value_vib_multiplier(value, nil),do: value
+  defp value_vib_multiplier(value, mul),do: value * mul
+
+  defp value_vib_extensions(value, []), do: value
+  defp value_vib_extensions(value, [{:multiplicative_correction_factor, factor} | rest]), do: value_vib_extensions(value * factor, rest)
+  defp value_vib_extensions(value, [{:additive_correction_constant, constant} | rest]), do: value_vib_extensions(value + constant, rest)
+  defp value_vib_extensions(value, [{:record_error, :none} | rest]), do: value_vib_extensions(value, rest)
+  defp value_vib_extensions(_value, [{:record_error, _}=reason | _rest]), do: throw({:error, reason})
+  defp value_vib_extensions(value, [_ | rest]), do: value_vib_extensions(value, rest) # We ignore rest of extensions
+
   def value!(record) do
     case value(record) do
       {:ok, value} -> value
@@ -98,42 +119,49 @@ defmodule Exmbus.Apl.DataRecord do
   def unit(%DataRecord{header: %{vib: vib}}) do
     unit(vib)
   end
-  def unit(%VIB{extensions: [], unit: unit}) do
-    {:ok, unit}
-  end
-  def unit(%VIB{extensions: [{:record_error, :none} | tail]}=vib) do
-    # We ignore a record_error: :none
-    unit(%VIB{vib | extensions: tail})
-  end
-  def unit(%VIB{extensions: [ext|_]}) do
-    {:error, {:unhandled_extension, ext}}
+  def unit(%VIB{extensions: exts, unit: unit}) do
+    try do
+      unit =
+        unit
+        |> unit_vib_extensions(exts)
+      {:ok, unit}
+    catch
+      {:error, _}=e -> e
+    end
   end
 
+  def unit!(record) do
+    case unit(record) do
+      {:ok, unit} -> unit
+      {:error, reason} -> raise "could not get unit from DataRecord, reason=#{inspect reason} record=#{inspect record}"
+    end
+  end
 
-  def to_map!(%DataRecord{data: raw_data, header: %{vib: %{unit: raw_unit}}=header}=dr) do
+  defp unit_vib_extensions(unit, []), do: unit
+  defp unit_vib_extensions(unit, [{:record_error, :none} | rest]), do: unit_vib_extensions(unit, rest)
+  defp unit_vib_extensions(_unit, [{:record_error, _}=reason | _rest]), do: throw({:error, reason})
+  defp unit_vib_extensions(unit, [{:per, :interval, i} | rest]), do: unit_vib_extensions("#{unit}/#{interval_to_string(i)}", rest)
+  defp unit_vib_extensions(unit, [{:per, :unit, u} | rest]), do: unit_vib_extensions("#{unit}/#{u}", rest)
+  defp unit_vib_extensions(unit, [{:multiplied_by, u} | rest]), do: unit_vib_extensions("#{unit}#{u}", rest)
+  defp unit_vib_extensions(unit, [_ | rest]), do: unit_vib_extensions(unit, rest) # NOTE: we ignore rest of extensions
+
+  defp interval_to_string(:second), do: "s"
+  defp interval_to_string(:minute), do: "min"
+  defp interval_to_string(:hour), do: "h"
+  defp interval_to_string(:day), do: "day"
+  defp interval_to_string(:month), do: "month"
+  defp interval_to_string(:year), do: "year"
+
+  def to_map!(%DataRecord{header: header}=dr) do
     unit =
       case unit(dr) do
         {:ok, u} ->
           u
-        {:error, {:unhandled_extension, _ext}} ->
-          # an unknown extension existed in this data record.
-          # for that reason, we cannot be certain of what the real value should
-          # have been, since the unknown extension might modify it.
-          # we return a {:raw, _} tuple to allow for debugability.
-          # Notice that a tuple will not correctly JSON encode.
-          {:raw, raw_unit}
       end
     value =
       case value(dr) do
         {:ok, v} ->
           v
-        {:error, {:unhandled_extension, _ext}} ->
-          # an unknown extension existed in this data record.
-          # for that reason, we cannot be certain of what the real value should
-          # have been, since the unknown extension might modify it.
-          # we return a {:raw, _} tuple to allow for debugability.
-          # Notice that a tuple will not correctly JSON encode.
-          {:raw, raw_data}
       end
     %{
       unit: unit,
@@ -143,6 +171,7 @@ defmodule Exmbus.Apl.DataRecord do
       storage: header.dib.storage,
       function_field: header.dib.function_field,
       description: header.vib.description,
+      extensions: header.vib.extensions
     }
   end
 
