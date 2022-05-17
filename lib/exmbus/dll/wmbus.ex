@@ -16,11 +16,50 @@ defmodule Exmbus.Dll.Wmbus do
     device: nil,
   ]
 
+  defp validate_frame_format_a(<<len, rest::binary>>) do
+    {:error, :frame_format_a_not_implemented}
+  end
+
+  defp  validate_frame_format_b(<<len, rest::binary>>) when byte_size(rest) == len do
+    raise "TODO convert to plain format (No length, no CRC) and return {:ok, plain_binary}"
+  end
+  defp  validate_frame_format_b(bin) do
+    {:error, {:not_valid_frame_format_b, bin}}
+  end
+
   @doc """
   Parse a wmbus message
   """
-  def parse(<<len, rest::binary>>, %{length: true, crc: false}=opts, ctx) when byte_size(rest) == len do
-    parse(rest, %{opts | length: false}, ctx)
+
+  # Expect length and crc in frame: Check CRC and length match.
+  # Be aware of Frame format A vs B
+  def parse(<<_len, _rest::binary>> = bin, %{length: true, crc: true}=opts, ctx) do
+    case validate_frame_format_b(bin) do
+      {:ok, valid_bin} ->
+        parse(valid_bin, %{opts | length: false, crc: false}, ctx)
+      {:error, {:not_valid_frame_format_b, _}} ->
+        case validate_frame_format_a(bin) do
+          {:ok, valid_bin} ->
+            parse(valid_bin, %{opts | length: false, crc: false}, ctx)
+          {:error, {:not_valid_frame_format_a, _}} ->
+            {:error, {:error, {:bad_length_or_crc, bin}}, ctx}
+        end
+    end
+  end
+
+  # length is set, but CRC isn't. Assume a pre-process step has checked and removed CRC.
+  # But length is still here, which is weird because the length depends on the frame format (A or B) which can
+  # either be including or excluding CRC.
+  # At this point, we don't know the frame format, so we can't validate the length.
+  # There is a chance that this isn't wmbus length but some other application's length.
+  # A same assumption is that length describes the length if `rest`, but that is _an assumption!_
+  # We just can't really validate the length here.
+  def parse(<<len, rest::binary>>, %{length: true, crc: false}=opts, ctx) do
+    if byte_size(rest) == len or Map.get(opts, :ignore_length, false) do
+      parse(rest, %{opts | length: false}, ctx)
+    else
+      {:error, :bad_length}
+    end
   end
 
   def parse(<<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v, d::binary-size(1), rest::binary>>, %{length: false, crc: false}=opts, ctx) do
@@ -41,7 +80,7 @@ defmodule Exmbus.Dll.Wmbus do
 
   # set some defaults.
   # maybe move this out of the core parsing logic.
-  def parse(bin, %{}=opts, ctx) when not is_map_key(opts, :length), do: parse(bin, Map.put(opts, :length, true), ctx)
+  def parse(bin, %{}=opts, ctx) when not is_map_key(opts, :length), do: parse(bin, Map.put(opts, :length, false), ctx)
   def parse(bin, %{}=opts, ctx) when not is_map_key(opts, :crc),    do: parse(bin, Map.put(opts, :crc, false), ctx)
 
   @doc """

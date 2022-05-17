@@ -31,28 +31,35 @@ defmodule Exmbus.Key do
   See get/3
   """
   def get(%{}=opts, ctx) do
-    with key <- from_options!(opts) do
+    with {:ok, key} <- from_options(opts) do
       get(key, opts, ctx)
     end
   end
 
-  def from_options!(%{key: %__MODULE__{}=key}) do
-    key
+  def from_options(%{key: %__MODULE__{}=key}) do
+    {:ok, key}
   end
-  def from_options!(%{key: fun}) when is_function(fun, 2) do
-    __MODULE__.by_fn!(fun)
+  def from_options(%{key: fun}) when is_function(fun, 2) do
+    {:ok, __MODULE__.by_fn!(fun)}
   end
-  def from_options!(%{key: key_bytes}) when is_binary(key_bytes) do
-    %__MODULE__{keyfn: fn(_,_) -> {:ok, [key_bytes]} end}
+  def from_options(%{key: key_bytes}) when is_binary(key_bytes) do
+    {:ok, %__MODULE__{keyfn: fn(_,_) -> {:ok, [key_bytes]} end}}
   end
-  def from_options!(%{key: list_of_key_bytes}) when is_list(list_of_key_bytes) and is_binary(hd(list_of_key_bytes)) do
-    %__MODULE__{keyfn: fn(_,_) -> {:ok, list_of_key_bytes} end}
+  def from_options(%{key: list_of_key_bytes}) when is_list(list_of_key_bytes) and is_binary(hd(list_of_key_bytes)) do
+    {:ok, %__MODULE__{keyfn: fn(_,_) -> {:ok, list_of_key_bytes} end}}
   end
-  def from_options!(%{key: []}) do
-    %__MODULE__{keyfn: fn(_,_) -> {:ok, []} end}
+  def from_options(%{key: []}) do
+    {:ok, %__MODULE__{keyfn: fn(_,_) -> {:ok, []} end}}
   end
-  def from_options!(%{}=opts) when not is_map_key(opts, :key) do
-    raise "the map key :key not found in options: #{inspect opts}"
+  def from_options(%{}=opts) when not is_map_key(opts, :key) do
+    {:error, {:no_key_in_options, opts}}
+  end
+
+  def from_options!(opts) do
+    case from_options(opts) do
+      {:ok, key} -> key
+      {:error, reason} -> raise "could not retrieve key from options: #{inspect reason}"
+    end
   end
 
 end

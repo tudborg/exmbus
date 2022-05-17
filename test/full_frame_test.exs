@@ -9,7 +9,7 @@ defmodule FullFrameTest do
 
   test "wmbus, unencrypted Table P.1 from en13757-3:2003" do
     datagram = Base.decode16!("2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F")
-    assert {:ok, ctx, <<>>} = Exmbus.parse(datagram)
+    assert {:ok, ctx, <<>>} = Exmbus.parse(datagram, length: true, crc: false)
     assert [
       %Apl.FullFrame{
         records: [
@@ -101,7 +101,7 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, layers, <<>>} = Exmbus.parse(datagram)
+    assert {:ok, layers, <<>>} = Exmbus.parse(datagram, length: true, crc: true)
     assert [raw=%Apl.Raw{} | layers] = layers
     assert [_tpl=%Tpl{} | layers] = layers
     assert [_dll=%Wmbus{} | layers] = layers
@@ -112,12 +112,15 @@ defmodule FullFrameTest do
       plain_bytes: ""
     } = raw
 
-    assert {:ok, [%Apl.FullFrame{records: records} | _], ""} = Exmbus.parse(datagram, key: Key.by_fn!(keyfn))
+    assert {:ok, [%Apl.FullFrame{records: records} | _], ""} = Exmbus.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
 
   test "wmbus, encrypted: mode 5 Table F.2 from CEN/TR 17167:2018" do
-    datagram = Base.decode16!("294493444433221155087288776655934455080004100500DFE2A782146D1513581CD2F83F3904015B19")
+    # without length and CRC:
+    # datagram = Base.decode16!("4493444433221155087288776655934455080004100500DFE2A782146D1513581CD2F83F3904015B19")
+    # with length and CRC:
+    datagram = Base.decode16!("294493444433221155086CB17288776655934455080004100500DFE227F9A782146D1513581CD2F83F3904015B196109")
     key = <<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F>>
     keyfn = fn (_parsed, _opts) ->
       {:ok, [key]}
@@ -133,7 +136,7 @@ defmodule FullFrameTest do
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 1, description: :units_for_hca,    unit: nil,  value: 23456},
         %{function_field: :instantaneous, device: 0, tariff: 0, storage: 0, description: :flow_temperature, unit: "°C", value: 25},
       ],
-    } = Exmbus.Message.to_map!(datagram, key: Key.by_fn!(keyfn))
+    } = Exmbus.Message.to_map!(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
   end
 
 end

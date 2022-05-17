@@ -63,8 +63,12 @@ defmodule Exmbus.Tpl do
   end
   # short
   def parse(<<0x6A, rest::binary>>, opts, ctx) do
-    {:ok, header, rest} = parse_tpl_header_short(rest)
-    finalize_tpl(:format_frame, header, rest, opts, ctx)
+    with {:ok, header, rest} <- parse_tpl_header_short(rest) do
+      finalize_tpl(:format_frame, header, rest, opts, ctx)
+    else
+      {:error, reason} ->
+        {:error, reason, ctx}
+    end
   end
   # long
   def parse(<<0x6B, rest::binary>>, opts, ctx) do
@@ -81,8 +85,12 @@ defmodule Exmbus.Tpl do
   end
   # MBus full frame short
   def parse(<<0x7A, rest::binary>>, opts, ctx) do
-    {:ok, header, rest} = parse_tpl_header_short(rest)
-    finalize_tpl(:full_frame, header, rest, opts, ctx)
+    with {:ok, header, rest} <- parse_tpl_header_short(rest) do
+      finalize_tpl(:full_frame, header, rest, opts, ctx)
+    else
+      {:error, reason} ->
+        {:error, reason, ctx}
+    end
   end
   # MBus full frame long
   def parse(<<0x72, rest::binary>>, opts, ctx) do
@@ -105,8 +113,12 @@ defmodule Exmbus.Tpl do
   end
   # MBus compact short
   def parse(<<0x7B, rest::binary>>, opts, ctx) do
-    {:ok, header, rest} = parse_tpl_header_short(rest)
-    finalize_tpl(:compact_frame, header, rest, opts, ctx)
+    with {:ok, header, rest} <- parse_tpl_header_short(rest) do
+      finalize_tpl(:compact_frame, header, rest, opts, ctx)
+    else
+      {:error, reason} ->
+        {:error, reason, ctx}
+    end
   end
 
 
@@ -158,13 +170,16 @@ defmodule Exmbus.Tpl do
   # it might have extensions, so we leave the parsing to ConfigurationField.decode/1
   def parse_tpl_header_short(<<access_no, status_byte::binary-size(1), rest::binary>>) do
     status = Status.decode(status_byte)
-    {:ok, configuration_field, rest} = ConfigurationField.decode(rest)
-    header = %Short{
-      access_no: access_no,
-      status: status,
-      configuration_field: configuration_field,
-    }
-    {:ok, header, rest}
+    with {:ok, configuration_field, rest} <- ConfigurationField.decode(rest) do
+      header = %Short{
+        access_no: access_no,
+        status: status,
+        configuration_field: configuration_field,
+      }
+      {:ok, header, rest}
+    else
+      {:error, _}=e -> e
+    end
   end
   @doc """
   Decode a TPL long header.

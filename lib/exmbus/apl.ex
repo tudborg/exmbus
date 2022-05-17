@@ -197,6 +197,9 @@ defmodule Exmbus.Apl do
         {:error, _reason, _ctx}=e -> e
         nil -> {:error, {:mode_5_decryption_failed, byte_keys}, ctx}
       end
+    else
+      {:error, e} ->
+        {:error, e, ctx}
     end
 
   end

@@ -106,7 +106,9 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b0111010::7, rest::binary>>, opts, acc), do: exts(e, rest, opts, [:vif_contains_uncorrected_unit_or_value | acc])
   defp exts(1, <<e::1, 0b0111011::7, rest::binary>>, opts, acc), do: exts(e, rest, opts, [{:accumulation_only, :forward_flow} | acc])
   defp exts(1, <<e::1, 0b0111100::7, rest::binary>>, opts, acc), do: exts(e, rest, opts, [{:accumulation_only, :backward_flow} | acc])
-  defp exts(1, <<_::1, 0b0111101::7, _rest::binary>>, _opts, _acc), do: raise "E011 1101 non-metric unit system not supported"
+  #defp exts(1, <<_::1, 0b0111101::7, _rest::binary>>, _opts, _acc), do: raise "E011 1101 non-metric unit system not supported"
+  # TODO, fix support for this:
+  defp exts(1, <<e::1, 0b0111101::7, rest::binary>>, opts, acc), do: exts(e, rest, opts, [{:todo, :alternate_non_metric_unit_system} | acc])
   defp exts(1, <<e::1, 0b0111110::7, rest::binary>>, opts, acc), do: exts(e, rest, opts, [:value_at_base_condition | acc])
   defp exts(1, <<_::1, 0b0111111::7, _rest::binary>>, _opts, _acc), do: raise "E011 1111 OBIS-declaration not supported"
   defp exts(1, <<e::1, 0b100::3, 0::1, 000::7, rest::binary>>, opts, acc), do: exts(e, rest, opts, [{:limit_value, :lower} | acc])

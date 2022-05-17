@@ -42,6 +42,10 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   def parse(<<e::1, 0b010_1001::7, rest::binary>>, opts,      ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: {:storage_interval, :year}} | ctx])
   def parse(<<e::1, 0b010_1010::7, rest::binary>>, opts,      ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :operator_specific_data} | ctx])
   def parse(<<e::1, 0b010_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: :time_point_second} | ctx])
+  def parse(<<e::1, 0b010_11::5, 0b00::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :second}} | ctx])
+  def parse(<<e::1, 0b010_11::5, 0b01::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :minute}} | ctx])
+  def parse(<<e::1, 0b010_11::5, 0b10::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :hour}} | ctx])
+  def parse(<<e::1, 0b010_11::5, 0b11::2, rest::binary>>, opts, ctx), do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :day}} | ctx])
   # ... skipped some vifs ...
   def parse(<<e::1, 0b011_1010::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: :dimensionless} | ctx])
   def parse(<<e::1, 0b011_1011::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: {:container, :wmbus}} | ctx])
@@ -58,7 +62,7 @@ defmodule Exmbus.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   def parse(<<e::1, 0b111_0101::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, coding: fd_remark_k(ctx), description: :number_of_times_meter_was_stopped} | ctx])
   def parse(<<e::1, 0b111_0110::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, [%VIB{table: :fd, description: {:container, :manufacturer}} | ctx])
   # ... skipped some vifs ...
-  def parse(<<e::1, vif::7, rest::binary>>, _opts, ctx) do
+  def parse(<<_::1, vif::7, rest::binary>>, _opts, ctx) do
     raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.u8_to_hex_str(vif)} (#{Exmbus.Debug.u8_to_binary_str(vif)}), ctx was: #{inspect ctx}, rest was: #{inspect rest}"
   end
 

@@ -105,6 +105,9 @@ defmodule Exmbus.Ell do
 
     with {:ok, keys} <- Exmbus.Key.get(opts, ctx) do
       try_decrypt_and_verify(bin, icb, ctx, keys, [])
+    else
+      {:error, e} ->
+        {:error, e, ctx}
     end
   end
 
