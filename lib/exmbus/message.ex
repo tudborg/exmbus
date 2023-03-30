@@ -94,7 +94,7 @@ defmodule Exmbus.Message do
 
   def from_layers(layers, opts) when is_map(opts) do
     # Gather manufacturer, identification number, device, version
-    {:ok, {m, i, d, v}} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
+    {:ok, id} = gather_m_i_d_v(layers, nil, nil, nil, nil, opts)
     {:ok, records} = gather_records(layers, opts)
     # If we successfully gathered records, we only keep the original layers list
     # if :keep_layers is set true in the options.
@@ -108,23 +108,27 @@ defmodule Exmbus.Message do
      %__MODULE__{
        layers: layers,
        records: records,
-       manufacturer: m,
-       identification_no: i,
-       device: d,
-       version: v
+       manufacturer: id.manufacturer,
+       identification_no: id.identification_no,
+       device: id.device,
+       version: id.version
      }}
+  end
+
+  def identity(layers) do
+    gather_m_i_d_v(layers, nil, nil, nil, nil, [])
   end
 
   # Gather manufacturer, identification number, device, version from parsed layers,
   # returning as soon as we have found it.
   defp gather_m_i_d_v(_, m, i, d, v, _opts)
        when not (is_nil(m) or is_nil(i) or is_nil(d) or is_nil(v)) do
-    {:ok, {m, i, d, v}}
+    {:ok, %{manufacturer: m, identification_no: i, device: d, version: v}}
   end
 
   # error if we fail. Shouldn't happen for valid parse results
   defp gather_m_i_d_v([], m, i, d, v, _opts) do
-    {:error, {:could_not_gather_m_i_d_v, {m, i, d, v}}}
+    {:error, {:found_only, {m, i, d, v}}}
   end
 
   # Gather from APL
