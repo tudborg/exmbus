@@ -2,14 +2,17 @@ defmodule OMSVol2AnnexNTest do
   # OMS Spec Vol2 Annex N D103 2020-10-22
   use ExUnit.Case, async: true
 
-  alias Exmbus.Apl.FullFrame
-  alias Exmbus.Apl.DataRecord
-  alias Exmbus.Tpl
-  alias Exmbus.Tpl.Short
-  alias Exmbus.Tpl.Status
-  alias Exmbus.Tpl.ConfigurationField
-  alias Exmbus.Dll.Wmbus
-  alias Exmbus.Dll.Mbus
+  alias Exmbus.Parser.Apl
+  alias Exmbus.Parser.Ell
+  alias Exmbus.Parser.Tpl
+  alias Exmbus.Parser.Dll
+  alias Exmbus.Parser.Apl.FullFrame
+  alias Exmbus.Parser.Apl.DataRecord
+  alias Exmbus.Parser.Tpl.Short
+  alias Exmbus.Parser.Tpl.Status
+  alias Exmbus.Parser.Tpl.ConfigurationField
+  alias Exmbus.Parser.Dll.Wmbus
+  alias Exmbus.Parser.Dll.Mbus
 
   describe "N.2. Gas Meter" do
     test "N.2.1. wM-Bus Meter with Security profile A" do
@@ -119,14 +122,14 @@ defmodule OMSVol2AnnexNTest do
       assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{}, [])
 
       assert [
-               %Exmbus.Apl.FullFrame{
+               %Apl.FullFrame{
                  manufacturer_bytes: "",
                  records: [
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: 2_850_427,
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_a,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :bcd,
                          device: 0,
                          function_field: :instantaneous,
@@ -134,7 +137,7 @@ defmodule OMSVol2AnnexNTest do
                          storage: 0,
                          tariff: 0
                        },
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: nil,
                          description: :volume,
                          extensions: [],
@@ -144,11 +147,11 @@ defmodule OMSVol2AnnexNTest do
                        }
                      }
                    },
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: ~N[2008-05-31 23:50:00],
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_f,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :int_or_bin,
                          device: 0,
                          function_field: :instantaneous,
@@ -156,7 +159,7 @@ defmodule OMSVol2AnnexNTest do
                          storage: 0,
                          tariff: 0
                        },
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: :type_f,
                          description: :naive_datetime,
                          extensions: [],
@@ -166,7 +169,7 @@ defmodule OMSVol2AnnexNTest do
                        }
                      }
                    },
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: [
                        false,
                        false,
@@ -185,9 +188,9 @@ defmodule OMSVol2AnnexNTest do
                        false,
                        false
                      ],
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_d,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :int_or_bin,
                          device: 0,
                          function_field: :instantaneous,
@@ -195,7 +198,7 @@ defmodule OMSVol2AnnexNTest do
                          storage: 0,
                          tariff: 0
                        },
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: :type_d,
                          description: :error_flags,
                          extensions: [],
@@ -207,11 +210,11 @@ defmodule OMSVol2AnnexNTest do
                    }
                  ]
                },
-               %Exmbus.Tpl{
+               %Tpl{
                  frame_type: :full_frame,
-                 header: %Exmbus.Tpl.Long{
+                 header: %Tpl.Long{
                    access_no: 42,
-                   configuration_field: %Exmbus.Tpl.ConfigurationField{
+                   configuration_field: %Tpl.ConfigurationField{
                      accessibility: false,
                      bidirectional: false,
                      blocks: nil,
@@ -224,7 +227,7 @@ defmodule OMSVol2AnnexNTest do
                    device: :gas,
                    identification_no: 12_345_678,
                    manufacturer: "ELS",
-                   status: %Exmbus.Tpl.Status{
+                   status: %Tpl.Status{
                      application_status: :no_error,
                      low_power: false,
                      manufacturer_status: 0,
@@ -247,29 +250,29 @@ defmodule OMSVol2AnnexNTest do
     # ACC-NR is not yet implemented
     @tag :skip
     test "N.5.2 wM-Bus Example with ACC-NR " do
-      #TODO include CRC in this frame, it seems like we've skipped typing it
+      # TODO include CRC in this frame, it seems like we've skipped typing it
       frame = "194793444433221155378C20758B8877665593445508FF040000" |> Base.decode16!()
-      assert {:ok, ctx, <<>>} = Exmbus.parse(frame, length: true, crc: false)
+      assert {:ok, _ctx, <<>>} = Exmbus.Parser.parse(frame, length: true, crc: false)
     end
 
     test "N.5.3 wM-Bus Example with partial encryption" do
-      #TODO include CRC in this frame, it seems like we've skipped typing it
+      # TODO include CRC in this frame, it seems like we've skipped typing it
       frame =
         "304493444433221155378C00757288776655934455080004100500DFE2A782146D1513581CD2F83F39040CFD1078563412"
         |> Base.decode16!()
 
       key = "000102030405060708090A0B0C0D0E0F" |> Base.decode16!()
-      assert {:ok, ctx, <<>>} = Exmbus.parse(frame, length: true, crc: false, key: key)
+      assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(frame, length: true, crc: false, key: key)
 
       assert [
-               %Exmbus.Apl.FullFrame{
+               %Apl.FullFrame{
                  manufacturer_bytes: "",
                  records: [
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: 1234,
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_a,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :bcd,
                          device: 0,
                          function_field: :instantaneous,
@@ -278,7 +281,7 @@ defmodule OMSVol2AnnexNTest do
                          tariff: 0
                        },
                        dib_bytes: "\v",
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: nil,
                          description: :units_for_hca,
                          extensions: [],
@@ -289,11 +292,11 @@ defmodule OMSVol2AnnexNTest do
                        vib_bytes: "n"
                      }
                    },
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: ~D[2007-04-30],
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_g,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :int_or_bin,
                          device: 0,
                          function_field: :instantaneous,
@@ -302,7 +305,7 @@ defmodule OMSVol2AnnexNTest do
                          tariff: 0
                        },
                        dib_bytes: "B",
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: :type_g,
                          description: :date,
                          extensions: [],
@@ -313,11 +316,11 @@ defmodule OMSVol2AnnexNTest do
                        vib_bytes: "l"
                      }
                    },
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: 23456,
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_a,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :bcd,
                          device: 0,
                          function_field: :instantaneous,
@@ -326,7 +329,7 @@ defmodule OMSVol2AnnexNTest do
                          tariff: 0
                        },
                        dib_bytes: "K",
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: nil,
                          description: :units_for_hca,
                          extensions: [],
@@ -337,11 +340,11 @@ defmodule OMSVol2AnnexNTest do
                        vib_bytes: "n"
                      }
                    },
-                   %Exmbus.Apl.DataRecord{
+                   %Apl.DataRecord{
                      data: 12_345_678,
-                     header: %Exmbus.Apl.DataRecord.Header{
+                     header: %Apl.DataRecord.Header{
                        coding: :type_a,
-                       dib: %Exmbus.Apl.DataRecord.DataInformationBlock{
+                       dib: %Apl.DataRecord.DataInformationBlock{
                          data_type: :bcd,
                          device: 0,
                          function_field: :instantaneous,
@@ -350,7 +353,7 @@ defmodule OMSVol2AnnexNTest do
                          tariff: 0
                        },
                        dib_bytes: "\f",
-                       vib: %Exmbus.Apl.DataRecord.ValueInformationBlock{
+                       vib: %Apl.DataRecord.ValueInformationBlock{
                          coding: :type_a,
                          description: :customer_location,
                          extensions: [],
@@ -363,11 +366,11 @@ defmodule OMSVol2AnnexNTest do
                    }
                  ]
                },
-               %Exmbus.Tpl{
+               %Tpl{
                  frame_type: :full_frame,
-                 header: %Exmbus.Tpl.Long{
+                 header: %Tpl.Long{
                    access_no: 0,
-                   configuration_field: %Exmbus.Tpl.ConfigurationField{
+                   configuration_field: %Tpl.ConfigurationField{
                      accessibility: false,
                      bidirectional: false,
                      blocks: 1,
@@ -380,7 +383,7 @@ defmodule OMSVol2AnnexNTest do
                    device: :heat_cost_allocator,
                    identification_no: 55_667_788,
                    manufacturer: "QDS",
-                   status: %Exmbus.Tpl.Status{
+                   status: %Tpl.Status{
                      application_status: :no_error,
                      low_power: true,
                      manufacturer_status: 0,
@@ -390,9 +393,9 @@ defmodule OMSVol2AnnexNTest do
                    version: 85
                  }
                },
-               %Exmbus.Ell{
+               %Ell{
                  access_no: 117,
-                 communication_control: %Exmbus.Ell.CommunicationControl{
+                 communication_control: %Ell.CommunicationControl{
                    accessibility: false,
                    bidirectional: false,
                    hop_count: false,
@@ -403,7 +406,7 @@ defmodule OMSVol2AnnexNTest do
                  },
                  session_number: nil
                },
-               %Exmbus.Dll.Wmbus{
+               %Dll.Wmbus{
                  control: :snd_nr,
                  device: :radio_converter_meter_side,
                  identification_no: 11_223_344,
@@ -418,7 +421,7 @@ defmodule OMSVol2AnnexNTest do
       # TODO: fill in this frame from the example (page 46)
       frame = "" |> Base.decode16!()
       key = "000102030405060708090A0B0C0D0E0F" |> Base.decode16!()
-      assert {:ok, ctx, <<>>} = Exmbus.parse(frame, key: key)
+      assert {:ok, _ctx, <<>>} = Exmbus.Parser.parse(frame, key: key)
     end
   end
 end

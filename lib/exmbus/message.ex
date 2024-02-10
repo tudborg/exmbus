@@ -4,11 +4,11 @@ defmodule Exmbus.Message do
   The raw layers can optionally be kept as well with the `:keep_layers` option.
   """
 
-  alias Exmbus.Tpl
-  alias Exmbus.Apl
-  alias Exmbus.Apl.DataRecord
-  alias Exmbus.Ell
-  alias Exmbus.Dll.Wmbus
+  alias Exmbus.Parser.Tpl
+  alias Exmbus.Parser.Apl
+  alias Exmbus.Parser.Apl.DataRecord
+  alias Exmbus.Parser.Ell
+  alias Exmbus.Parser.Dll.Wmbus
 
   defmodule MessageError do
     defexception [
@@ -72,7 +72,7 @@ defmodule Exmbus.Message do
   You can parse using a specific DLL using one of the parse_* functions.
   """
   def parse(bin, opts \\ %{}) do
-    with {:ok, ctx, _rest} <- Exmbus.parse(bin, opts, []) do
+    with {:ok, ctx, _rest} <- Exmbus.Parser.parse(bin, opts, []) do
       from_layers(ctx, opts)
     end
   end

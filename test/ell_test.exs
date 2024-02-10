@@ -1,8 +1,6 @@
 defmodule EllTest do
   use ExUnit.Case, async: true
-  # alias Exmbus.Ell
-
-  doctest Exmbus.Ell, import: true
+  doctest Exmbus.Parser.Ell, import: true
 
   # Test a frame with ELL but without encryption, like
 

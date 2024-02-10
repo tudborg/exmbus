@@ -1,9 +1,9 @@
 defmodule DataInformationBlockTest do
   use ExUnit.Case, async: true
 
-  alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
+  alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
 
-  doctest Exmbus.Apl.DataRecord.DataInformationBlock, import: true
+  doctest Exmbus.Parser.Apl.DataRecord.DataInformationBlock, import: true
 
   # Test all non-extended dibs
   # We use some meta-programming here to programatically set up a test
@@ -27,9 +27,7 @@ defmodule DataInformationBlockTest do
 
       # test non-extended dib
       <<0::1, storage::1, ff::2, df::4>> = dib_bytes ->
-        test "non-extended dib parse/unparse storage=#{storage} function_field=#{ff} data_field=#{
-               df
-             }" do
+        test "non-extended dib parse/unparse storage=#{storage} function_field=#{ff} data_field=#{df}" do
           bin = unquote(dib_bytes)
           assert {:ok, [%DIB{} = dib], <<>>} = DIB.parse(bin, %{}, [])
           assert {:ok, ^bin, []} = DIB.unparse(%{}, [dib])

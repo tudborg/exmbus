@@ -1,4 +1,4 @@
 defmodule ManufacturerTest do
   use ExUnit.Case, async: true
-  doctest Exmbus.Manufacturer, import: true
+  doctest Exmbus.Parser.Manufacturer, import: true
 end

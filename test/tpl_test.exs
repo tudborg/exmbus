@@ -1,7 +1,7 @@
 defmodule TplTest do
   use ExUnit.Case, async: true
 
-  doctest Exmbus.Tpl, import: true
+  doctest Exmbus.Parser.Tpl, import: true
 
   test "MBus full frame, long header" do
     # tpl_layer = Base.decode16!("7278563412931533032A0000000C1427048502046D32371F1502FD170000")
@@ -36,5 +36,4 @@ defmodule TplTest do
     #   },
     # }, _} = Tpl.decode(tpl_layer)
   end
-
 end

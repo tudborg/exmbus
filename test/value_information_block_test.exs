@@ -1,10 +1,10 @@
 defmodule ValueInformationBlockTest do
   use ExUnit.Case, async: true
 
-  alias Exmbus.Apl.DataRecord.DataInformationBlock, as: DIB
-  alias Exmbus.Apl.DataRecord.ValueInformationBlock, as: VIB
+  alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
+  alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
 
-  doctest Exmbus.Apl.DataRecord.ValueInformationBlock, import: true
+  doctest Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, import: true
 
   for i <- 0x00..0b01111010 do
     case <<i>> do
