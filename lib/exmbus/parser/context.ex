@@ -1,22 +1,26 @@
-# defmodule Exmbus.Parser.Context do
-#   defstruct [
-#     # layers
-#     dll: nil,
-#     tpl: nil,
-#     ell: nil,
-#     apl: nil,
-#     # error accumulator
-#     errors: []
-#   ]
+defmodule Exmbus.Parser.Context do
+  @moduledoc """
+  Parsing context, accumulating errors and layers.
+  """
 
-#   def new() do
-#     %__MODULE__{}
-#   end
+  defstruct [
+    # layers
+    dll: nil,
+    tpl: nil,
+    ell: nil,
+    apl: nil,
+    # error accumulator
+    errors: []
+  ]
 
-#   @doc """
-#   Add an error to the context and return the updated context.
-#   """
-#   def add_error(ctx, error) do
-#     %{ctx | errors: [error | ctx.errors]}
-#   end
-# end
+  def new() do
+    %__MODULE__{}
+  end
+
+  @doc """
+  Add an error to the context and return the updated context.
+  """
+  def add_error(ctx, error) do
+    %{ctx | errors: [error | ctx.errors]}
+  end
+end

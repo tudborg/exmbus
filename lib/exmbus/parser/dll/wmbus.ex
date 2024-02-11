@@ -3,9 +3,9 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   Data Link Layer for WMbus
   """
 
+  alias Exmbus.Parser.Dll
   alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
-  alias Exmbus.Parser.CI
   alias Exmbus.Parser.Tpl.Device
 
   defstruct control: nil,
@@ -82,7 +82,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
       device: device
     }
 
-    CI.parse(rest, opts, [dll | ctx])
+    Dll.ci_route(rest, opts, [dll | ctx])
   end
 
   # set some defaults.

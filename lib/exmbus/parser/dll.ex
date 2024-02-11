@@ -13,4 +13,24 @@ defmodule Exmbus.Parser.Dll do
     # probably wmbus if not mbus
     Exmbus.Parser.Dll.Wmbus.parse(bin, opts, ctx)
   end
+
+  def ci_route(bin, opts, ctx) do
+    case Exmbus.Parser.CI.lookup(bin) do
+      {:ok, {:tpl, _tpl_header}} ->
+        Exmbus.Parser.Tpl.parse(bin, opts, ctx)
+
+      {:ok, {:apl, _tpl_header}} ->
+        Exmbus.Parser.Tpl.parse(bin, opts, ctx)
+
+      {:ok, {:ell, _ell_type}} ->
+        Exmbus.Parser.Ell.parse(bin, opts, ctx)
+
+      {:ok, {layer, layer_ext}} ->
+        raise "Not implemented: wmbus CI layer=#{inspect(layer)} layer_ext=#{inspect(layer_ext)}"
+
+      # lookup error:
+      {:error, reason} ->
+        {:error, reason, ctx}
+    end
+  end
 end

@@ -6,10 +6,10 @@ defmodule Exmbus.Parser.Ell do
   See also the Exmbus.Parser.CI module.
   """
 
+  alias Exmbus.Parser.Dll
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Tpl.Device
-  alias Exmbus.Parser.CI
   alias Exmbus.Parser.Ell.CommunicationControl
   alias Exmbus.Parser.Ell.SessionNumber
 
@@ -28,7 +28,7 @@ defmodule Exmbus.Parser.Ell do
       access_no: acc
     }
 
-    CI.parse(rest, opts, [ell | ctx])
+    Dll.ci_route(rest, opts, [ell | ctx])
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
@@ -51,7 +51,7 @@ defmodule Exmbus.Parser.Ell do
 
     with {:ok, plain} <-
            decrypt_and_verify(<<payload_crc::size(16), rest::binary>>, opts, [ell | ctx]) do
-      CI.parse(plain, opts, [ell | ctx])
+      Dll.ci_route(plain, opts, [ell | ctx])
     end
   end
 
