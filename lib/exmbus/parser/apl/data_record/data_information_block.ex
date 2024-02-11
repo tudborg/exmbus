@@ -15,10 +15,10 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
     size: nil
   ]
 
-  def unparse(_opts, [%__MODULE__{device: 0, tariff: 0, storage: s} = dib | ctx]) when s <= 1 do
+  def unparse(_opts, %__MODULE__{device: 0, tariff: 0, storage: s} = dib) when s <= 1 do
     ff_int = encode_function_field(dib.function_field)
     df_int = encode_data_field(dib.data_type, dib.size)
-    {:ok, <<0::1, s::1, ff_int::2, df_int::4>>, ctx}
+    {:ok, <<0::1, s::1, ff_int::2, df_int::4>>}
   end
 
   def parse(<<special::4, 0b1111::4, rest::binary>>, _opts, _ctx) do
@@ -51,7 +51,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
   end
 
   # regular DIF parsing:
-  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts, ctx) do
+  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts, _ctx) do
     {:ok, device, tariff, msb_storage, rest} =
       case e do
         # if extensions, decode dife:
@@ -65,17 +65,14 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
     {data_type, size} = decode_data_field(df)
 
     {:ok,
-     [
-       %__MODULE__{
-         device: device,
-         tariff: tariff,
-         storage: storage,
-         function_field: decode_function_field(ff),
-         data_type: data_type,
-         size: size
-       }
-       | ctx
-     ], rest}
+     %__MODULE__{
+       device: device,
+       tariff: tariff,
+       storage: storage,
+       function_field: decode_function_field(ff),
+       data_type: data_type,
+       size: size
+     }, rest}
   end
 
   # decodes series of DIFE bytes.

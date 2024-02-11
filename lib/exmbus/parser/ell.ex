@@ -6,7 +6,8 @@ defmodule Exmbus.Parser.Ell do
   See also the Exmbus.Parser.CI module.
   """
 
-  alias Exmbus.Parser.Dll
+  alias Exmbus.Parser.Context
+  alias Exmbus.Parser
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Tpl.Device
@@ -28,7 +29,7 @@ defmodule Exmbus.Parser.Ell do
       access_no: acc
     }
 
-    Dll.ci_route(rest, opts, [ell | ctx])
+    Parser.ci_route(rest, opts, Context.layer(ctx, :ell, ell))
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
@@ -49,9 +50,10 @@ defmodule Exmbus.Parser.Ell do
       session_number: session_number
     }
 
-    with {:ok, plain} <-
-           decrypt_and_verify(<<payload_crc::size(16), rest::binary>>, opts, [ell | ctx]) do
-      Dll.ci_route(plain, opts, [ell | ctx])
+    ctx = Context.layer(ctx, :ell, ell)
+
+    with {:ok, plain} <- decrypt_and_verify(<<payload_crc::size(16), rest::binary>>, opts, ctx) do
+      Parser.ci_route(plain, opts, ctx)
     end
   end
 
@@ -100,7 +102,7 @@ defmodule Exmbus.Parser.Ell do
   defp decrypt_and_verify(
          bin,
          opts,
-         [%__MODULE__{session_number: %{encryption: :aes_128_ctr}} = ell | _] = ctx
+         %{ell: %__MODULE__{session_number: %{encryption: :aes_128_ctr}} = ell} = ctx
        ) do
     frame_number = 0
     block_counter = 0
@@ -173,21 +175,21 @@ defmodule Exmbus.Parser.Ell do
     end
   end
 
-  defp identity_from_ctx([
-         %Exmbus.Parser.Dll.Wmbus{manufacturer: m, identification_no: i, version: v, device: d}
-         | _
-       ]) do
+  defp identity_from_ctx(%{
+         dll: %Exmbus.Parser.Dll.Wmbus{
+           manufacturer: m,
+           identification_no: i,
+           version: v,
+           device: d
+         }
+       }) do
     {:ok, m_bytes} = Manufacturer.encode(m)
     {:ok, i_bytes} = DataType.encode_type_a(i, 32)
     {:ok, d_byte} = Device.encode(d)
     {:ok, <<m_bytes::binary, i_bytes::binary, v, d_byte::binary>>}
   end
 
-  defp identity_from_ctx([_ | rest]) do
-    identity_from_ctx(rest)
-  end
-
-  defp identity_from_ctx([]) do
+  defp identity_from_ctx(%{}) do
     {:error, :could_not_find_identity}
   end
 end

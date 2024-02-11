@@ -3,18 +3,35 @@ defmodule Exmbus.Parser.Context do
   Parsing context, accumulating errors and layers.
   """
 
+  @type t :: %__MODULE__{
+          dll: any,
+          tpl: any,
+          ell: any,
+          apl: any,
+          #
+          dib: any,
+          vib: any,
+          #
+          errors: [any]
+        }
+
   defstruct [
-    # layers
+    # lower layers:
     dll: nil,
-    tpl: nil,
     ell: nil,
+    tpl: nil,
     apl: nil,
+    # state for when parsing data record:
+    dib: nil,
+    vib: nil,
     # error accumulator
     errors: []
   ]
 
-  def new() do
-    %__MODULE__{}
+  def layer(ctx, layer, data), do: %{ctx | layer => data}
+
+  def new(attrs \\ []) do
+    Enum.reduce(attrs, %__MODULE__{}, &Map.put(&2, elem(&1, 0), elem(&1, 1)))
   end
 
   @doc """

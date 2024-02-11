@@ -7,6 +7,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   VIF tables, so we gather it all here.
   """
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.ErrorCode
 
@@ -39,44 +40,55 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   # VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)
   # todo move down into exts function
   def parse(1, <<e::1, 0b000::3, xxxx::4, rest::binary>>, opts, [
-        %VIB{table: :main, extensions: exts} = vib | ctx
+        %{vib: %VIB{table: :main, extensions: exts} = vib} = ctx
       ]) do
     case direction_from_ctx(ctx) do
       {:ok, :from_meter} ->
         case ErrorCode.decode(xxxx) do
           {:ok, record_error} ->
-            parse(e, rest, opts, [
-              %VIB{vib | extensions: [{:record_error, record_error} | exts]} | ctx
-            ])
+            parse(
+              e,
+              rest,
+              opts,
+              Context.layer(ctx, :vib, %VIB{
+                vib
+                | extensions: [{:record_error, record_error} | exts]
+              })
+            )
 
           # TODO:
           # for now we just pass the reserved numbers through.
           # if they are being used it is most likely because we have not implemented them.
           # I've already seen 0b0_1000 in use in the real world.
           {:error, {:reserved, _} = r} ->
-            parse(e, rest, opts, [%VIB{vib | extensions: [{:record_error, r} | exts]} | ctx])
+            parse(
+              e,
+              rest,
+              opts,
+              Context.layer(ctx, :vib, %VIB{vib | extensions: [{:record_error, r} | exts]})
+            )
         end
     end
   end
 
-  def parse(1, rest, opts, [%VIB{extensions: exts} = vib | ctx]) do
+  def parse(1, rest, opts, %{vib: %VIB{extensions: exts} = vib} = ctx) do
     case exts(1, rest, opts, exts) do
       {:ok, rest, exts} ->
-        {:ok, [%VIB{vib | extensions: exts} | ctx], rest}
+        parse(0, rest, opts, Context.layer(ctx, :vib, %VIB{vib | extensions: exts}))
     end
   end
 
   def parse(0, rest, _opts, ctx) do
-    {:ok, ctx, rest}
+    # when no more extensions, return the vib (which we used as an accumulator so far)
+    {:ok, ctx.vib, rest}
   end
 
   # From ctx, find layer with direction and call direction function on it:
-  defp direction_from_ctx([]), do: {:error, :no_direction}
 
-  defp direction_from_ctx([%Exmbus.Parser.Dll.Wmbus{} = wmbus | _tail]),
+  defp direction_from_ctx(%{dll: %Exmbus.Parser.Dll.Wmbus{} = wmbus}),
     do: Exmbus.Parser.Dll.Wmbus.direction(wmbus)
 
-  defp direction_from_ctx([_ | tail]), do: direction_from_ctx(tail)
+  defp direction_from_ctx([]), do: {:error, :no_direction}
 
   # Table 15 — Combinable (orthogonal) VIFE-table
   defp exts(0, rest, _opts, acc) do

@@ -1,6 +1,7 @@
 defmodule RegressionGAVTest do
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Tpl
@@ -12,10 +13,10 @@ defmodule RegressionGAVTest do
         "6869696808017222070000361CDE02A12000000703AD3D00000000000004FB827501000000042A59F5FFFF04FB977224E4FFFF04FBB772C22C000002FDBA7313FF84808040FD48BD0F000004FD48160900008440FD59C6050000848040FD59E206000084C040FD59950600001F9616"
         |> Base.decode16!()
 
-      assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{length: false}, [])
+      assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{length: false}, Context.new())
 
-      assert [
-               %FullFrame{
+      assert %{
+               apl: %FullFrame{
                  manufacturer_bytes: "",
                  records:
                    [
@@ -32,7 +33,7 @@ defmodule RegressionGAVTest do
                      %DataRecord{}
                    ] = records
                },
-               %Tpl{
+               tpl: %Tpl{
                  frame_type: :full_frame,
                  header: %Tpl.Long{
                    access_no: 161,
@@ -59,11 +60,11 @@ defmodule RegressionGAVTest do
                    version: 222
                  }
                },
-               %Mbus{
+               dll: %Mbus{
                  control: :rsp_ud,
                  address: 1
                }
-             ] = ctx
+             } = ctx
 
       # check that all records can be parsed
       assert [

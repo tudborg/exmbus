@@ -23,11 +23,11 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   """
   def parse(bin, opts, ctx) do
     case Header.parse(bin, opts, ctx) do
-      {:ok, [%Header{} = header | ctx], rest} ->
+      {:ok, %Header{} = header, rest} ->
         # parse data from rest
         case parse_data(header, rest) do
           {:ok, data, rest} ->
-            {:ok, [%__MODULE__{header: header, data: data} | ctx], rest}
+            {:ok, %__MODULE__{header: header, data: data}, rest}
 
           {:error, {:cannot_parse_data, _}, _rest} = e ->
             e
@@ -40,18 +40,18 @@ defmodule Exmbus.Parser.Apl.DataRecord do
       {:special_function, _type, _rest} = s ->
         s
 
-      {:ok, [%InvalidHeader{} = header | ctx], rest} ->
+      {:ok, %InvalidHeader{} = header, rest} ->
         case consume_data(header, rest) do
           {:ok, raw, rest} ->
-            {:ok, [%InvalidDataRecord{header: header, data: raw} | ctx], rest}
+            {:ok, %InvalidDataRecord{header: header, data: raw}, rest}
         end
     end
   end
 
-  def unparse(opts, [%__MODULE__{header: h, data: d} | ctx]) do
-    with {:ok, h_bytes, _} <- Header.unparse(opts, [h | ctx]),
+  def unparse(opts, %__MODULE__{header: h, data: d}) do
+    with {:ok, h_bytes} <- Header.unparse(opts, h),
          {:ok, d_bytes} <- unparse_data(h, d) do
-      {:ok, <<h_bytes::binary, d_bytes::binary>>, ctx}
+      {:ok, <<h_bytes::binary, d_bytes::binary>>}
     end
   end
 

@@ -1,4 +1,5 @@
 defmodule Exmbus.Parser.Apl.CompactFrame do
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FormatFrame
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
@@ -13,15 +14,13 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
         _opts,
         ctx
       ) do
-    {:ok,
-     [
-       %__MODULE__{
-         format_signature: format_signature,
-         full_frame_crc: full_frame_crc,
-         data_bytes: rest
-       }
-       | ctx
-     ], <<>>}
+    compact_frame = %__MODULE__{
+      format_signature: format_signature,
+      full_frame_crc: full_frame_crc,
+      data_bytes: rest
+    }
+
+    {:ok, Context.layer(ctx, :apl, compact_frame), <<>>}
   end
 
   @doc """
@@ -36,12 +35,12 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
   """
   def expand(
         %{format_frame_fn: f} = opts,
-        [%__MODULE__{format_signature: fos, data_bytes: data_bytes} | _] = ctx
+        %{apl: %__MODULE__{format_signature: fos, data_bytes: data_bytes}} = ctx
       )
       when is_function(f, 2) do
     case f.(fos, opts) do
       {:ok, %FormatFrame{headers: headers}} ->
-        _expand(headers, data_bytes, opts, ctx)
+        _expand(headers, data_bytes, opts, ctx, [])
 
       {:error, reason} ->
         {:error, {:format_frame_lookup_failed, reason}, ctx}
@@ -51,21 +50,16 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
     end
   end
 
-  def expand(%{} = opts, ctx) do
+  def expand(%{} = opts, %{} = ctx) do
     raise "No format_frame_fn function given as option, got: #{inspect(opts)} for context: #{inspect(ctx)}"
   end
 
-  def _expand([], <<>> = _data_bytes, opts, ctx) do
-    {rev_records, [%__MODULE__{full_frame_crc: ffc} | rest_ctx]} =
-      ctx
-      |> Enum.split_while(fn
-        %DataRecord{} -> true
-        _ -> false
-      end)
+  def _expand([], <<>> = _data_bytes, opts, %{} = ctx, acc) do
+    %{apl: %__MODULE__{full_frame_crc: ffc}} = ctx
 
     full_frame =
       %FullFrame{
-        records: Enum.reverse(rev_records),
+        records: Enum.reverse(acc),
         manufacturer_bytes: <<>>
       }
 
@@ -86,14 +80,14 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
       end
 
     with :ok <- check_result do
-      {:ok, [full_frame | rest_ctx]}
+      {:ok, Context.layer(ctx, :apl, full_frame)}
     end
   end
 
-  def _expand([%Header{} = header | headers], bytes, opts, ctx) do
+  def _expand([%Header{} = header | headers], bytes, opts, %{} = ctx, acc) do
     case DataRecord.parse_data(header, bytes) do
       {:ok, data, rest} ->
-        _expand(headers, rest, opts, [%DataRecord{header: header, data: data} | ctx])
+        _expand(headers, rest, opts, ctx, [%DataRecord{header: header, data: data} | acc])
 
       {:error, _reason, _rest} = e ->
         e

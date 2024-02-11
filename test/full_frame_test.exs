@@ -15,8 +15,8 @@ defmodule FullFrameTest do
 
     assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: false)
 
-    assert [
-             %Apl.FullFrame{
+    assert %{
+             apl: %Apl.FullFrame{
                records: [
                  %Apl.DataRecord{
                    data: 2_850_427,
@@ -97,7 +97,7 @@ defmodule FullFrameTest do
                  }
                ]
              },
-             %Tpl{
+             tpl: %Tpl{
                frame_type: :full_frame,
                header: %Tpl.Short{
                  access_no: 42,
@@ -111,14 +111,14 @@ defmodule FullFrameTest do
                  }
                }
              },
-             %Wmbus{
+             dll: %Wmbus{
                manufacturer: "ELS",
                identification_no: 12_345_678,
                device: :gas,
                version: 51,
                control: :snd_nr
              }
-           ] = ctx
+           } = ctx
   end
 
   @tag :skip

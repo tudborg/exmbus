@@ -1,4 +1,5 @@
 defmodule Exmbus.Parser.Apl do
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Apl.DataRecord.InvalidDataRecord
   alias Exmbus.Parser.Tpl
@@ -41,97 +42,91 @@ defmodule Exmbus.Parser.Apl do
   end
 
   # It is possible to disable parsing of the APL by setting parse_apl: false in options.
-  defp parse_apl(%{parse_apl: false}, [%Raw{mode: 0, plain_bytes: _} | _] = ctx),
+  defp parse_apl(%{parse_apl: false}, %{apl: %Raw{mode: 0, plain_bytes: _}} = ctx),
     do: {:ok, ctx, <<>>}
 
-  defp parse_apl(opts, [%Raw{mode: 0, plain_bytes: bin, encrypted_bytes: <<>>} | ctx]) do
+  defp parse_apl(opts, %{apl: %Raw{mode: 0, plain_bytes: bin, encrypted_bytes: <<>>}} = ctx) do
     parse_records(bin, opts, ctx)
   end
 
   # when encryption mode is 5 and key option is set:
   defp parse_apl(
          %{key: _} = opts,
-         [%Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain} | ctx] = full_ctx
+         %{apl: %Raw{mode: 5, encrypted_bytes: enc, plain_bytes: plain}} = ctx
        ) do
-    with {:ok, decrypted} <- decrypt_mode_5(enc, opts, full_ctx) do
-      parse_apl(opts, [
-        %Raw{mode: 0, plain_bytes: <<decrypted::binary, plain::binary>>, encrypted_bytes: <<>>}
-        | ctx
-      ])
+    with {:ok, decrypted} <- decrypt_mode_5(enc, opts, ctx) do
+      parse_apl(
+        opts,
+        Context.layer(ctx, :apl, %Raw{
+          mode: 0,
+          plain_bytes: <<decrypted::binary, plain::binary>>,
+          encrypted_bytes: <<>>
+        })
+      )
     end
   end
 
   # when no key is supplied or we don't understand how to decrypt, return parse context
-  defp parse_apl(%{}, [%Raw{} | _] = ctx) do
+  defp parse_apl(%{}, %{apl: %Raw{}} = ctx) do
     {:ok, ctx, <<>>}
   end
 
   # assume decrypted apl bytes as first argument, parse data fields
-  # an return an {:ok, [Apl|ctx]}
-  defp parse_records(bin, opts, [%Tpl{frame_type: :full_frame} | _] = ctx) do
+  # an return an {:ok, Apl+ctx}
+  defp parse_records(bin, opts, %{tpl: %Tpl{frame_type: :full_frame}} = ctx) do
     # NOTE:
     # Should we possibly calculate the format signature here and attach it to the FullFrame struct?
     # That way we don't need the expensive unparse operation to get the format signature,
     # BUT we'd calculate it on every single parse? Option to turn off maybe?
-    parse_full_frame(bin, opts, ctx)
+    parse_full_frame(bin, opts, ctx, [])
   end
 
-  defp parse_records(bin, opts, [%Tpl{frame_type: :format_frame} | _] = ctx) do
+  defp parse_records(bin, opts, %{tpl: %Tpl{frame_type: :format_frame}} = ctx) do
     parse_format_frame(bin, opts, ctx)
   end
 
-  defp parse_records(bin, opts, [%Tpl{frame_type: :compact_frame} | _] = ctx) do
+  defp parse_records(bin, opts, %{tpl: %Tpl{frame_type: :compact_frame}} = ctx) do
     parse_compact_frame(bin, opts, ctx)
   end
 
   #
   # Parse full-frame records:
   #
-  defp parse_full_frame(<<>>, opts, ctx) do
-    finalize_full_frame(<<>>, opts, ctx)
+  defp parse_full_frame(<<>>, opts, ctx, acc) do
+    finalize_full_frame(<<>>, opts, ctx, acc)
   end
 
-  defp parse_full_frame(bin, opts, ctx) do
+  defp parse_full_frame(bin, opts, ctx, acc) do
     case DataRecord.parse(bin, opts, ctx) do
-      {:ok, [%DataRecord{} | _] = ctx, rest} ->
-        parse_full_frame(rest, opts, ctx)
+      {:ok, %DataRecord{} = data_record, rest} ->
+        parse_full_frame(rest, opts, ctx, [data_record | acc])
 
-      {:ok, [%InvalidDataRecord{} | _] = ctx, rest} ->
-        parse_full_frame(rest, opts, ctx)
+      {:ok, %InvalidDataRecord{} = data_record, rest} ->
+        parse_full_frame(rest, opts, ctx, [data_record | acc])
 
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        parse_full_frame(rest, opts, ctx)
+        parse_full_frame(rest, opts, ctx, acc)
 
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        finalize_full_frame(rest, opts, ctx)
+        finalize_full_frame(rest, opts, ctx, acc)
 
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        finalize_full_frame(rest, opts, ctx)
+        finalize_full_frame(rest, opts, ctx, acc)
 
       {:error, _reason, _rest} = e ->
         e
     end
   end
 
-  defp finalize_full_frame(rest, _opts, ctx) do
-    {rev_records, ctx} =
-      ctx
-      |> Enum.split_while(fn
-        %DataRecord{} -> true
-        %InvalidDataRecord{} -> true
-        _ -> false
-      end)
+  defp finalize_full_frame(rest, _opts, ctx, acc) do
+    full_frame = %FullFrame{
+      records: Enum.reverse(acc),
+      manufacturer_bytes: rest
+    }
 
-    {:ok,
-     [
-       %FullFrame{
-         records: Enum.reverse(rev_records),
-         manufacturer_bytes: rest
-       }
-       | ctx
-     ], <<>>}
+    {:ok, Context.layer(ctx, :apl, full_frame), <<>>}
   end
 
   #
@@ -139,42 +134,35 @@ defmodule Exmbus.Parser.Apl do
   #
 
   defp parse_format_frame(<<len, format_signature::little-size(16), rest::binary>>, opts, ctx) do
-    _parse_format_frame({len, format_signature}, rest, opts, ctx)
+    _parse_format_frame({len, format_signature}, rest, opts, ctx, [])
   end
 
-  defp _parse_format_frame(ff_header, <<>>, opts, ctx) do
-    finalize_format_frame(ff_header, <<>>, opts, ctx)
+  defp _parse_format_frame(ff_header, <<>>, opts, ctx, acc) do
+    finalize_format_frame(ff_header, <<>>, opts, ctx, acc)
   end
 
-  defp _parse_format_frame(ff_header, bin, opts, ctx) do
+  defp _parse_format_frame(ff_header, bin, opts, ctx, acc) do
     case DataRecord.Header.parse(bin, opts, ctx) do
-      {:ok, ctx, rest} ->
-        _parse_format_frame(ff_header, rest, opts, ctx)
+      {:ok, header, rest} ->
+        _parse_format_frame(ff_header, rest, opts, ctx, [header | acc])
 
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        _parse_format_frame(ff_header, rest, opts, ctx)
+        _parse_format_frame(ff_header, rest, opts, ctx, acc)
 
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        finalize_format_frame(ff_header, rest, opts, ctx)
+        finalize_format_frame(ff_header, rest, opts, ctx, acc)
 
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        finalize_format_frame(ff_header, rest, opts, ctx)
+        finalize_format_frame(ff_header, rest, opts, ctx, acc)
     end
   end
 
   # TODO: should we check length?
-  defp finalize_format_frame({_len, format_signature}, <<>>, opts, ctx) do
-    {rev_headers, ctx} =
-      ctx
-      |> Enum.split_while(fn
-        %DataRecord.Header{} -> true
-        _ -> false
-      end)
-
+  defp finalize_format_frame({_len, format_signature}, <<>>, opts, ctx, acc) do
     full_frame = %FormatFrame{
-      headers: Enum.reverse(rev_headers)
+      headers: Enum.reverse(acc)
     }
 
     check_result =
@@ -191,7 +179,7 @@ defmodule Exmbus.Parser.Apl do
       end
 
     with :ok <- check_result do
-      {:ok, [full_frame | ctx], <<>>}
+      {:ok, Context.layer(ctx, :apl, full_frame), <<>>}
     end
   end
 
@@ -232,36 +220,25 @@ defmodule Exmbus.Parser.Apl do
   end
 
   # append a Raw struct to the parse stack
-  defp append_raw(bin, _opts, [%Tpl{} = tpl | _] = ctx) do
+  defp append_raw(bin, _opts, %{tpl: %Tpl{} = tpl} = ctx) do
     {:mode, m} = Tpl.encryption_mode(tpl)
     {:ok, enclen} = Tpl.encrypted_byte_count(tpl)
     <<enc::binary-size(enclen), plain::binary>> = bin
 
-    {:ok,
-     [
-       %Raw{
-         mode: m,
-         encrypted_bytes: enc,
-         plain_bytes: plain
-       }
-       | ctx
-     ]}
+    {:ok, Context.layer(ctx, :apl, %Raw{mode: m, encrypted_bytes: enc, plain_bytes: plain})}
   end
 
-  defp append_raw(bin, _opts, ctx) when is_list(ctx) do
+  defp append_raw(bin, _opts, ctx) do
     {:ok,
-     [
-       %Raw{
-         mode: 0,
-         encrypted_bytes: <<>>,
-         plain_bytes: bin
-       }
-       | ctx
-     ]}
+     Context.layer(ctx, :apl, %Raw{
+       mode: 0,
+       encrypted_bytes: <<>>,
+       plain_bytes: bin
+     })}
   end
 
   # Generate the IV for mode 5 encryption
-  defp ctx_to_mode_5_iv([_, %Tpl{header: %Tpl.Short{access_no: a_no}}, %Wmbus{} = wmbus | _]) do
+  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Short{access_no: a_no}}, dll: %Wmbus{} = wmbus}) do
     %Wmbus{manufacturer: m, identification_no: i, version: v, device: d} = wmbus
     {:ok, man_bytes} = Manufacturer.encode(m)
     {:ok, id_bytes} = DataType.encode_type_a(i, 32)
@@ -272,7 +249,7 @@ defmodule Exmbus.Parser.Apl do
        a_no, a_no, a_no>>}
   end
 
-  defp ctx_to_mode_5_iv([_, %Tpl{header: %Tpl.Long{} = header} | _]) do
+  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Long{} = header}}) do
     %Tpl.Long{manufacturer: m, identification_no: id, version: v, device: d, access_no: a_no} =
       header
 

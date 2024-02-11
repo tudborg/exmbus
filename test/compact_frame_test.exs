@@ -1,6 +1,7 @@
 defmodule CompactFrameTest do
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Tpl
   alias Exmbus.Parser.Apl
   alias Exmbus.Parser.Apl.FullFrame
@@ -32,10 +33,10 @@ defmodule CompactFrameTest do
 
       # assert that the parsed full frame contains what the docs says it contains
       assert {:ok,
-              [
-                %FullFrame{} = full_frame,
-                %Tpl{frame_type: :full_frame, header: %Tpl.None{}}
-              ], <<>>} = Tpl.parse(bytes_full, %{}, [])
+              %{
+                apl: %FullFrame{} = full_frame,
+                tpl: %Tpl{frame_type: :full_frame, header: %Tpl.None{}}
+              }, <<>>} = Tpl.parse(bytes_full, %{}, Context.new())
 
       assert %{
                records: [
@@ -49,10 +50,10 @@ defmodule CompactFrameTest do
 
       # assert that the parsed format frame results in the same signature
       assert {:ok,
-              [
-                %FormatFrame{} = format_frame,
-                %Tpl{frame_type: :format_frame, header: %Tpl.None{}}
-              ], <<>>} = Tpl.parse(bytes_format, %{}, [])
+              %{
+                apl: %FormatFrame{} = format_frame,
+                tpl: %Tpl{frame_type: :format_frame, header: %Tpl.None{}}
+              }, <<>>} = Tpl.parse(bytes_format, %{}, Context.new())
 
       assert {:ok, 15153} == FormatFrame.format_signature(format_frame)
 
@@ -62,16 +63,16 @@ defmodule CompactFrameTest do
       # given the format frame
 
       assert {:ok,
-              [
-                %CompactFrame{format_signature: 15153},
-                %Tpl{frame_type: :compact_frame, header: %Tpl.None{}}
-              ] = compact_frame_ctx, <<>>} = Tpl.parse(bytes_compact, %{}, [])
+              %{
+                apl: %CompactFrame{format_signature: 15153},
+                tpl: %Tpl{frame_type: :compact_frame, header: %Tpl.None{}}
+              } = compact_frame_ctx, <<>>} = Tpl.parse(bytes_compact, %{}, Context.new())
 
       ffl = fn 15153, _opts ->
         {:ok, format_frame}
       end
 
-      assert {:ok, [%FullFrame{} = full_frame_from_compact, %Tpl{}]} =
+      assert {:ok, %{apl: %FullFrame{} = full_frame_from_compact, tpl: %Tpl{}}} =
                CompactFrame.expand(%{format_frame_fn: ffl}, compact_frame_ctx)
 
       assert full_frame == full_frame_from_compact
@@ -82,15 +83,18 @@ defmodule CompactFrameTest do
       bytes_format = "6A0100000008313B02020215022A" |> Base.decode16!()
       bytes_compact = "7B01000000313B42A6D2042E163423" |> Base.decode16!()
 
-      assert {:ok, [%FullFrame{} = _full_frame | _], <<>>} = Tpl.parse(bytes_full, %{}, [])
-      assert {:ok, [%FormatFrame{} = format_frame | _], <<>>} = Tpl.parse(bytes_format, %{}, [])
+      assert {:ok, %{apl: %FullFrame{} = _full_frame}, <<>>} =
+               Tpl.parse(bytes_full, %{}, Context.new())
 
-      assert {:ok, [%CompactFrame{} = _compact_frame | _] = compact_frame_ctx, <<>>} =
-               Tpl.parse(bytes_compact, %{}, [])
+      assert {:ok, %{apl: %FormatFrame{} = format_frame}, <<>>} =
+               Tpl.parse(bytes_format, %{}, Context.new())
+
+      assert {:ok, %{apl: %CompactFrame{} = _compact_frame} = compact_frame_ctx, <<>>} =
+               Tpl.parse(bytes_compact, %{}, Context.new())
 
       format_frame_fn = fn _, _ -> {:ok, format_frame} end
 
-      assert {:ok, [%FullFrame{} = _full_frame_from_compact | _]} =
+      assert {:ok, %{apl: %FullFrame{} = _full_frame_from_compact}} =
                CompactFrame.expand(%{format_frame_fn: format_frame_fn}, compact_frame_ctx)
     end
   end
@@ -103,8 +107,12 @@ defmodule CompactFrameTest do
       bytes_full = "780306EB24004306E723000314285E00426CBF2C022D030001FF2100" |> Base.decode16!()
       bytes_compact = "79E7F1A3FCED2400E723002E5E00BF2C0D0000" |> Base.decode16!()
       # parse the frames
-      assert {:ok, [%FullFrame{} = full_frame | _], ""} = Tpl.parse(bytes_full, %{}, [])
-      assert {:ok, [%CompactFrame{} = compact_frame | _], ""} = Tpl.parse(bytes_compact, %{}, [])
+      assert {:ok, %{apl: %FullFrame{} = full_frame}, ""} =
+               Tpl.parse(bytes_full, %{}, Context.new())
+
+      assert {:ok, %{apl: %CompactFrame{} = compact_frame}, ""} =
+               Tpl.parse(bytes_compact, %{}, Context.new())
+
       # derive the format frame from the full
       assert %FormatFrame{} = format_frame = FormatFrame.from_full_frame!(full_frame)
       # check that the format signature of the derived format frame
@@ -115,7 +123,10 @@ defmodule CompactFrameTest do
       format_frame_fn = fn _fs, _opts -> {:ok, format_frame} end
       # expand the compact frame which should succeed:
       assert {:ok, _expanded_layers} =
-               CompactFrame.expand(%{format_frame_fn: format_frame_fn}, [compact_frame])
+               CompactFrame.expand(
+                 %{format_frame_fn: format_frame_fn},
+                 Context.new(apl: compact_frame)
+               )
     end
   end
 end

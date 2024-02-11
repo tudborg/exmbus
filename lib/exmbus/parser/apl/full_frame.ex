@@ -15,7 +15,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     record_bytes =
       records
       |> Enum.map(fn record ->
-        {:ok, bytes, _} = DataRecord.unparse(%{}, [record])
+        {:ok, bytes} = DataRecord.unparse(%{}, record)
         bytes
       end)
       |> Enum.into("")

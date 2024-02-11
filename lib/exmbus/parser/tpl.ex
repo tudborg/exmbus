@@ -6,6 +6,7 @@ defmodule Exmbus.Parser.Tpl do
   See also the Exmbus.Parser.CI module.
   """
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Apl
@@ -166,7 +167,7 @@ defmodule Exmbus.Parser.Tpl do
       header: header
     }
 
-    Apl.parse(rest, opts, [tpl | ctx])
+    Apl.parse(rest, opts, Context.layer(ctx, :tpl, tpl))
   end
 
   # TPL header decoders

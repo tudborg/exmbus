@@ -2,9 +2,30 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock do
   @moduledoc """
   The Value Information Block utilities
   """
-
   alias __MODULE__, as: VIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain
+  alias Exmbus.Parser.Context
+
+  @type t :: %__MODULE__{
+          description: atom(),
+          multiplier: nil | integer(),
+          unit: nil | binary(),
+          extensions: [any],
+          coding:
+            :type_a
+            | :type_b
+            | :type_c
+            | :type_d
+            | :type_f
+            | :type_g
+            | :type_h
+            | :type_i
+            | :type_j
+            | :type_k
+            | :type_l
+            | :type_m,
+          table: atom()
+        }
 
   defstruct [
     # VIB fields:
@@ -30,13 +51,15 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock do
     table: nil
   ]
 
+  @spec parse(binary, opts :: map(), Context.t()) ::
+          {:ok, VIB.t(), rest :: binary} | {:error, any, binary}
   def parse(bin, opts, ctx) do
     # delegate the parsing to the primary table
     VifTableMain.parse(bin, opts, ctx)
   end
 
   # Basic unparse, main table, no extensions
-  def unparse(opts, [%VIB{table: :main} | _] = ctx) do
-    VifTableMain.unparse(opts, ctx)
+  def unparse(opts, %VIB{table: :main} = vib) do
+    VifTableMain.unparse(opts, vib)
   end
 end

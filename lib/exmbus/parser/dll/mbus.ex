@@ -3,7 +3,8 @@ defmodule Exmbus.Parser.Dll.Mbus do
   Data Link Layer for Mbus
   """
 
-  alias Exmbus.Parser.Dll
+  alias Exmbus.Parser.Context
+  alias Exmbus.Parser
 
   defstruct control: nil,
             address: nil
@@ -37,7 +38,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
       address: a
     }
 
-    Dll.ci_route(rest, opts, [dll | ctx])
+    Parser.ci_route(rest, opts, Context.layer(ctx, :dll, dll))
   end
 
   @doc """

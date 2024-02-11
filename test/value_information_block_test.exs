@@ -1,6 +1,7 @@
 defmodule ValueInformationBlockTest do
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
 
@@ -27,8 +28,8 @@ defmodule ValueInformationBlockTest do
                 %DIB{data_type: :int_or_bin, size: 32}
             end
 
-          assert {:ok, ctx, <<>>} = VIB.parse(bin, %{}, [dib])
-          assert {:ok, ^bin, [^dib]} = VIB.unparse(%{}, ctx)
+          assert {:ok, vib, <<>>} = VIB.parse(bin, %{}, Context.new(dib: dib))
+          assert {:ok, ^bin} = VIB.unparse(%{}, vib)
         end
     end
   end

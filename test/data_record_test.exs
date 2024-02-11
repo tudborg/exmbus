@@ -1,6 +1,7 @@
 defmodule DataRecordTest do
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Apl.DataRecord.Header
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock
@@ -10,8 +11,12 @@ defmodule DataRecordTest do
 
   describe "Main VIFE-code extension table (0xFD)" do
     test "0bE0010111 Error flags" do
-      {:ok, [record], <<0xFF, 0xFF>>} =
-        DataRecord.parse(<<0x02, 0xFD, 0x17, 0b00000100, 0b10000000, 0xFF, 0xFF>>, %{}, [])
+      {:ok, record, <<0xFF, 0xFF>>} =
+        DataRecord.parse(
+          <<0x02, 0xFD, 0x17, 0b00000100, 0b10000000, 0xFF, 0xFF>>,
+          %{},
+          Context.new()
+        )
 
       assert %DataRecord{
                data: [

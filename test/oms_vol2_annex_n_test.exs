@@ -2,6 +2,7 @@ defmodule OMSVol2AnnexNTest do
   # OMS Spec Vol2 Annex N D103 2020-10-22
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl
   alias Exmbus.Parser.Ell
   alias Exmbus.Parser.Tpl
@@ -28,10 +29,10 @@ defmodule OMSVol2AnnexNTest do
            "D3529B520EDFF0EA6DEFC99D6D69EBF3")
         |> Base.decode16!()
 
-      assert {:ok, ctx, <<>>} = Wmbus.parse(bytes, %{length: false, key: aes_key}, [])
+      assert {:ok, ctx, <<>>} = Wmbus.parse(bytes, %{length: false, key: aes_key}, Context.new())
 
-      assert [
-               %FullFrame{
+      assert %Context{
+               apl: %FullFrame{
                  manufacturer_bytes: <<>>,
                  records: [
                    %DataRecord{} = dr1,
@@ -39,7 +40,7 @@ defmodule OMSVol2AnnexNTest do
                    %DataRecord{} = dr3
                  ]
                },
-               %Tpl{
+               tpl: %Tpl{
                  frame_type: :full_frame,
                  header: %Short{
                    access_no: 0x2A,
@@ -62,14 +63,14 @@ defmodule OMSVol2AnnexNTest do
                    }
                  }
                },
-               %Wmbus{
+               dll: %Wmbus{
                  manufacturer: "ELS",
                  identification_no: 12_345_678,
                  device: :gas,
                  version: 51,
                  control: :snd_nr
                }
-             ] = ctx
+             } = ctx
 
       assert %DataRecord{header: %{dib: %{storage: 0}}} = dr1
       assert %DataRecord{header: %{dib: %{storage: 0}}} = dr2
@@ -119,10 +120,10 @@ defmodule OMSVol2AnnexNTest do
            "8916")
         |> Base.decode16!()
 
-      assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{}, [])
+      assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{}, Context.new())
 
-      assert [
-               %Apl.FullFrame{
+      assert %{
+               apl: %Apl.FullFrame{
                  manufacturer_bytes: "",
                  records: [
                    %Apl.DataRecord{
@@ -210,7 +211,7 @@ defmodule OMSVol2AnnexNTest do
                    }
                  ]
                },
-               %Tpl{
+               tpl: %Tpl{
                  frame_type: :full_frame,
                  header: %Tpl.Long{
                    access_no: 42,
@@ -237,12 +238,12 @@ defmodule OMSVol2AnnexNTest do
                    version: 51
                  }
                },
-               %Mbus{
+               dll: %Mbus{
                  control: :rsp_ud,
                  # secondary addressing
                  address: 0xFD
                }
-             ] = ctx
+             } = ctx
     end
   end
 
@@ -264,8 +265,8 @@ defmodule OMSVol2AnnexNTest do
       key = "000102030405060708090A0B0C0D0E0F" |> Base.decode16!()
       assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(frame, length: true, crc: false, key: key)
 
-      assert [
-               %Apl.FullFrame{
+      assert %{
+               apl: %Apl.FullFrame{
                  manufacturer_bytes: "",
                  records: [
                    %Apl.DataRecord{
@@ -366,7 +367,7 @@ defmodule OMSVol2AnnexNTest do
                    }
                  ]
                },
-               %Tpl{
+               tpl: %Tpl{
                  frame_type: :full_frame,
                  header: %Tpl.Long{
                    access_no: 0,
@@ -393,7 +394,7 @@ defmodule OMSVol2AnnexNTest do
                    version: 85
                  }
                },
-               %Ell{
+               ell: %Ell{
                  access_no: 117,
                  communication_control: %Ell.CommunicationControl{
                    accessibility: false,
@@ -406,14 +407,14 @@ defmodule OMSVol2AnnexNTest do
                  },
                  session_number: nil
                },
-               %Dll.Wmbus{
+               dll: %Dll.Wmbus{
                  control: :snd_nr,
                  device: :radio_converter_meter_side,
                  identification_no: 11_223_344,
                  manufacturer: "QDS",
                  version: 85
                }
-             ] = ctx
+             } = ctx
     end
 
     @tag :skip

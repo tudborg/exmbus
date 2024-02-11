@@ -1,6 +1,7 @@
 defmodule DataRecordHeaderTest do
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.Header
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
@@ -11,7 +12,7 @@ defmodule DataRecordHeaderTest do
     test "parse/unparse header mismatch 2022-01-14" do
       # unparsing this yielded 01FA21 which ofc is wrong, it should be same as input
       orignal_drh = "01FF21" |> Base.decode16!()
-      {:ok, [%Header{} = header], ""} = Header.parse(orignal_drh, %{}, [])
+      {:ok, %Header{} = header, ""} = Header.parse(orignal_drh, %{}, Context.new())
 
       assert %Header{
                coding: :type_b,
@@ -37,7 +38,7 @@ defmodule DataRecordHeaderTest do
 
       # be sure we don't "cheat" :)
       header = Map.drop(header, [:dib_bytes, :vib_bytes])
-      assert {:ok, <<0x01, 0xFF, 0x21>>, []} = Header.unparse(%{}, [header])
+      assert {:ok, <<0x01, 0xFF, 0x21>>} = Header.unparse(%{}, header)
     end
   end
 end

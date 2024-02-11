@@ -1,4 +1,5 @@
 defmodule Exmbus.Parser.Apl.DataRecord.Header do
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
 
@@ -22,7 +23,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   @doc """
   Parses the next DataRecord Header from a binary.
   """
-  def parse(bin, opts \\ [], ctx \\ []) do
+  def parse(bin, opts, ctx) do
     {:ok, dib_bytes, rest_after_dib} = collect_block(bin)
 
     case DIB.parse(dib_bytes, opts, ctx) do
@@ -31,53 +32,47 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
         # but there isn't a real header here. The APL layer knows what to do.
         {:special_function, type, rest_after_dib}
 
-      {:ok, [%DIB{} = dib | _] = inner_ctx, <<>>} ->
+      {:ok, %DIB{} = dib, <<>>} ->
         {:ok, vib_bytes, rest_after_vib} = collect_block(rest_after_dib)
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(vib_bytes, opts, inner_ctx) do
-          {:ok, [%VIB{} = vib, %DIB{} = dib | _], <<>>} ->
+        case VIB.parse(vib_bytes, opts, Context.layer(ctx, :dib, dib)) do
+          {:ok, %VIB{} = vib, <<>>} ->
             {:ok, coding} = summarize_coding(dib, vib)
 
             {
               :ok,
               # Wrap the VIB and DIB into a DataRecord.Header
-              [
-                %__MODULE__{
-                  dib_bytes: dib_bytes,
-                  vib_bytes: vib_bytes,
-                  dib: dib,
-                  vib: vib,
-                  coding: coding
-                }
-                | ctx
-              ],
+              %__MODULE__{
+                dib_bytes: dib_bytes,
+                vib_bytes: vib_bytes,
+                dib: dib,
+                vib: vib,
+                coding: coding
+              },
               rest_after_vib
             }
 
           {:error, {:invalid, reason}, <<>>} ->
             {:ok,
-             [
-               %InvalidHeader{
-                 dib: dib,
-                 vib: nil,
-                 error_message: "VIB invalid with reason #{inspect(reason)}"
-               }
-               | ctx
-             ], rest_after_vib}
+             %InvalidHeader{
+               dib: dib,
+               vib: nil,
+               error_message: "VIB invalid with reason #{inspect(reason)}"
+             }, rest_after_vib}
         end
 
       {:error, reason, <<>>} ->
-        {:ok, [%InvalidHeader{error_message: "Parsing DIB failed: #{inspect(reason)}"} | ctx],
+        {:ok, %InvalidHeader{error_message: "Parsing DIB failed: #{inspect(reason)}"},
          rest_after_dib}
     end
   end
 
-  def unparse(opts, [%__MODULE__{vib: vib, dib: dib} | ctx]) do
-    with {:ok, vib_bytes, ctx} <- VIB.unparse(opts, [vib, dib | ctx]),
-         {:ok, dib_bytes, ctx} <- DIB.unparse(opts, ctx) do
-      {:ok, <<dib_bytes::binary, vib_bytes::binary>>, ctx}
+  def unparse(opts, %__MODULE__{vib: vib, dib: dib}) do
+    with {:ok, vib_bytes} <- VIB.unparse(opts, vib),
+         {:ok, dib_bytes} <- DIB.unparse(opts, dib) do
+      {:ok, <<dib_bytes::binary, vib_bytes::binary>>}
     end
   end
 
