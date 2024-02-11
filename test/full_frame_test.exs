@@ -121,7 +121,9 @@ defmodule FullFrameTest do
            } = ctx
   end
 
+  # we've not implemented frame format B with CRC checking yet.
   @tag :skip
+  @tag :frame_format_b
   test "wmbus, encrypted: mode 5 Table P.1 from en13757-3:2003" do
     datagram =
       Base.decode16!(
@@ -154,7 +156,9 @@ defmodule FullFrameTest do
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
 
+  # we've not implemented frame format A with CRC checking yet.
   @tag :skip
+  @tag :frame_format_a
   test "wmbus, encrypted: mode 5 Table F.2 from CEN/TR 17167:2018" do
     # without length and CRC:
     # datagram = Base.decode16!("4493444433221155087288776655934455080004100500DFE2A782146D1513581CD2F83F3904015B19")
@@ -172,49 +176,223 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert %{
-             device: :heat_cost_allocator,
-             manufacturer: "QDS",
-             identification_no: 55_667_788,
-             version: 85,
-             records: [
-               %{
-                 function_field: :instantaneous,
-                 device: 0,
-                 tariff: 0,
-                 storage: 0,
-                 description: :units_for_hca,
-                 unit: nil,
-                 value: 1234
-               },
-               %{
-                 function_field: :instantaneous,
-                 device: 0,
-                 tariff: 0,
-                 storage: 1,
-                 description: :date,
-                 unit: nil,
-                 value: ~D[2007-04-30]
-               },
-               %{
-                 function_field: :instantaneous,
-                 device: 0,
-                 tariff: 0,
-                 storage: 1,
-                 description: :units_for_hca,
-                 unit: nil,
-                 value: 23456
-               },
-               %{
-                 function_field: :instantaneous,
-                 device: 0,
-                 tariff: 0,
-                 storage: 0,
-                 description: :flow_temperature,
-                 unit: "°C",
-                 value: 25
+    assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
+             Exmbus.Parser.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
+
+    assert [
+             %DataRecord{
+               data: 1234,
+               header: %DataRecord.Header{
+                 dib_bytes: "\v",
+                 vib_bytes: "n",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 0,
+                   function_field: :instantaneous,
+                   data_type: :bcd,
+                   size: 24
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :units_for_hca,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_a
                }
-             ]
-           } = Exmbus.Message.to_map!(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
+             },
+             %DataRecord{
+               data: ~D[2007-04-30],
+               header: %DataRecord.Header{
+                 dib_bytes: "B",
+                 vib_bytes: "l",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 1,
+                   function_field: :instantaneous,
+                   data_type: :int_or_bin,
+                   size: 16
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :date,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: :type_g,
+                   table: :main
+                 },
+                 coding: :type_g
+               }
+             },
+             %DataRecord{
+               data: 23456,
+               header: %DataRecord.Header{
+                 dib_bytes: "K",
+                 vib_bytes: "n",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 1,
+                   function_field: :instantaneous,
+                   data_type: :bcd,
+                   size: 24
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :units_for_hca,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_a
+               }
+             },
+             %DataRecord{
+               header: %DataRecord.Header{
+                 dib_bytes: <<1>>,
+                 vib_bytes: "[",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 0,
+                   function_field: :instantaneous,
+                   data_type: :int_or_bin,
+                   size: 8
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :flow_temperature,
+                   multiplier: 1,
+                   unit: "°C",
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_b
+               },
+               data: 25
+             }
+           ] = records
+  end
+
+  test "wmbus, encrypted: mode 5 Table F.2 from CEN/TR 17167:2018 but without length and CRC" do
+    datagram =
+      Base.decode16!(
+        "4493444433221155087288776655934455080004100500DFE2A782146D1513581CD2F83F3904015B19"
+      )
+
+    key =
+      <<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+        0x0F>>
+
+    keyfn = fn _parsed, _opts ->
+      {:ok, [key]}
+    end
+
+    assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
+             Exmbus.Parser.parse(datagram, length: false, crc: false, key: Key.by_fn!(keyfn))
+
+    assert [
+             %DataRecord{
+               data: 1234,
+               header: %DataRecord.Header{
+                 dib_bytes: "\v",
+                 vib_bytes: "n",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 0,
+                   function_field: :instantaneous,
+                   data_type: :bcd,
+                   size: 24
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :units_for_hca,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_a
+               }
+             },
+             %DataRecord{
+               data: ~D[2007-04-30],
+               header: %DataRecord.Header{
+                 dib_bytes: "B",
+                 vib_bytes: "l",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 1,
+                   function_field: :instantaneous,
+                   data_type: :int_or_bin,
+                   size: 16
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :date,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: :type_g,
+                   table: :main
+                 },
+                 coding: :type_g
+               }
+             },
+             %DataRecord{
+               data: 23456,
+               header: %DataRecord.Header{
+                 dib_bytes: "K",
+                 vib_bytes: "n",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 1,
+                   function_field: :instantaneous,
+                   data_type: :bcd,
+                   size: 24
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :units_for_hca,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_a
+               }
+             },
+             %DataRecord{
+               header: %DataRecord.Header{
+                 dib_bytes: <<1>>,
+                 vib_bytes: "[",
+                 dib: %DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 0,
+                   function_field: :instantaneous,
+                   data_type: :int_or_bin,
+                   size: 8
+                 },
+                 vib: %DataRecord.ValueInformationBlock{
+                   description: :flow_temperature,
+                   multiplier: 1,
+                   unit: "°C",
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_b
+               },
+               data: 25
+             }
+           ] = records
   end
 end

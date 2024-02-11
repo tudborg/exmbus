@@ -19,7 +19,8 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   end
 
   defp validate_frame_format_b(<<len, rest::binary>>) when byte_size(rest) == len do
-    raise "TODO convert to plain format (No length, no CRC) and return {:ok, plain_binary}"
+    {:error, :frame_format_b_not_implemented}
+    
   end
 
   defp validate_frame_format_b(bin) do
