@@ -14,11 +14,20 @@ defmodule Exmbus.Parser.Apl do
   The function assumes that the entire input is the APL layer data.
   """
   def parse(bin, opts, %{apl: nil} = ctx) do
-    with {:ok, ctx, ""} <- Unparsed.parse(bin, opts, ctx),
-         {:ok, ctx} <- Unparsed.decrypt(opts, ctx) do
-      parse_records(opts, ctx)
+    with {:ok, ctx, ""} <- maybe_parse_apl(bin, opts, ctx),
+         {:ok, ctx} <- maybe_decrypt_apl(opts, ctx) do
+      maybe_parse_records(opts, ctx)
     end
   end
+
+  defp maybe_parse_apl(bin, %{parse_apl: false}, ctx), do: {:ok, ctx, bin}
+  defp maybe_parse_apl(bin, opts, ctx), do: Unparsed.parse(bin, opts, ctx)
+
+  defp maybe_decrypt_apl(%{decrypt_apl: false}, ctx), do: {:ok, ctx}
+  defp maybe_decrypt_apl(opts, ctx), do: Unparsed.decrypt(opts, ctx)
+
+  defp maybe_parse_records(%{parse_records: false}, ctx), do: {:ok, ctx}
+  defp maybe_parse_records(opts, ctx), do: parse_records(opts, ctx)
 
   # assume decrypted apl bytes as first argument, parse data fields
   # an return an {:ok, Apl+ctx}

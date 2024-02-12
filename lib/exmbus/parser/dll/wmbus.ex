@@ -20,7 +20,6 @@ defmodule Exmbus.Parser.Dll.Wmbus do
 
   defp validate_frame_format_b(<<len, rest::binary>>) when byte_size(rest) == len do
     {:error, :frame_format_b_not_implemented}
-    
   end
 
   defp validate_frame_format_b(bin) do

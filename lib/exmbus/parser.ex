@@ -4,23 +4,10 @@ defmodule Exmbus.Parser do
   """
   alias Exmbus.Parser.Context
 
-  def parse!(bin, opts \\ %{}) do
-    case parse(bin, opts) do
-      {:ok, result, <<>>} ->
-        result
-
-      {:error, reason} ->
-        raise "failed to parse. reason=#{inspect(reason)}"
-
-      {:error, reason, ctx} ->
-        raise "failed to parse. reason=#{inspect(reason)} ctx=#{inspect(ctx)}"
-    end
-  end
-
-  def parse(bin, opts \\ %{}, ctx \\ nil)
+  def parse(bin, opts \\ nil, ctx \\ nil)
 
   def parse(bin, opts, ctx) when not is_map(opts) do
-    parse(bin, Enum.into(opts, %{}), ctx || Context.new())
+    parse(bin, Enum.into(opts || [], %{}), ctx || Context.new())
   end
 
   def parse(bin, opts, ctx) when is_map(opts) and is_struct(ctx, Context) do
