@@ -137,20 +137,19 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, layers, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: true)
-    assert [raw = %Apl.Raw{} | layers] = layers
-    assert [_tpl = %Tpl{} | layers] = layers
-    assert [_dll = %Wmbus{} | layers] = layers
-    assert [] = layers
+    assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: true)
+    assert %{apl: %Apl.Unparsed{} = raw} = ctx
+    assert %{tpl: %Tpl{}} = ctx
+    assert %{dll: %Wmbus{}} = ctx
 
-    assert %Apl.Raw{
+    assert %Apl.Unparsed{
              encrypted_bytes:
                <<89, 35, 201, 90, 170, 38, 209, 178, 231, 73, 59, 1, 62, 196, 166, 246, 211, 82,
                  155, 82, 14, 223, 240, 234, 109, 239, 201, 157, 109, 105, 235, 243>>,
              plain_bytes: ""
            } = raw
 
-    assert {:ok, [%Apl.FullFrame{records: records} | _], ""} =
+    assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
              Exmbus.Parser.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
 
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records

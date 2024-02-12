@@ -1,8 +1,59 @@
 defmodule Exmbus.Parser.Apl.FormatFrame do
   defstruct headers: nil
 
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FullFrame
-  alias Exmbus.Parser.Apl.DataRecord.Header
+  alias Exmbus.Parser.Apl.DataRecord
+
+  def parse(<<len, format_signature::little-size(16), rest::binary>>, opts, ctx) do
+    _parse_format_frame({len, format_signature}, rest, opts, ctx, [])
+  end
+
+  defp _parse_format_frame(ff_header, <<>>, opts, ctx, acc) do
+    finalize_format_frame(ff_header, <<>>, opts, ctx, acc)
+  end
+
+  defp _parse_format_frame(ff_header, bin, opts, ctx, acc) do
+    case DataRecord.Header.parse(bin, opts, ctx) do
+      {:ok, header, rest} ->
+        _parse_format_frame(ff_header, rest, opts, ctx, [header | acc])
+
+      # just skip the idle filler
+      {:special_function, :idle_filler, rest} ->
+        _parse_format_frame(ff_header, rest, opts, ctx, acc)
+
+      # manufacturer specific data is the rest of the APL data
+      {:special_function, {:manufacturer_specific, :to_end}, rest} ->
+        finalize_format_frame(ff_header, rest, opts, ctx, acc)
+
+      {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
+        finalize_format_frame(ff_header, rest, opts, ctx, acc)
+    end
+  end
+
+  # TODO: should we check length?
+  defp finalize_format_frame({_len, format_signature}, <<>>, opts, ctx, acc) do
+    full_frame = %__MODULE__{
+      headers: Enum.reverse(acc)
+    }
+
+    check_result =
+      if Map.get(opts, :verify_format_signature, true) do
+        case format_signature(full_frame) do
+          {:ok, ^format_signature} ->
+            :ok
+
+          {:ok, differing_format_signature} ->
+            {:error,
+             {:format_signature_mismatch,
+              %{expected: format_signature, got: differing_format_signature}}, ctx}
+        end
+      end
+
+    with :ok <- check_result do
+      {:ok, Context.layer(ctx, :apl, full_frame), <<>>}
+    end
+  end
 
   def from_full_frame!(%FullFrame{records: records}) do
     headers =
@@ -26,12 +77,12 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
     headers
     |> Enum.map(fn
       # if we have the header bytes collected already, we can use those
-      %Header{dib_bytes: d, vib_bytes: v} when is_binary(d) and is_binary(v) ->
+      %DataRecord.Header{dib_bytes: d, vib_bytes: v} when is_binary(d) and is_binary(v) ->
         <<d::binary, v::binary>>
 
       # otherwise we need to try and unparse the headers
-      %Header{dib_bytes: d, vib_bytes: v} = header when is_nil(d) or is_nil(v) ->
-        {:ok, header_bin, []} = Header.unparse(%{}, [header])
+      %DataRecord.Header{dib_bytes: d, vib_bytes: v} = header when is_nil(d) or is_nil(v) ->
+        {:ok, header_bin, []} = DataRecord.Header.unparse(%{}, [header])
         header_bin
     end)
     |> Enum.into("")

@@ -1,9 +1,9 @@
 defmodule CompactFrameTest do
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Tpl
-  alias Exmbus.Parser.Apl
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.CompactFrame
   alias Exmbus.Parser.Apl.FormatFrame
@@ -38,13 +38,12 @@ defmodule CompactFrameTest do
                 tpl: %Tpl{frame_type: :full_frame, header: %Tpl.None{}}
               }, <<>>} = Tpl.parse(bytes_full, %{}, Context.new())
 
-      assert %{
-               records: [
+      assert records:
+               [
                  %{description: :energy, value: 123.4, unit: "Wh"},
                  %{description: :volume, value: 567.8000000000001, unit: "m^3"},
                  %{description: :power, value: 901.2, unit: "W"}
-               ]
-             } = Apl.to_map!(full_frame)
+               ] = Enum.map(full_frame.records, &DataRecord.to_map!/1)
 
       assert {:ok, 15153} == FullFrame.format_signature(full_frame)
 
