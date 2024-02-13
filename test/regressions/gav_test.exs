@@ -1,4 +1,4 @@
-defmodule RegressionGAVTest do
+defmodule Regressions.GAVTest do
   use ExUnit.Case, async: true
 
   alias Exmbus.Parser.Context
