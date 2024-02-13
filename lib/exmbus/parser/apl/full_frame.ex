@@ -39,13 +39,17 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     end
   end
 
-  defp finalize_full_frame(rest, _opts, ctx, acc) do
+  defp finalize_full_frame(rest, opts, ctx, acc) do
     full_frame = %__MODULE__{
       records: Enum.reverse(acc),
       manufacturer_bytes: rest
     }
 
-    {:ok, Context.layer(ctx, :apl, full_frame), <<>>}
+    ctx = Context.layer(ctx, :apl, full_frame)
+
+    with {:ok, ctx} <- maybe_expand_compact_profiles(opts, ctx) do
+      {:ok, ctx, <<>>}
+    end
   end
 
   def format_signature(%__MODULE__{} = ff) do
@@ -64,5 +68,19 @@ defmodule Exmbus.Parser.Apl.FullFrame do
       |> Enum.into("")
 
     {:ok, Exmbus.crc!(record_bytes)}
+  end
+
+  defp maybe_expand_compact_profiles(%{expand_compact_profiles: false}, ctx), do: {:ok, ctx}
+
+  defp maybe_expand_compact_profiles(_opts, %{apl: %{records: records}} = ctx) do
+    records
+    |> Enum.filter(&DataRecord.is_compact_profile?/1)
+    |> Enum.reduce({:ok, ctx}, fn
+      compact_profile_record, {:ok, ctx} ->
+        DataRecord.expand_compact_profile(compact_profile_record, ctx)
+
+      _compact_profile_record, not_ok ->
+        not_ok
+    end)
   end
 end

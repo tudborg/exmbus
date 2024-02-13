@@ -21,6 +21,7 @@ defmodule Exmbus.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:timex, "~> 3.0"},
       {:nimble_csv, "~> 1.1"},
       {:crc, "~> 0.10.1"}
     ]

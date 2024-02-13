@@ -16,10 +16,10 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile.CompactProfileHeader do
       ) do
     increment_mode =
       case increment_mode_bits do
-        00 -> :absolute_value
-        01 -> :increments
-        10 -> :decrements
-        11 -> :signed_difference
+        0b00 -> :absolute_value
+        0b01 -> :increments
+        0b10 -> :decrements
+        0b11 -> :signed_difference
       end
 
     # the values 0xD and 0xF are now allowed in the element_size of a compact profile,

@@ -10,8 +10,8 @@ defmodule DataRecord.CompactProfileTest do
   - "Compact Profile"
   - "Inverse Compact Profile"
 
+
   """
-  alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Context
   use ExUnit.Case, async: true
@@ -30,25 +30,62 @@ defmodule DataRecord.CompactProfileTest do
       |> Base.decode16!()
 
     assert {:ok, ctx, <<>>} = FullFrame.parse(apl_bytes, %{}, Context.new())
-    records = ctx.apl.records
-    [compact_profile_record] = Enum.filter(records, &DataRecord.is_compact_profile?/1)
-
-    timeseries = DataRecord.unpack_compact_profile(compact_profile_record, ctx)
 
     assert [
-             {
-               %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 01:00:00]},
-               %{header: %{dib: %{storage: 9}}, data: 123_003}
+             # base time:
+             %Exmbus.Parser.Apl.DataRecord{
+               header: %Exmbus.Parser.Apl.DataRecord.Header{
+                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 8,
+                   function_field: :instantaneous,
+                   data_type: :int_or_bin,
+                   size: 32
+                 },
+                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                   description: :naive_datetime,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: :type_f,
+                   table: :main
+                 },
+                 coding: :type_f
+               },
+               data: ~N[2010-01-01 00:00:00]
              },
-             {
-               %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 02:00:00]},
-               %{header: %{dib: %{storage: 10}}, data: 123_005}
+             # base value:
+             %Exmbus.Parser.Apl.DataRecord{
+               header: %Exmbus.Parser.Apl.DataRecord.Header{
+                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 8,
+                   function_field: :instantaneous,
+                   data_type: :bcd,
+                   size: 24
+                 },
+                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                   description: :volume,
+                   multiplier: 0.1,
+                   unit: "m^3",
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_a
+               },
+               data: 123_000
              },
-             {
-               %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 03:00:00]},
-               %{header: %{dib: %{storage: 11}}, data: 123_016}
-             }
-           ] = timeseries
+             # expanded compact profile:
+             %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 01:00:00.000000]},
+             %{header: %{dib: %{storage: 9}}, data: 123_003},
+             %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 02:00:00.000000]},
+             %{header: %{dib: %{storage: 10}}, data: 123_005},
+             %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 03:00:00.000000]},
+             %{header: %{dib: %{storage: 11}}, data: 123_016}
+           ] = ctx.apl.records
   end
 
   test "inverse compact profile - orthogonal VIFE 0x13 - F.2.8" do
@@ -57,7 +94,7 @@ defmodule DataRecord.CompactProfileTest do
         # base time:
         "84046D00234111",
         # base value:
-        "8B0415003012",
+        "8B0415163012",
         # profile:
         "8D049513056901110203"
       ]
@@ -65,24 +102,65 @@ defmodule DataRecord.CompactProfileTest do
       |> Base.decode16!()
 
     assert {:ok, ctx, <<>>} = FullFrame.parse(apl_bytes, %{}, Context.new())
-    records = ctx.apl.records
-    [compact_profile_record] = Enum.filter(records, &DataRecord.is_compact_profile?/1)
-
-    {:ok, timeseries} = DataRecord.unpack_compact_profile(compact_profile_record, ctx)
 
     assert [
-             {
-               %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 02:00:00]},
-               %{header: %{dib: %{storage: 9}}, data: 123_005}
+             # base
+             %Exmbus.Parser.Apl.DataRecord{
+               header: %Exmbus.Parser.Apl.DataRecord.Header{
+                 dib_bytes: <<132, 4>>,
+                 vib_bytes: "m",
+                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 8,
+                   function_field: :instantaneous,
+                   data_type: :int_or_bin,
+                   size: 32
+                 },
+                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                   description: :naive_datetime,
+                   multiplier: nil,
+                   unit: nil,
+                   extensions: [],
+                   coding: :type_f,
+                   table: :main
+                 },
+                 coding: :type_f
+               },
+               data: ~N[2010-01-01 03:00:00]
              },
-             {
-               %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 01:00:00]},
-               %{header: %{dib: %{storage: 10}}, data: 123_003}
+             # value
+             %Exmbus.Parser.Apl.DataRecord{
+               header: %Exmbus.Parser.Apl.DataRecord.Header{
+                 dib_bytes: <<139, 4>>,
+                 vib_bytes: <<21>>,
+                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                   device: 0,
+                   tariff: 0,
+                   storage: 8,
+                   function_field: :instantaneous,
+                   data_type: :bcd,
+                   size: 24
+                 },
+                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                   description: :volume,
+                   multiplier: 0.1,
+                   unit: "m^3",
+                   extensions: [],
+                   coding: nil,
+                   table: :main
+                 },
+                 coding: :type_a
+               },
+               data: 123_016
              },
-             {
-               %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 00:00:00]},
-               %{header: %{dib: %{storage: 11}}, data: 123_000}
-             }
-           ] = timeseries
+             # expanded compact profile
+             %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 02:00:00.000000]},
+             %{header: %{dib: %{storage: 9}}, data: 123_005},
+             %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 01:00:00.000000]},
+             %{header: %{dib: %{storage: 10}}, data: 123_003},
+             %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 00:00:00.000000]},
+             %{header: %{dib: %{storage: 11}}, data: 123_000}
+           ] = ctx.apl.records
   end
 end
