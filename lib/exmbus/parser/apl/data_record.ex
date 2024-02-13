@@ -8,7 +8,8 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   alias Exmbus.Parser.DataType
 
   defdelegate is_compact_profile?(data_record), to: CompactProfile
-  defdelegate unpack_compact_profile(data_record, ctx), to: CompactProfile
+  defdelegate expand_compact_profile(data_record, ctx), to: CompactProfile
+  defdelegate compact_profile_records(data_record, all_records), to: CompactProfile
 
   defstruct [
     # header is the Header struct

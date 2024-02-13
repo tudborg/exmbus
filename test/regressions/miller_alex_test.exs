@@ -12,7 +12,545 @@ defmodule Regressions.MillerAlexTest do
 
     assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: false, key: key)
 
-    IO.inspect(ctx)
+    assert %Exmbus.Parser.Context{
+             apl: %Exmbus.Parser.Apl.FullFrame{
+               manufacturer_bytes: "",
+               records: [
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 67329,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       multiplier: 0.001,
+                       unit: "m^3",
+                       description: :volume
+                     },
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       tariff: 0,
+                       storage: 0
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2020-01-20],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       tariff: 0,
+                       storage: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2020-01-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 8,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 64475,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 8,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-12-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 9,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 60063,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 9,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-11-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 10,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 55912,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 10,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-10-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 11,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 52342,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 11,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-09-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 12,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 48965,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 12,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-08-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 13,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 43990,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 13,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-07-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 14,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 40374,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 14,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-06-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 15,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 34701,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 15,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-05-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 16,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 29110,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 16,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-04-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 17,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 23315,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 17,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-03-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 18,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 17584,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 18,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-02-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 19,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 13356,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 19,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2019-01-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 20,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 8638,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 20,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2018-12-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 21,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 4677,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 21,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: ~D[2018-11-01],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 22,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :date
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: 421,
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_a,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 22,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       description: :volume,
+                       multiplier: 0.001,
+                       unit: "m^3"
+                     }
+                   }
+                 },
+                 %Exmbus.Parser.Apl.DataRecord{
+                   data: [
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false,
+                     false
+                   ],
+                   header: %Exmbus.Parser.Apl.DataRecord.Header{
+                     coding: :type_d,
+                     dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                       device: 0,
+                       storage: 0,
+                       tariff: 0
+                     },
+                     vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                       coding: :type_d,
+                       description: :error_flags,
+                       table: :fd
+                     }
+                   }
+                 }
+               ]
+             },
+             dll: %Exmbus.Parser.Dll.Wmbus{
+               control: :snd_nr,
+               device: :radio_converter_meter_side,
+               identification_no: 55_010_031,
+               manufacturer: "ZRI",
+               version: 20
+             },
+             tpl: %Exmbus.Parser.Tpl{
+               frame_type: :full_frame,
+               header: %Exmbus.Parser.Tpl.Long{
+                 access_no: 80,
+                 configuration_field: %Exmbus.Parser.Tpl.ConfigurationField{
+                   accessibility: false,
+                   bidirectional: false,
+                   blocks: 5,
+                   content_of_message: 0,
+                   hop_count: 0,
+                   mode: 5,
+                   repeater_access: 0,
+                   syncrony: false
+                 },
+                 device: :water,
+                 identification_no: 14_639_203,
+                 manufacturer: "ZRI",
+                 status: %Exmbus.Parser.Tpl.Status{
+                   application_status: :no_error,
+                   low_power: false,
+                   manufacturer_status: 0,
+                   permanent_error: false,
+                   temporary_error: false
+                 },
+                 version: 0
+               }
+             },
+             errors: []
+           } = ctx
   end
 
   # Used to cause:
