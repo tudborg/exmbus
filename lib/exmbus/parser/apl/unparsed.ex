@@ -90,27 +90,33 @@ defmodule Exmbus.Parser.Apl.Unparsed do
   end
 
   # Generate the IV for mode 5 encryption
-  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Short{access_no: a_no}}, dll: %Wmbus{} = wmbus}) do
-    %Wmbus{manufacturer: m, identification_no: i, version: v, device: d} = wmbus
-    {:ok, man_bytes} = Manufacturer.encode(m)
-    {:ok, id_bytes} = DataType.encode_type_a(i, 32)
-    {:ok, device_byte} = Device.encode(d)
-
-    {:ok,
-     <<man_bytes::binary, id_bytes::binary, v, device_byte::binary, a_no, a_no, a_no, a_no, a_no,
-       a_no, a_no, a_no>>}
+  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Short{} = header}, dll: %Wmbus{} = wmbus}) do
+    mode_5_iv(
+      wmbus.manufacturer,
+      wmbus.identification_no,
+      wmbus.version,
+      wmbus.device,
+      header.access_no
+    )
   end
 
   defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Long{} = header}}) do
-    %Tpl.Long{manufacturer: m, identification_no: id, version: v, device: d, access_no: a_no} =
-      header
+    mode_5_iv(
+      header.manufacturer,
+      header.identification_no,
+      header.version,
+      header.device,
+      header.access_no
+    )
+  end
 
-    {:ok, man_bytes} = Manufacturer.encode(m)
-    {:ok, id_bytes} = DataType.encode_type_a(id, 32)
-    {:ok, device_byte} = Device.encode(d)
+  defp mode_5_iv(manufacturer, identification_no, version, device, access_no) do
+    {:ok, man_bytes} = Manufacturer.encode(manufacturer)
+    {:ok, id_bytes} = DataType.encode_type_a(identification_no, 32)
+    {:ok, device_byte} = Device.encode(device)
 
     {:ok,
-     <<man_bytes::binary, id_bytes::binary, v, device_byte::binary, a_no, a_no, a_no, a_no, a_no,
-       a_no, a_no, a_no>>}
+     <<man_bytes::binary, id_bytes::binary, version, device_byte::binary, access_no, access_no,
+       access_no, access_no, access_no, access_no, access_no, access_no>>}
   end
 end
