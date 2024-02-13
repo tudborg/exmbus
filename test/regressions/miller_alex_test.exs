@@ -11,6 +11,8 @@ defmodule Regressions.MillerAlexTest do
       )
 
     assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: false, key: key)
+
+    IO.inspect(ctx)
   end
 
   # Used to cause:

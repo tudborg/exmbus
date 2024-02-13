@@ -1,10 +1,14 @@
 defmodule Exmbus.Parser.Apl.DataRecord do
+  alias Exmbus.Parser.Apl.DataRecord.CompactProfile
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Apl.DataRecord.Header
   alias Exmbus.Parser.Apl.DataRecord.Header.InvalidHeader
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
   # alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.DataType
+
+  defdelegate is_compact_profile?(data_record), to: CompactProfile
+  defdelegate unpack_compact_profile(data_record, ctx), to: CompactProfile
 
   defstruct [
     # header is the Header struct

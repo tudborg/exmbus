@@ -1,4 +1,4 @@
-defmodule DataInformationBlockTest do
+defmodule DataRecord.DataInformationBlockTest do
   use ExUnit.Case, async: true
 
   alias Exmbus.Parser.Context

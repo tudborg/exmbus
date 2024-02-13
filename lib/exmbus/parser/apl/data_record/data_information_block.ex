@@ -3,6 +3,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
 
   defstruct [
     # DIB fields:
+    # device is what is also called "subunit"
     device: nil,
     tariff: nil,
     storage: nil,
@@ -92,10 +93,11 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
   Utilities for DIB parsing
   """
 
-  def default_coding(%__MODULE__{data_type: :int_or_bin}), do: :type_b
-  def default_coding(%__MODULE__{data_type: :real}), do: :type_h
-  def default_coding(%__MODULE__{data_type: :bcd}), do: :type_a
-  def default_coding(%__MODULE__{data_type: _}), do: nil
+  def default_coding(%__MODULE__{data_type: data_type}), do: default_coding(data_type)
+  def default_coding(:int_or_bin), do: :type_b
+  def default_coding(:real), do: :type_h
+  def default_coding(:bcd), do: :type_a
+  def default_coding(_), do: nil
 
   # data field conversion to nicer internal format.
   # returns data_type, size in bits
