@@ -105,8 +105,8 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
     do: exts(e, rest, opts, [:average_value | acc])
 
   # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b0010011::7, _rest::binary>>, _opts, _acc),
-    do: raise("E001 0011 Inverse Compact Profile not supported")
+  defp exts(1, <<e::1, 0b0010011::7, rest::binary>>, opts, acc),
+    do: exts(e, rest, opts, [{:compact_profile, :inverse} | acc])
 
   # EN 13757-3:2018 table 15
   defp exts(1, <<_::1, 0b0010100::7, _rest::binary>>, _opts, _acc),
@@ -117,12 +117,12 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
     do: raise("E001 1101 Standard conform data content not supported")
 
   # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b0011110::7, _rest::binary>>, _opts, _acc),
-    do: raise("E001 1110 Compact profile with register numbers not supported")
+  defp exts(1, <<e::1, 0b0011110::7, rest::binary>>, opts, acc),
+    do: exts(e, rest, opts, [{:compact_profile, :register_numbers} | acc])
 
   # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b0011111::7, _rest::binary>>, _opts, _acc),
-    do: raise("E001 1111 Compact profile not supported")
+  defp exts(1, <<e::1, 0b0011111::7, rest::binary>>, opts, acc),
+    do: exts(e, rest, opts, [{:compact_profile, :compact_profile} | acc])
 
   defp exts(1, <<e::1, 0b0100000::7, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:per, :interval, :second} | acc])
