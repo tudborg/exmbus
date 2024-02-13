@@ -21,12 +21,8 @@ defmodule Exmbus.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:httpoison, "~> 1.8", only: [:test, :dev]},
-      {:jason, "~> 1.2", only: [:test, :dev]},
       {:nimble_csv, "~> 1.1"},
       {:crc, "~> 0.10.1"}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 end
