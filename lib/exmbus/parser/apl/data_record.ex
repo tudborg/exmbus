@@ -24,7 +24,6 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   def parse(bin, opts, ctx) do
     case Header.parse(bin, opts, ctx) do
       {:ok, %Header{} = header, rest} ->
-        # parse data from rest
         case parse_data(header, rest) do
           {:ok, data, rest} ->
             {:ok, %__MODULE__{header: header, data: data}, rest}

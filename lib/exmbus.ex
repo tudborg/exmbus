@@ -11,8 +11,11 @@ defmodule Exmbus do
 
   def parse!(bin, opts \\ nil, ctx \\ nil) do
     case parse(bin, opts, ctx) do
-      {:ok, ctx, <<>>} ->
+      {:ok, %Context{errors: []} = ctx, <<>>} ->
         ctx
+
+      {:ok, %Context{errors: errors}, <<>>} ->
+        raise ParseError, message: "Failed to parse: #{inspect(errors)}", errors: errors
 
       {:ok, ctx, rest} ->
         raise ParseError,
@@ -20,7 +23,7 @@ defmodule Exmbus do
           errors: ctx.errors ++ [{:failed_to_parse_entire_binary, rest}]
 
       {:error, %Context{errors: errors}} when is_list(errors) ->
-        raise ParseError, message: "Failed to parse", errors: errors
+        raise ParseError, message: "Failed to parse: #{inspect(errors)}", errors: errors
     end
   end
 

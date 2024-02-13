@@ -39,9 +39,12 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   """
   # VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)
   # todo move down into exts function
-  def parse(1, <<e::1, 0b000::3, xxxx::4, rest::binary>>, opts, [
+  def parse(
+        1,
+        <<e::1, 0b000::3, xxxx::4, rest::binary>>,
+        opts,
         %{vib: %VIB{table: :main, extensions: exts} = vib} = ctx
-      ]) do
+      ) do
     case direction_from_ctx(ctx) do
       {:ok, :from_meter} ->
         case ErrorCode.decode(xxxx) do
@@ -88,7 +91,10 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp direction_from_ctx(%{dll: %Exmbus.Parser.Dll.Wmbus{} = wmbus}),
     do: Exmbus.Parser.Dll.Wmbus.direction(wmbus)
 
-  defp direction_from_ctx([]), do: {:error, :no_direction}
+  defp direction_from_ctx(%{dll: %Exmbus.Parser.Dll.Mbus{} = mbus}),
+    do: Exmbus.Parser.Dll.Mbus.direction(mbus)
+
+  defp direction_from_ctx(%{}), do: {:error, :no_direction}
 
   # Table 15 — Combinable (orthogonal) VIFE-table
   defp exts(0, rest, _opts, acc) do

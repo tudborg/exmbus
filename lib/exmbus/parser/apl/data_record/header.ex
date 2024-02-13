@@ -1,4 +1,5 @@
 defmodule Exmbus.Parser.Apl.DataRecord.Header do
+  alias Exmbus.Parser.Binary
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
@@ -24,7 +25,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   Parses the next DataRecord Header from a binary.
   """
   def parse(bin, opts, ctx) do
-    {:ok, dib_bytes, rest_after_dib} = collect_block(bin)
+    {:ok, dib_bytes, rest_after_dib} = Binary.collect_by_extension_bit(bin)
 
     case DIB.parse(dib_bytes, opts, ctx) do
       {:special_function, type, <<>>} ->
@@ -33,12 +34,19 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
         {:special_function, type, rest_after_dib}
 
       {:ok, %DIB{} = dib, <<>>} ->
-        {:ok, vib_bytes, rest_after_vib} = collect_block(rest_after_dib)
+        # {:ok, vib_bytes, rest_after_vib} = Binary.collect_by_extension_bit(rest_after_dib)
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(vib_bytes, opts, Context.layer(ctx, :dib, dib)) do
-          {:ok, %VIB{} = vib, <<>>} ->
+        case VIB.parse(rest_after_dib, opts, Context.layer(ctx, :dib, dib)) do
+          {:ok, %VIB{} = vib, rest_after_vib} ->
+            vib_bytes =
+              binary_part(
+                rest_after_dib,
+                0,
+                byte_size(rest_after_dib) - byte_size(rest_after_vib)
+              )
+
             {:ok, coding} = summarize_coding(dib, vib)
 
             {
@@ -54,7 +62,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
               rest_after_vib
             }
 
-          {:error, {:invalid, reason}, <<>>} ->
+          {:error, {:invalid, reason}, rest_after_vib} ->
             {:ok,
              %InvalidHeader{
                dib: dib,
@@ -73,35 +81,6 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
     with {:ok, vib_bytes} <- VIB.unparse(opts, vib),
          {:ok, dib_bytes} <- DIB.unparse(opts, dib) do
       {:ok, <<dib_bytes::binary, vib_bytes::binary>>}
-    end
-  end
-
-  @doc """
-  Collect a byte block.
-  A block is a sequence of bytes where the first bit in each byte
-  represents if the next byte is part of the block.
-
-    iex> {:ok, <<0xFF, 0x00>>, <<0x00>>} = collect_block(<<0xFF, 0x00, 0x00>>)
-
-    iex> {:ok, <<0x00>>, <<0x00>>} = collect_block(<<0x00, 0x00>>)
-
-    iex> {:ok, <<0x80, 0x80, 0x00>>, <<0x00>>} = collect_block(<<1::1, 0::7, 1::1, 0::7, 0x00, 0x00>>)
-
-  """
-  def collect_block(bin) do
-    collect_block(0, bin)
-  end
-
-  defp collect_block(byte_len, bin) do
-    byte_len_with_next = byte_len + 1
-
-    case bin do
-      <<_::binary-size(byte_len), 0::1, _::7, _::binary>> ->
-        <<block::binary-size(byte_len_with_next), rest::binary>> = bin
-        {:ok, block, rest}
-
-      <<_::binary-size(byte_len), 1::1, _::7, _::binary>> ->
-        collect_block(byte_len_with_next, bin)
     end
   end
 
