@@ -194,22 +194,32 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
   # Shift a time record according to the spacing of the compact profile
   #
   defp shift_time_record(profile_type, spacing, %DataRecord{} = record) do
-    {n, unit} =
+    duration =
       case spacing do
-        {n, :second} -> {n, :seconds}
-        {n, :minute} -> {n, :minutes}
-        {n, :hour} -> {n, :hours}
-        {n, :day} -> {n, :days}
-        {n, :month} -> {n, :months}
+        {n, :second} -> Duration.new!(second: n)
+        {n, :minute} -> Duration.new!(minute: n)
+        {n, :hour} -> Duration.new!(hour: n)
+        {n, :day} -> Duration.new!(day: n)
+        {n, :month} -> Duration.new!(month: n)
       end
 
     # flip time direction if profile type is inverse:
-    n = if profile_type == :inverse, do: -n, else: n
-    # the heavy lifting of shifting different types of Date/Time constructs
-    # is deleted to Timex:
-    data = Timex.shift(record.data, [{unit, n}])
+    duration = if profile_type == :inverse, do: Duration.negate(duration), else: duration
 
-    {:ok, set_data_and_storage(record, data, record.header.dib.storage + 1)}
+    # depending on the record data type, we need to shift the data differently
+    shifted_data =
+      case record.data do
+        %Date{} ->
+          record.data |> Date.shift(duration)
+
+        %NaiveDateTime{} ->
+          record.data |> NaiveDateTime.shift(duration)
+
+        %DateTime{time_zone: tz} ->
+          record.data |> NaiveDateTime.shift(duration) |> DateTime.from_naive(tz)
+      end
+
+    {:ok, set_data_and_storage(record, shifted_data, record.header.dib.storage + 1)}
   end
 
   defp shift_value_record(profile_type, header, value, %DataRecord{} = record) do

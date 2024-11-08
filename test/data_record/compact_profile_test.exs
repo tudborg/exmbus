@@ -79,11 +79,11 @@ defmodule DataRecord.CompactProfileTest do
                data: 123_000
              },
              # expanded compact profile:
-             %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 01:00:00.000000]},
+             %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 01:00:00]},
              %{header: %{dib: %{storage: 9}}, data: 123_003},
-             %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 02:00:00.000000]},
+             %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 02:00:00]},
              %{header: %{dib: %{storage: 10}}, data: 123_005},
-             %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 03:00:00.000000]},
+             %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 03:00:00]},
              %{header: %{dib: %{storage: 11}}, data: 123_016}
            ] = ctx.apl.records
   end
@@ -155,11 +155,11 @@ defmodule DataRecord.CompactProfileTest do
                data: 123_016
              },
              # expanded compact profile
-             %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 02:00:00.000000]},
+             %{header: %{dib: %{storage: 9}}, data: ~N[2010-01-01 02:00:00]},
              %{header: %{dib: %{storage: 9}}, data: 123_005},
-             %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 01:00:00.000000]},
+             %{header: %{dib: %{storage: 10}}, data: ~N[2010-01-01 01:00:00]},
              %{header: %{dib: %{storage: 10}}, data: 123_003},
-             %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 00:00:00.000000]},
+             %{header: %{dib: %{storage: 11}}, data: ~N[2010-01-01 00:00:00]},
              %{header: %{dib: %{storage: 11}}, data: 123_000}
            ] = ctx.apl.records
   end

@@ -5,7 +5,7 @@ defmodule Exmbus.MixProject do
     [
       app: :exmbus,
       version: "0.1.0",
-      elixir: "~> 1.10",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -21,7 +21,6 @@ defmodule Exmbus.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:timex, "~> 3.0"},
       {:nimble_csv, "~> 1.1"},
       {:crc, "~> 0.10.1"}
     ]
