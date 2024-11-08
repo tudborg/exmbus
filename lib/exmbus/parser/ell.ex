@@ -157,12 +157,8 @@ defmodule Exmbus.Parser.Ell do
 
   # Try to decrypt bin with key.
   defp decrypt_aes(bin, icb, key) do
-    result = :crypto.crypto_one_time(:aes_ctr, key, icb, bin, false)
-
-    case result do
-      {_newState, plain} -> {:ok, plain}
-      :run_time_error -> {:error, :run_time_error}
-    end
+    # TODO: handle a raise from this call? Do we want to crash? Probably?
+    {:ok, :crypto.crypto_one_time(:aes_ctr, key, icb, bin, false)}
   end
 
   defp verify_crc(payload_crc, plain) when is_integer(payload_crc) and is_binary(plain) do
