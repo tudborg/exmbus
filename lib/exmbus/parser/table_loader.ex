@@ -11,7 +11,7 @@ defmodule Exmbus.Parser.TableLoader do
   rescue
     e ->
       Logger.error(
-        "Failed #{__MODULE__}.from_file!(#{inspect(dir)}, #{inspect(filename)})\n#{e.message}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
+        "Failed #{__MODULE__}.from_file!(#{inspect(dir)}, #{inspect(filename)})\n#{Exception.message(e)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
       )
 
       reraise e, __STACKTRACE__

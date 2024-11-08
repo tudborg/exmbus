@@ -147,7 +147,7 @@ defmodule Exmbus.Parser.Ell do
 
   defp try_decrypt_and_verify(bin, icb, ctx, [key | keys], error_acc) do
     with {:ok, <<payload_crc::little-size(16), rest::binary>>} <- decrypt_aes(bin, icb, key),
-         {:ok, plain} = verify_crc(payload_crc, rest) do
+         {:ok, plain} <- verify_crc(payload_crc, rest) do
       {:ok, plain}
     else
       {:error, reason} ->
@@ -157,7 +157,9 @@ defmodule Exmbus.Parser.Ell do
 
   # Try to decrypt bin with key.
   defp decrypt_aes(bin, icb, key) do
-    # TODO: handle a raise from this call? Do we want to crash? Probably?
+    # TODO: handle a raise from this call? Do we want to crash?
+    # Crash only occours when data format is bad, which should be prevalidated when we get here.
+    # see also: https://www.erlang.org/doc/apps/crypto/crypto#error_3tup
     {:ok, :crypto.crypto_one_time(:aes_ctr, key, icb, bin, false)}
   end
 
