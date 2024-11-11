@@ -68,10 +68,13 @@ defmodule Exmbus.Parser.Apl.Unparsed do
       answer =
         Enum.find_value(byte_keys, fn
           byte_key when byte_size(byte_key) == 16 ->
-            case :crypto.crypto_one_time(:aes_cbc, byte_key, iv, enc, false) do
-              <<0x2F, 0x2F, rest::binary>> -> {:ok, rest}
-              # not the valid key
-              _ -> nil
+            case Exmbus.Crypto.crypto_one_time(:aes_cbc, byte_key, iv, enc, false) do
+              # Valid key, decrypts with marker 0x2F2F:
+              {:ok, <<0x2F, 0x2F, rest::binary>>} -> {:ok, rest}
+              # Not valid key, marker not found as prefix:
+              {:ok, _other} -> nil
+              # decryption error:
+              {:error, e} -> {:error, {:mode_5_decryption_failed, e}}
             end
 
           byte_key ->

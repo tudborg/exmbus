@@ -146,7 +146,7 @@ defmodule Exmbus.Parser.Ell do
   end
 
   defp try_decrypt_and_verify(bin, icb, ctx, [key | keys], error_acc) do
-    with {:ok, <<payload_crc::little-size(16), rest::binary>>} <- decrypt_aes(bin, icb, key),
+    with {:ok, <<payload_crc::little-size(16), rest::binary>>} <- decrypt_aes_ctr(bin, icb, key),
          {:ok, plain} <- verify_crc(payload_crc, rest) do
       {:ok, plain}
     else
@@ -155,15 +155,11 @@ defmodule Exmbus.Parser.Ell do
     end
   end
 
-  # Try to decrypt bin with key.
-  defp decrypt_aes(bin, icb, key) do
-    try do
-      {:ok, :crypto.crypto_one_time(:aes_ctr, key, icb, bin, false)}
-    catch
-      :error, {_tag, _c_file_info, _description} = e ->
-        {:error, {:crypto_error, e}}
-    end
-  end
+  defp encrypt_aes_ctr(bin, icb, key),
+    do: Exmbus.Crypto.crypto_one_time(:aes_ctr, key, icb, bin, true)
+
+  defp decrypt_aes_ctr(bin, icb, key),
+    do: Exmbus.Crypto.crypto_one_time(:aes_ctr, key, icb, bin, false)
 
   defp verify_crc(payload_crc, plain) when is_integer(payload_crc) and is_binary(plain) do
     case Exmbus.crc!(plain) do
