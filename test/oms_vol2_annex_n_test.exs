@@ -395,7 +395,7 @@ defmodule OMSVol2AnnexNTest do
                    version: 85
                  }
                },
-               ell: %Ell{
+               ell: %Ell.Unencrypted{
                  access_no: 117,
                  communication_control: %Ell.CommunicationControl{
                    accessibility: false,
@@ -405,8 +405,7 @@ defmodule OMSVol2AnnexNTest do
                    repeated_access: false,
                    response_delay: :slow_delay,
                    synchronized: false
-                 },
-                 session_number: nil
+                 }
                },
                dll: %Dll.Wmbus{
                  control: :snd_nr,

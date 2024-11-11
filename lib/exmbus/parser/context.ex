@@ -23,6 +23,7 @@ defmodule Exmbus.Parser.Context do
   @default_handlers [
     &Exmbus.Parser.Dll.parse/1,
     &Exmbus.Parser.Ell.parse/1,
+    &Exmbus.Parser.Ell.Encrypted.decrypt_rest/1,
     &Exmbus.Parser.Tpl.parse/1,
     &Exmbus.Parser.Tpl.decrypt/1,
     &Exmbus.Parser.Apl.parse/1
