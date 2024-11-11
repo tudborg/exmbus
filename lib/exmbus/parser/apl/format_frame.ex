@@ -5,7 +5,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
 
-  def parse(%{rest: <<len, format_signature::little-size(16), rest::binary>>} = ctx) do
+  def parse(%{bin: <<len, format_signature::little-size(16), rest::binary>>} = ctx) do
     _parse_format_frame({len, format_signature}, rest, ctx, [])
   end
 
@@ -51,7 +51,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
       end
 
     with :ok <- check_result do
-      {:continue, Context.merge(ctx, apl: full_frame, rest: <<>>)}
+      {:continue, Context.merge(ctx, apl: full_frame, bin: <<>>)}
     end
   end
 

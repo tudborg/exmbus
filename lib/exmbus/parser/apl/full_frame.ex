@@ -8,7 +8,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
             manufacturer_bytes: nil
 
   def parse(%Context{} = ctx) do
-    parse_full_frame(ctx.rest, ctx, [])
+    parse_full_frame(ctx.bin, ctx, [])
   end
 
   defp parse_full_frame(<<>>, ctx, acc) do
@@ -48,7 +48,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     ctx = Context.merge(ctx, apl: full_frame)
 
     with {:ok, ctx} <- maybe_expand_compact_profiles(ctx) do
-      {:continue, Context.merge(ctx, rest: <<>>)}
+      {:continue, Context.merge(ctx, bin: <<>>)}
     end
   end
 

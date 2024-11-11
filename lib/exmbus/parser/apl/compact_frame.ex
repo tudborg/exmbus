@@ -11,7 +11,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
 
   def parse(
         %{
-          rest:
+          bin:
             <<format_signature::little-size(16), full_frame_crc::little-size(16), rest::binary>>
         } = ctx
       ) do
@@ -21,7 +21,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
       data_bytes: rest
     }
 
-    {:continue, Context.merge(ctx, apl: compact_frame, rest: <<>>)}
+    {:continue, Context.merge(ctx, apl: compact_frame, bin: <<>>)}
   end
 
   @doc """
@@ -89,7 +89,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
 
     case check_result do
       :ok ->
-        {:continue, Context.merge(ctx, apl: full_frame, rest: <<>>)}
+        {:continue, Context.merge(ctx, apl: full_frame, bin: <<>>)}
 
       {:error, reason} ->
         {:abort, Context.add_error(ctx, reason)}
@@ -102,7 +102,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
         _expand(headers, rest, ctx, [%DataRecord{header: header, data: data} | acc])
 
       {:error, reason, rest} ->
-        {:abort, Context.add_error(ctx, reason) |> Context.merge(rest: rest)}
+        {:abort, Context.add_error(ctx, reason) |> Context.merge(bin: rest)}
     end
   end
 end

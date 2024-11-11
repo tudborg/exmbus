@@ -22,7 +22,7 @@ defmodule Devices.LAN_WMBUS_SMK2Test do
       |> Base.decode16!()
 
     {:continue, ctx} =
-      Apl.FullFrame.parse(Context.new(rest: apl_bytes))
+      Apl.FullFrame.parse(Context.new(bin: apl_bytes))
 
     assert [
              %Apl.DataRecord{

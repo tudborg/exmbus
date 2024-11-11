@@ -12,8 +12,8 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
   This function will decrypt the encrypted bytes according to the TPL encryption mode.
   """
-  def decrypt(%{tpl: nil} = ctx), do: {:continue, ctx}
-  def decrypt(%{tpl: tpl} = ctx), do: decrypt_to_context(encryption_mode(tpl), ctx)
+  def decrypt_bin(%{tpl: nil} = ctx), do: {:continue, ctx}
+  def decrypt_bin(%{tpl: tpl} = ctx), do: decrypt_to_context(encryption_mode(tpl), ctx)
 
   @doc """
   Return configured encryption mode as {:mode, m}
@@ -57,11 +57,11 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
   defp decrypt_to_context(5, ctx) do
     {:ok, encrypted_byte_count} = encrypted_byte_count(ctx.tpl)
-    <<encrypted::binary-size(encrypted_byte_count), plain::binary>> = ctx.rest
+    <<encrypted::binary-size(encrypted_byte_count), plain::binary>> = ctx.bin
 
     case decrypt_mode_5(encrypted, ctx) do
       {:ok, decrypted} ->
-        {:continue, Context.merge(ctx, rest: <<decrypted::binary, plain::binary>>)}
+        {:continue, Context.merge(ctx, bin: <<decrypted::binary, plain::binary>>)}
 
       {:error, reason} ->
         {:abort, Context.add_error(ctx, reason)}

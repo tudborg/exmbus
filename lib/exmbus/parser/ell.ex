@@ -17,7 +17,7 @@ defmodule Exmbus.Parser.Ell do
   # > This value of the CI-field is used if data encryption at the link layer is not used in the frame.
   # > Table 44 below, shows the complete extension block in this case.
   # Fields: CC, ACC
-  def parse(%{rest: <<0x8C, cc::binary-size(1), acc, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x8C, cc::binary-size(1), acc, rest::binary>>} = ctx) do
     {:ok, control} = CommunicationControl.decode(cc)
 
     ell = %Unencrypted{
@@ -25,7 +25,7 @@ defmodule Exmbus.Parser.Ell do
       access_no: acc
     }
 
-    {:continue, Context.merge(ctx, ell: ell, rest: rest)}
+    {:continue, Context.merge(ctx, ell: ell, bin: rest)}
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
@@ -33,7 +33,7 @@ defmodule Exmbus.Parser.Ell do
   # Fields: CC, ACC, SN, PayloadCRC (the payload is part of encrypted)
   def parse(
         %{
-          rest:
+          bin:
             <<0x8D, cc::binary-size(1), acc, sn::binary-size(4), payload_crc::size(16),
               rest::binary>>
         } = ctx
@@ -47,7 +47,7 @@ defmodule Exmbus.Parser.Ell do
       session_number: session_number
     }
 
-    {:continue, Context.merge(ctx, ell: ell, rest: <<payload_crc::size(16), rest::binary>>)}
+    {:continue, Context.merge(ctx, ell: ell, bin: <<payload_crc::size(16), rest::binary>>)}
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is not used in the frame.
@@ -55,7 +55,7 @@ defmodule Exmbus.Parser.Ell do
   # > Table 46 below shows the complete extension block in this case.
   # Fields: CC, ACC, M2, A2
   def parse(%{
-        rest:
+        bin:
           <<0x8E, _cc::binary-size(1), _acc, _m2::binary-size(2), _a2::binary-size(6),
             _rest::binary>>
       }) do
@@ -67,7 +67,7 @@ defmodule Exmbus.Parser.Ell do
   # > Table 47 below shows the complete extension block in this case.
   # Fields: CC, ACC, M2, A2, SN, PayloadCRC
   def parse(%{
-        rest:
+        bin:
           <<0x8F, _cc::binary-size(1), _acc, _m2::binary-size(2), _a2::binary-size(6),
             _sn::binary-size(4), _payload_crc::binary-size(2), _rest::binary>>
       }) do
@@ -78,12 +78,14 @@ defmodule Exmbus.Parser.Ell do
   # > The shadowed rows of Table 48 shall always be present.
   # > The other fields are optional and can be selected in case they are needed.
   # > The table defines the ordering of the fields.
-  def parse(%{rest: <<0x86, _rest::binary>>}) do
+  def parse(%{bin: <<0x86, _rest::binary>>}) do
     raise "TODO: ELL V"
   end
 
   # When the CI is not an ELL CI, we set the ELL to none and continue
-  def parse(%{rest: _} = ctx) do
+  def parse(%{bin: _} = ctx) do
     {:continue, Context.merge(ctx, ell: %None{})}
   end
+
+  defdelegate decrypt_bin(ctx), to: Encrypted
 end

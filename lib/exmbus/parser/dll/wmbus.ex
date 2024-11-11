@@ -31,20 +31,20 @@ defmodule Exmbus.Parser.Dll.Wmbus do
 
   # Expect length and crc in frame: Check CRC and length match.
   # Be aware of Frame format A vs B
-  def parse(%{rest: <<_len, _rest::binary>>, opts: %{length: true, crc: true}} = ctx) do
-    case validate_frame_format_b(ctx.rest) do
+  def parse(%{bin: <<_len, _rest::binary>>, opts: %{length: true, crc: true}} = ctx) do
+    case validate_frame_format_b(ctx.bin) do
       {:ok, valid_bin} ->
-        Context.merge(ctx, rest: valid_bin, opts: %{length: false, crc: false})
+        Context.merge(ctx, bin: valid_bin, opts: %{length: false, crc: false})
         |> parse()
 
       {:error, {:not_valid_frame_format_b, _}} ->
-        case validate_frame_format_a(ctx.rest) do
+        case validate_frame_format_a(ctx.bin) do
           {:ok, valid_bin} ->
-            Context.merge(ctx, rest: valid_bin, opts: %{length: false, crc: false})
+            Context.merge(ctx, bin: valid_bin, opts: %{length: false, crc: false})
             |> parse()
 
           {:error, {:not_valid_frame_format_a, _}} ->
-            {:abort, Context.add_error(ctx, {:bad_length_or_crc, ctx.rest})}
+            {:abort, Context.add_error(ctx, {:bad_length_or_crc, ctx.bin})}
         end
     end
   end
@@ -56,9 +56,9 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   # There is a chance that this isn't wmbus length but some other application's length.
   # A same assumption is that length describes the length if `rest`, but that is _an assumption!_
   # We just can't really validate the length here.
-  def parse(%{rest: <<len, rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
+  def parse(%{bin: <<len, rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
     if byte_size(rest) == len or Map.get(ctx.opts, :ignore_length, false) do
-      Context.merge(ctx, rest: rest, opts: %{length: false})
+      Context.merge(ctx, bin: rest, opts: %{length: false})
       |> parse()
     else
       {:abort, Context.add_error(ctx, :bad_length)}
@@ -67,7 +67,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
 
   def parse(
         %{
-          rest:
+          bin:
             <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v,
               d::binary-size(1), rest::binary>>,
           opts: %{length: false, crc: false}
@@ -86,7 +86,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
       device: device
     }
 
-    {:continue, Context.merge(ctx, rest: rest, dll: dll)}
+    {:continue, Context.merge(ctx, bin: rest, dll: dll)}
   end
 
   # set some defaults.

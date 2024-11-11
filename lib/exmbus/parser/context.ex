@@ -7,7 +7,7 @@ defmodule Exmbus.Parser.Context do
           #
           opts: map(),
           #
-          rest: binary | nil,
+          bin: binary | nil,
           #
           dll: any,
           tpl: any,
@@ -23,9 +23,9 @@ defmodule Exmbus.Parser.Context do
   @default_handlers [
     &Exmbus.Parser.Dll.parse/1,
     &Exmbus.Parser.Ell.parse/1,
-    &Exmbus.Parser.Ell.Encrypted.decrypt_rest/1,
+    &Exmbus.Parser.Ell.decrypt_bin/1,
     &Exmbus.Parser.Tpl.parse/1,
-    &Exmbus.Parser.Tpl.decrypt/1,
+    &Exmbus.Parser.Tpl.decrypt_bin/1,
     &Exmbus.Parser.Apl.parse/1
   ]
 
@@ -35,7 +35,7 @@ defmodule Exmbus.Parser.Context do
     # handlers to apply, in order:
     handlers: @default_handlers,
     # remaining binary data
-    rest: nil,
+    bin: nil,
     # lower layers:
     dll: nil,
     ell: nil,

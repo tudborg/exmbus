@@ -12,7 +12,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
   @doc """
   Parse an mbus message
   """
-  def parse(%{rest: <<0x68, len, len, 0x68, rest::binary>>} = ctx)
+  def parse(%{bin: <<0x68, len, len, 0x68, rest::binary>>} = ctx)
       when byte_size(rest) == len + 2 do
     <<payload::binary-size(len), checksum, 0x16>> = rest
 
@@ -39,7 +39,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
       address: a
     }
 
-    {:continue, Context.merge(ctx, dll: dll, rest: rest)}
+    {:continue, Context.merge(ctx, dll: dll, bin: rest)}
   end
 
   @doc """

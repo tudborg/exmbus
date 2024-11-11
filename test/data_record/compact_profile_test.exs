@@ -29,7 +29,7 @@ defmodule DataRecord.CompactProfileTest do
       |> Enum.join()
       |> Base.decode16!()
 
-    assert {:continue, ctx} = FullFrame.parse(Context.new(rest: apl_bytes))
+    assert {:continue, ctx} = FullFrame.parse(Context.new(bin: apl_bytes))
 
     assert [
              # base time:
@@ -101,7 +101,7 @@ defmodule DataRecord.CompactProfileTest do
       |> Enum.join()
       |> Base.decode16!()
 
-    assert {:continue, ctx} = FullFrame.parse(Context.new(rest: apl_bytes))
+    assert {:continue, ctx} = FullFrame.parse(Context.new(bin: apl_bytes))
 
     assert [
              # base

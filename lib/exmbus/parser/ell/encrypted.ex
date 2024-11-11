@@ -16,31 +16,31 @@ defmodule Exmbus.Parser.Ell.Encrypted do
   This function will decrypt the encrypted bytes according to the ELL encryption mode.
   """
 
-  def decrypt_rest(
+  def decrypt_bin(
         %{
-          rest: <<payload_crc::little-size(16), plain::binary>>,
+          bin: <<payload_crc::little-size(16), plain::binary>>,
           ell: %__MODULE__{session_number: %{encryption: :none}}
         } = ctx
       ) do
     # encryption mode is none, so we just need to verify the payload crc
     # assuming that this was a CI=8D or CI=8F
     case verify_crc(payload_crc, plain) do
-      {:ok, rest} -> {:continue, Context.merge(ctx, rest: rest)}
+      {:ok, rest} -> {:continue, Context.merge(ctx, bin: rest)}
       {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
     end
   end
 
-  def decrypt_rest(%{ell: %__MODULE__{session_number: %{encryption: :aes_128_ctr}}} = ctx) do
+  def decrypt_bin(%{ell: %__MODULE__{session_number: %{encryption: :aes_128_ctr}}} = ctx) do
     with {:ok, icb} <- icb(ctx),
          {:ok, keys} <- Exmbus.Key.get(ctx) do
-      case try_decrypt_and_verify(ctx.rest, icb, keys, []) do
-        {:ok, rest} -> {:continue, Context.merge(ctx, rest: rest)}
+      case try_decrypt_and_verify(ctx.bin, icb, keys, []) do
+        {:ok, rest} -> {:continue, Context.merge(ctx, bin: rest)}
         {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
       end
     end
   end
 
-  def decrypt_rest(ctx) do
+  def decrypt_bin(ctx) do
     # no encryption mode found, continue assuming payload not ELL encrypted
     {:continue, ctx}
   end

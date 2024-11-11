@@ -36,12 +36,12 @@ defmodule Exmbus.Parser.Tpl do
   ## Format frames:
   ##
   # none
-  def parse(%{rest: <<0x69, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x69, rest::binary>>} = ctx) do
     finalize_tpl(:format_frame, %None{}, rest, ctx)
   end
 
   # short
-  def parse(%{rest: <<0x6A, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x6A, rest::binary>>} = ctx) do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
       finalize_tpl(:format_frame, header, rest, ctx)
     else
@@ -50,7 +50,7 @@ defmodule Exmbus.Parser.Tpl do
   end
 
   # long
-  def parse(%{rest: <<0x6B, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x6B, rest::binary>>} = ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
     finalize_tpl(:format_frame, header, rest, ctx)
   end
@@ -59,12 +59,12 @@ defmodule Exmbus.Parser.Tpl do
   ## Full frames:
   ##
   # MBus full frame none
-  def parse(%{rest: <<0x78, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x78, rest::binary>>} = ctx) do
     finalize_tpl(:full_frame, %None{}, rest, ctx)
   end
 
   # MBus full frame short
-  def parse(%{rest: <<0x7A, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x7A, rest::binary>>} = ctx) do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
       finalize_tpl(:full_frame, header, rest, ctx)
     else
@@ -73,7 +73,7 @@ defmodule Exmbus.Parser.Tpl do
   end
 
   # MBus full frame long
-  def parse(%{rest: <<0x72, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x72, rest::binary>>} = ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
     finalize_tpl(:full_frame, header, rest, ctx)
   end
@@ -83,18 +83,18 @@ defmodule Exmbus.Parser.Tpl do
   ##
 
   # MBus compact long
-  def parse(%{rest: <<0x73, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x73, rest::binary>>} = ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
     finalize_tpl(:compact_frame, header, rest, ctx)
   end
 
   # MBus compact none
-  def parse(%{rest: <<0x79, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x79, rest::binary>>} = ctx) do
     finalize_tpl(:compact_frame, %None{}, rest, ctx)
   end
 
   # MBus compact short
-  def parse(%{rest: <<0x7B, rest::binary>>} = ctx) do
+  def parse(%{bin: <<0x7B, rest::binary>>} = ctx) do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
       finalize_tpl(:compact_frame, header, rest, ctx)
     else
@@ -102,7 +102,7 @@ defmodule Exmbus.Parser.Tpl do
     end
   end
 
-  defdelegate decrypt(ctx), to: Encryption
+  defdelegate decrypt_bin(ctx), to: Encryption
 
   ##
   ## Helpers
@@ -115,7 +115,7 @@ defmodule Exmbus.Parser.Tpl do
       header: header
     }
 
-    {:continue, Context.merge(ctx, rest: rest, tpl: tpl)}
+    {:continue, Context.merge(ctx, bin: rest, tpl: tpl)}
   end
 
   # TPL header decoders

@@ -13,7 +13,7 @@ defmodule FullFrameTest do
         "2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F"
       )
 
-    assert {:ok, %{rest: ""} = ctx} = Exmbus.parse(datagram, length: true, crc: false)
+    assert {:ok, %{bin: ""} = ctx} = Exmbus.parse(datagram, length: true, crc: false)
 
     assert %{
              apl: %Apl.FullFrame{
@@ -292,7 +292,7 @@ defmodule FullFrameTest do
       {:ok, [key]}
     end
 
-    assert {:ok, %{apl: %Apl.FullFrame{records: records}, rest: ""}} =
+    assert {:ok, %{apl: %Apl.FullFrame{records: records}, bin: ""}} =
              Exmbus.parse(datagram, length: false, crc: false, key: Key.by_fn!(keyfn))
 
     assert [
