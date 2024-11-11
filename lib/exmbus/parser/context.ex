@@ -72,7 +72,7 @@ defmodule Exmbus.Parser.Context do
 
   # any other key is overwritten:
   defp merge_key({key, value}, ctx),
-    do: Map.put(ctx, key, value)
+    do: %{ctx | key => value}
 
   @doc """
   Add an error to the context and return the updated context.

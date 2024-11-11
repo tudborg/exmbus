@@ -1,6 +1,6 @@
 defmodule Exmbus.Parser.ParseBehaviour do
   @doc """
-  Parse a context using it's `rest` binary as data.
+  Parse a context using it's `bin` binary as data.
   Returns a tuple with the new context.
 
   The tuple is either a `continue`, `done` or `error` tuple.
