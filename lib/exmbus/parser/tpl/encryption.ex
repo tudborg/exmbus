@@ -1,6 +1,4 @@
 defmodule Exmbus.Parser.Tpl.Encryption do
-  @behaviour Exmbus.Parser.ParseBehaviour
-
   alias Exmbus.Parser.Context
   alias Exmbus.Key
   alias Exmbus.Parser.Dll.Wmbus
@@ -10,21 +8,53 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   alias Exmbus.Parser.Manufacturer
 
   @doc """
-  "Parse" the encryption layer of the TPL.
+  decrypts the context data according to the TPL layer.
 
   This function will decrypt the encrypted bytes according to the TPL encryption mode.
-  We name it `parse` because it follows the `ParseBehaviour` interface.
   """
-  def parse(%{tpl: tpl} = ctx) do
-    decrypt_to_context(Tpl.encryption_mode(tpl), ctx)
-  end
+  def decrypt(%{tpl: nil} = ctx), do: {:continue, ctx}
+  def decrypt(%{tpl: tpl} = ctx), do: decrypt_to_context(encryption_mode(tpl), ctx)
+
+  @doc """
+  Return configured encryption mode as {:mode, m}
+  """
+  def encryption_mode(%Tpl{header: header}), do: encryption_mode(header)
+  def encryption_mode(%Tpl.None{}), do: 0
+  def encryption_mode(%Tpl.Short{configuration_field: %{mode: m}}), do: m
+  def encryption_mode(%Tpl.Long{configuration_field: %{mode: m}}), do: m
+
+  @doc """
+  Is tpl encrypted?
+  """
+  def encrypted?(%Tpl{header: header}), do: encrypted?(header)
+  def encrypted?(%Tpl.None{}), do: false
+  def encrypted?(%Tpl.Short{configuration_field: %{mode: 0}}), do: false
+  def encrypted?(%Tpl.Short{configuration_field: %{mode: _}}), do: true
+  def encrypted?(%Tpl.Long{configuration_field: %{mode: 0}}), do: false
+  def encrypted?(%Tpl.Long{configuration_field: %{mode: _}}), do: true
+
+  @doc """
+  Get the number of expected encrypted bytes in the APL binary
+  """
+  def encrypted_byte_count(%Tpl{header: header}), do: encrypted_byte_count(header)
+  def encrypted_byte_count(%Tpl.None{}), do: {:ok, 0}
+
+  def encrypted_byte_count(%Tpl.Short{configuration_field: %{mode: m, blocks: n}}) when m != 0,
+    do: {:ok, n * 16}
+
+  def encrypted_byte_count(%Tpl.Long{configuration_field: %{mode: m, blocks: n}}) when m != 0,
+    do: {:ok, n * 16}
+
+  # when mode is 0, then encrypted byte count is 0
+  def encrypted_byte_count(%Tpl.Short{configuration_field: %{mode: 0}}), do: {:ok, 0}
+  def encrypted_byte_count(%Tpl.Long{configuration_field: %{mode: 0}}), do: {:ok, 0}
 
   defp decrypt_to_context(0, ctx) do
     {:continue, ctx}
   end
 
   defp decrypt_to_context(5, ctx) do
-    {:ok, encrypted_byte_count} = Tpl.encrypted_byte_count(ctx.tpl)
+    {:ok, encrypted_byte_count} = encrypted_byte_count(ctx.tpl)
     <<encrypted::binary-size(encrypted_byte_count), plain::binary>> = ctx.rest
 
     case decrypt_mode_5(encrypted, ctx) do

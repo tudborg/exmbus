@@ -13,6 +13,7 @@ defmodule Exmbus.Parser.Tpl do
   alias Exmbus.Parser.Tpl.Device
   alias Exmbus.Parser.Tpl.Status
   alias Exmbus.Parser.Tpl.ConfigurationField
+  alias Exmbus.Parser.Tpl.Encryption
 
   defstruct [
     # :format_frame | :full_frame | :compact_frame
@@ -119,39 +120,7 @@ defmodule Exmbus.Parser.Tpl do
     end
   end
 
-  @doc """
-  Return configured encryption mode as {:mode, m}
-  """
-  def encryption_mode(%__MODULE__{header: header}), do: encryption_mode(header)
-  def encryption_mode(%None{}), do: 0
-  def encryption_mode(%Short{configuration_field: %{mode: m}}), do: m
-  def encryption_mode(%Long{configuration_field: %{mode: m}}), do: m
-
-  @doc """
-  Is tpl encrypted?
-  """
-  def encrypted?(%__MODULE__{header: header}), do: encrypted?(header)
-  def encrypted?(%None{}), do: false
-  def encrypted?(%Short{configuration_field: %{mode: 0}}), do: false
-  def encrypted?(%Short{configuration_field: %{mode: _}}), do: true
-  def encrypted?(%Long{configuration_field: %{mode: 0}}), do: false
-  def encrypted?(%Long{configuration_field: %{mode: _}}), do: true
-
-  @doc """
-  Get the number of expected encrypted bytes in the APL binary
-  """
-  def encrypted_byte_count(%__MODULE__{header: header}), do: encrypted_byte_count(header)
-  def encrypted_byte_count(%None{}), do: {:ok, 0}
-
-  def encrypted_byte_count(%Short{configuration_field: %{mode: m, blocks: n}}) when m != 0,
-    do: {:ok, n * 16}
-
-  def encrypted_byte_count(%Long{configuration_field: %{mode: m, blocks: n}}) when m != 0,
-    do: {:ok, n * 16}
-
-  # when mode is 0, then encrypted byte count is 0
-  def encrypted_byte_count(%Short{configuration_field: %{mode: 0}}), do: {:ok, 0}
-  def encrypted_byte_count(%Long{configuration_field: %{mode: 0}}), do: {:ok, 0}
+  defdelegate decrypt(ctx), to: Encryption
 
   ##
   ## Helpers
