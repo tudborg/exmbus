@@ -1,36 +1,26 @@
 defmodule Exmbus.Parser do
+  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Responsible for parsing the binary data into a structured format.
   """
   alias Exmbus.Parser.Context
 
-  def parse(bin, opts \\ nil, ctx \\ nil)
-
-  def parse(bin, opts, ctx) when not is_map(opts) do
-    parse(bin, Enum.into(opts || [], %{}), ctx || Context.new())
+  @doc """
+  Parse the parse context until it's handler stack is empty, or it has errors.
+  """
+  @spec parse(Context.t()) :: Context.t()
+  def parse(%Context{handlers: []} = ctx) do
+    {:continue, ctx}
   end
 
-  def parse(bin, opts, ctx) when is_map(opts) and is_struct(ctx, Context) do
-    Exmbus.Parser.Dll.parse(bin, opts, ctx)
+  def parse(%Context{errors: [_ | _]} = ctx) do
+    {:abort, ctx}
   end
 
-  @doc false
-  def ci_route(bin, opts, ctx) do
-    case Exmbus.Parser.CI.lookup(bin) do
-      {:ok, {:tpl, _tpl_header}} ->
-        Exmbus.Parser.Tpl.parse(bin, opts, ctx)
-
-      {:ok, {:apl, _tpl_header}} ->
-        Exmbus.Parser.Tpl.parse(bin, opts, ctx)
-
-      {:ok, {:ell, _ell_type}} ->
-        Exmbus.Parser.Ell.parse(bin, opts, ctx)
-
-      {:ok, {layer, layer_ext}} ->
-        raise "Not implemented: wmbus CI layer=#{inspect(layer)} layer_ext=#{inspect(layer_ext)}"
-
-      {:error, reason} ->
-        {:error, Context.add_error(ctx, reason)}
+  def parse(%Context{handlers: [next | remaining]} = ctx) do
+    # recursively parse the context while parse/1 returns {:continue, ctx}
+    with {:continue, ctx} <- next.(%{ctx | handlers: remaining}) do
+      parse(ctx)
     end
   end
 end

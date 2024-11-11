@@ -25,7 +25,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
       coding: Keyword.get(keywords, :coding, nil)
     }
 
-    ctx = Context.layer(ctx, :vib, vib)
+    ctx = Context.merge(ctx, vib: vib)
 
     Vife.parse(e, rest, opts, ctx)
   end

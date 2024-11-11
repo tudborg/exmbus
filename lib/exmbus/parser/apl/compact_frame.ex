@@ -10,9 +10,10 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
             data_bytes: nil
 
   def parse(
-        <<format_signature::little-size(16), full_frame_crc::little-size(16), rest::binary>>,
-        _opts,
-        ctx
+        %{
+          rest:
+            <<format_signature::little-size(16), full_frame_crc::little-size(16), rest::binary>>
+        } = ctx
       ) do
     compact_frame = %__MODULE__{
       format_signature: format_signature,
@@ -20,7 +21,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
       data_bytes: rest
     }
 
-    {:ok, Context.layer(ctx, :apl, compact_frame), <<>>}
+    {:continue, Context.merge(ctx, apl: compact_frame, rest: <<>>)}
   end
 
   @doc """
@@ -34,27 +35,32 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
   and an error returned if they do not match. This behaviour can be disabled with the option :verify_full_frame_crc
   """
   def expand(
-        %{format_frame_fn: f} = opts,
-        %{apl: %__MODULE__{format_signature: fos, data_bytes: data_bytes}} = ctx
+        %{
+          apl: %__MODULE__{format_signature: format_signature, data_bytes: data_bytes},
+          opts: %{format_frame_fn: f}
+        } = ctx
       )
       when is_function(f, 2) do
-    case f.(fos, opts) do
+    case f.(format_signature, ctx.opts) do
       {:ok, %FormatFrame{headers: headers}} ->
-        _expand(headers, data_bytes, opts, ctx, [])
+        case _expand(headers, data_bytes, ctx, []) do
+          {:continue, ctx} -> {:continue, ctx}
+          {:abort, ctx} -> {:abort, ctx}
+        end
 
       {:error, reason} ->
-        {:error, {:format_frame_lookup_failed, reason}, ctx}
+        {:abort, Context.add_error(ctx, {:format_frame_lookup_failed, reason})}
 
       bad_return ->
         raise "Unexpected return from the format_frame_fn function, expected {:ok, %FormatFrame{}}, got: #{inspect(bad_return)}"
     end
   end
 
-  def expand(%{} = opts, %{} = ctx) do
-    raise "No format_frame_fn function given as option, got: #{inspect(opts)} for context: #{inspect(ctx)}"
+  def expand(%{} = ctx) do
+    raise "No format_frame_fn function given as option for context: #{inspect(ctx)}"
   end
 
-  def _expand([], <<>> = _data_bytes, opts, %{} = ctx, acc) do
+  def _expand([], <<>> = _data_bytes, ctx, acc) do
     %{apl: %__MODULE__{full_frame_crc: ffc}} = ctx
 
     full_frame =
@@ -64,7 +70,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
       }
 
     check_result =
-      if Map.get(opts, :verify_full_frame_crc, true) do
+      if Map.get(ctx.opts, :verify_full_frame_crc, true) do
         # assert that the full frame CRC from the compact frame, and the calculated
         # CRC from the constructed FullFrame, matches.
         # This is overly expensive to do because we have to unparse the context to
@@ -77,20 +83,26 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
           {:ok, differing_ffc} ->
             {:error, {:full_frame_crc_mismatch, %{expected: ffc, got: differing_ffc}}, ctx}
         end
+      else
+        :ok
       end
 
-    with :ok <- check_result do
-      {:ok, Context.layer(ctx, :apl, full_frame)}
+    case check_result do
+      :ok ->
+        {:continue, Context.merge(ctx, apl: full_frame, rest: <<>>)}
+
+      {:error, reason} ->
+        {:abort, Context.add_error(ctx, reason)}
     end
   end
 
-  def _expand([%Header{} = header | headers], bytes, opts, %{} = ctx, acc) do
+  def _expand([%Header{} = header | headers], bytes, ctx, acc) do
     case DataRecord.parse_data(header, bytes) do
       {:ok, data, rest} ->
-        _expand(headers, rest, opts, ctx, [%DataRecord{header: header, data: data} | acc])
+        _expand(headers, rest, ctx, [%DataRecord{header: header, data: data} | acc])
 
-      {:error, _reason, _rest} = e ->
-        e
+      {:error, reason, rest} ->
+        {:abort, Context.add_error(ctx, reason) |> Context.merge(rest: rest)}
     end
   end
 end

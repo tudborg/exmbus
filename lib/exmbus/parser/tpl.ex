@@ -1,4 +1,5 @@
 defmodule Exmbus.Parser.Tpl do
+  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Module responsible for handling the transport layer.
   Primarily described in EN 13757-7:2018.
@@ -9,7 +10,6 @@ defmodule Exmbus.Parser.Tpl do
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
-  alias Exmbus.Parser.Apl
   alias Exmbus.Parser.Tpl.Device
   alias Exmbus.Parser.Tpl.Status
   alias Exmbus.Parser.Tpl.ConfigurationField
@@ -53,48 +53,46 @@ defmodule Exmbus.Parser.Tpl do
   ## Format frames:
   ##
   # none
-  def parse(<<0x69, rest::binary>>, opts, ctx) do
-    finalize_tpl(:format_frame, %None{}, rest, opts, ctx)
+  def parse(%{rest: <<0x69, rest::binary>>} = ctx) do
+    finalize_tpl(:format_frame, %None{}, rest, ctx)
   end
 
   # short
-  def parse(<<0x6A, rest::binary>>, opts, ctx) do
+  def parse(%{rest: <<0x6A, rest::binary>>} = ctx) do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
-      finalize_tpl(:format_frame, header, rest, opts, ctx)
+      finalize_tpl(:format_frame, header, rest, ctx)
     else
-      {:error, reason} ->
-        {:error, reason, ctx}
+      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
     end
   end
 
   # long
-  def parse(<<0x6B, rest::binary>>, opts, ctx) do
+  def parse(%{rest: <<0x6B, rest::binary>>} = ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:format_frame, header, rest, opts, ctx)
+    finalize_tpl(:format_frame, header, rest, ctx)
   end
 
   ##
   ## Full frames:
   ##
   # MBus full frame none
-  def parse(<<0x78, rest::binary>>, opts, ctx) do
-    finalize_tpl(:full_frame, %None{}, rest, opts, ctx)
+  def parse(%{rest: <<0x78, rest::binary>>} = ctx) do
+    finalize_tpl(:full_frame, %None{}, rest, ctx)
   end
 
   # MBus full frame short
-  def parse(<<0x7A, rest::binary>>, opts, ctx) do
+  def parse(%{rest: <<0x7A, rest::binary>>} = ctx) do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
-      finalize_tpl(:full_frame, header, rest, opts, ctx)
+      finalize_tpl(:full_frame, header, rest, ctx)
     else
-      {:error, reason} ->
-        {:error, reason, ctx}
+      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
     end
   end
 
   # MBus full frame long
-  def parse(<<0x72, rest::binary>>, opts, ctx) do
+  def parse(%{rest: <<0x72, rest::binary>>} = ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:full_frame, header, rest, opts, ctx)
+    finalize_tpl(:full_frame, header, rest, ctx)
   end
 
   ##
@@ -102,23 +100,22 @@ defmodule Exmbus.Parser.Tpl do
   ##
 
   # MBus compact long
-  def parse(<<0x73, rest::binary>>, opts, ctx) do
+  def parse(%{rest: <<0x73, rest::binary>>} = ctx) do
     {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:compact_frame, header, rest, opts, ctx)
+    finalize_tpl(:compact_frame, header, rest, ctx)
   end
 
   # MBus compact none
-  def parse(<<0x79, rest::binary>>, opts, ctx) do
-    finalize_tpl(:compact_frame, %None{}, rest, opts, ctx)
+  def parse(%{rest: <<0x79, rest::binary>>} = ctx) do
+    finalize_tpl(:compact_frame, %None{}, rest, ctx)
   end
 
   # MBus compact short
-  def parse(<<0x7B, rest::binary>>, opts, ctx) do
+  def parse(%{rest: <<0x7B, rest::binary>>} = ctx) do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
-      finalize_tpl(:compact_frame, header, rest, opts, ctx)
+      finalize_tpl(:compact_frame, header, rest, ctx)
     else
-      {:error, reason} ->
-        {:error, reason, ctx}
+      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
     end
   end
 
@@ -126,9 +123,9 @@ defmodule Exmbus.Parser.Tpl do
   Return configured encryption mode as {:mode, m}
   """
   def encryption_mode(%__MODULE__{header: header}), do: encryption_mode(header)
-  def encryption_mode(%None{}), do: {:mode, 0}
-  def encryption_mode(%Short{configuration_field: %{mode: m}}), do: {:mode, m}
-  def encryption_mode(%Long{configuration_field: %{mode: m}}), do: {:mode, m}
+  def encryption_mode(%None{}), do: 0
+  def encryption_mode(%Short{configuration_field: %{mode: m}}), do: m
+  def encryption_mode(%Long{configuration_field: %{mode: m}}), do: m
 
   @doc """
   Is tpl encrypted?
@@ -161,19 +158,19 @@ defmodule Exmbus.Parser.Tpl do
   ##
 
   # decode APL layer after decoding TPL header and figuring out encryption mode and frame type
-  defp finalize_tpl(frame_type, header, rest, opts, ctx) do
+  defp finalize_tpl(frame_type, header, rest, ctx) do
     tpl = %__MODULE__{
       frame_type: frame_type,
       header: header
     }
 
-    Apl.parse(rest, opts, Context.layer(ctx, :tpl, tpl))
+    {:continue, Context.merge(ctx, rest: rest, tpl: tpl)}
   end
 
   # TPL header decoders
   # NOTE, rest contains the Configuration Field but we can't parse it out becaise
   # it might have extensions, so we leave the parsing to ConfigurationField.decode/1
-  def parse_tpl_header_short(<<access_no, status_byte::binary-size(1), rest::binary>>) do
+  defp parse_tpl_header_short(<<access_no, status_byte::binary-size(1), rest::binary>>) do
     status = Status.decode(status_byte)
 
     with {:ok, configuration_field, rest} <- ConfigurationField.decode(rest) do

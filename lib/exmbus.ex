@@ -5,30 +5,37 @@ defmodule Exmbus do
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.ParseError
 
-  @spec parse(binary, opts :: Keyword.t(), ctx :: Context.t()) ::
-          {:ok, Context.t(), binary} | {:error, Context.t()}
-  def parse(bin, opts \\ nil, ctx \\ nil) do
-    case Exmbus.Parser.parse(bin, opts, ctx) do
-      {:ok, context, rest} -> {:ok, context, rest}
-      {:error, context} -> {:error, context}
+  @spec parse(binary, options_or_context :: Keyword.t() | Context.t()) ::
+          {:ok, Context.t()} | {:error, Context.t()}
+  def parse(bin, options_or_context \\ nil) do
+    # normalize input to a Context struct
+    case options_or_context do
+      %Context{} = ctx -> Context.merge(ctx, rest: bin)
+      opts when is_map(opts) -> Context.new(opts: opts, rest: bin)
+      opts when is_list(opts) -> Context.new(opts: opts, rest: bin)
+      nil -> Context.new(rest: bin)
+    end
+    # send down the parser
+    |> Exmbus.Parser.parse()
+    # rewrap maps the internal returns of the ParseBehaviour to {:ok, ctx} or {:error, ctx}
+    |> rewrap()
+  end
+
+  def parse!(bin, options_or_context \\ nil) do
+    case parse(bin, options_or_context) do
+      {:ok, ctx} -> ctx
+      {:error, ctx} -> raise ParseError, message: "Failed to parse data", errors: ctx.errors
     end
   end
 
-  def parse!(bin, opts \\ nil, ctx \\ nil) do
-    case parse(bin, opts, ctx) do
-      {:ok, %Context{errors: []} = ctx, <<>>} ->
-        ctx
+  defp rewrap({:continue, ctx}) do
+    {:ok, ctx}
+  end
 
-      {:ok, %Context{errors: errors}, <<>>} ->
-        raise ParseError, message: "Failed to parse: #{inspect(errors)}", errors: errors
-
-      {:ok, ctx, rest} ->
-        raise ParseError,
-          message: "Failed to parse the entire binary. #{byte_size(rest)} bytes left",
-          errors: ctx.errors ++ [{:failed_to_parse_entire_binary, rest}]
-
-      {:error, %Context{errors: errors}} when is_list(errors) ->
-        raise ParseError, message: "Failed to parse: #{inspect(errors)}", errors: errors
+  defp rewrap({:abort, ctx}) do
+    case Context.has_errors?(ctx) do
+      true -> {:error, ctx}
+      false -> {:ok, ctx}
     end
   end
 

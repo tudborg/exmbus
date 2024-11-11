@@ -7,48 +7,48 @@ defmodule Exmbus.Parser.Apl.FullFrame do
   defstruct records: [],
             manufacturer_bytes: nil
 
-  def parse(bin, opts, ctx) do
-    parse_full_frame(bin, opts, ctx, [])
+  def parse(%Context{} = ctx) do
+    parse_full_frame(ctx.rest, ctx, [])
   end
 
-  defp parse_full_frame(<<>>, opts, ctx, acc) do
-    finalize_full_frame(<<>>, opts, ctx, acc)
+  defp parse_full_frame(<<>>, ctx, acc) do
+    finalize_full_frame(<<>>, ctx, acc)
   end
 
-  defp parse_full_frame(bin, opts, ctx, acc) do
-    case DataRecord.parse(bin, opts, ctx) do
+  defp parse_full_frame(bin, ctx, acc) do
+    case DataRecord.parse(bin, ctx.opts, ctx) do
       {:ok, %DataRecord{} = data_record, rest} ->
-        parse_full_frame(rest, opts, ctx, [data_record | acc])
+        parse_full_frame(rest, ctx, [data_record | acc])
 
       {:ok, %InvalidDataRecord{} = data_record, rest} ->
-        parse_full_frame(rest, opts, ctx, [data_record | acc])
+        parse_full_frame(rest, ctx, [data_record | acc])
 
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        parse_full_frame(rest, opts, ctx, acc)
+        parse_full_frame(rest, ctx, acc)
 
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        finalize_full_frame(rest, opts, ctx, acc)
+        finalize_full_frame(rest, ctx, acc)
 
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        finalize_full_frame(rest, opts, ctx, acc)
+        finalize_full_frame(rest, ctx, acc)
 
       {:error, _reason, _rest} = e ->
         e
     end
   end
 
-  defp finalize_full_frame(rest, opts, ctx, acc) do
+  defp finalize_full_frame(rest, ctx, acc) do
     full_frame = %__MODULE__{
       records: Enum.reverse(acc),
       manufacturer_bytes: rest
     }
 
-    ctx = Context.layer(ctx, :apl, full_frame)
+    ctx = Context.merge(ctx, apl: full_frame)
 
-    with {:ok, ctx} <- maybe_expand_compact_profiles(opts, ctx) do
-      {:ok, ctx, <<>>}
+    with {:ok, ctx} <- maybe_expand_compact_profiles(ctx) do
+      {:continue, Context.merge(ctx, rest: <<>>)}
     end
   end
 
@@ -70,9 +70,10 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     {:ok, Exmbus.crc!(record_bytes)}
   end
 
-  defp maybe_expand_compact_profiles(%{expand_compact_profiles: false}, ctx), do: {:ok, ctx}
+  defp maybe_expand_compact_profiles(%{opts: %{expand_compact_profiles: false}} = ctx),
+    do: {:ok, ctx}
 
-  defp maybe_expand_compact_profiles(_opts, %{apl: %{records: records}} = ctx) do
+  defp maybe_expand_compact_profiles(%{apl: %{records: records}} = ctx) do
     records
     |> Enum.filter(&DataRecord.is_compact_profile?/1)
     |> Enum.reduce({:ok, ctx}, fn

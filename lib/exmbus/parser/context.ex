@@ -4,6 +4,11 @@ defmodule Exmbus.Parser.Context do
   """
 
   @type t :: %__MODULE__{
+          #
+          opts: map(),
+          #
+          rest: binary | nil,
+          #
           dll: any,
           tpl: any,
           ell: any,
@@ -15,29 +20,70 @@ defmodule Exmbus.Parser.Context do
           errors: [any]
         }
 
+  @default_handlers [
+    &Exmbus.Parser.Dll.parse/1,
+    &Exmbus.Parser.Ell.parse/1,
+    &Exmbus.Parser.Tpl.parse/1,
+    &Exmbus.Parser.Tpl.Encryption.parse/1,
+    &Exmbus.Parser.Apl.parse/1
+  ]
+
   defstruct [
+    # configuration:
+    opts: %{},
+    # handlers to apply, in order:
+    handlers: @default_handlers,
+    # remaining binary data
+    rest: nil,
     # lower layers:
     dll: nil,
     ell: nil,
     tpl: nil,
     apl: nil,
     # state for when parsing data record:
+    # TODO: move to it's own ACC so it doesnt polute the state?
+    # #reason for keeping it here is that it is useful
+    # for debugging when parsing fails, but maybe
+    # the errors should have more information?
+    # otherwise, maybe have a generic "current parse state" field
+    # that other layers can use?
     dib: nil,
     vib: nil,
     # error accumulator
     errors: []
   ]
 
-  def layer(ctx, layer, data), do: %{ctx | layer => data}
-
   def new(attrs \\ []) do
-    Enum.reduce(attrs, %__MODULE__{}, &Map.put(&2, elem(&1, 0), elem(&1, 1)))
+    merge(%__MODULE__{}, attrs)
   end
+
+  def merge(%__MODULE__{} = ctx, attrs \\ []) do
+    Enum.reduce(attrs, ctx, &merge_key/2)
+  end
+
+  # errors are appended:
+  defp merge_key({:errors, errors}, ctx),
+    do: Map.update(ctx, :errors, [], &(&1 ++ errors))
+
+  # optionsare Map.merge/2'ed:
+  defp merge_key({:opts, opts}, ctx),
+    do: %{ctx | opts: Map.merge(ctx.opts, Enum.into(opts || [], %{}))}
+
+  # any other key is overwritten:
+  defp merge_key({key, value}, ctx),
+    do: Map.put(ctx, key, value)
 
   @doc """
   Add an error to the context and return the updated context.
   """
   def add_error(ctx, error) do
-    %{ctx | errors: [error | ctx.errors]}
+    %__MODULE__{ctx | errors: [error | ctx.errors]}
   end
+
+  @doc """
+  Check if there are any errors in the context.
+  """
+  @spec has_errors?(t) :: boolean
+  def has_errors?(%__MODULE__{errors: []}), do: false
+  def has_errors?(%__MODULE__{errors: [_ | _]}), do: true
 end

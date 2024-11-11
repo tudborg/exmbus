@@ -5,40 +5,40 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
 
-  def parse(<<len, format_signature::little-size(16), rest::binary>>, opts, ctx) do
-    _parse_format_frame({len, format_signature}, rest, opts, ctx, [])
+  def parse(%{rest: <<len, format_signature::little-size(16), rest::binary>>} = ctx) do
+    _parse_format_frame({len, format_signature}, rest, ctx, [])
   end
 
-  defp _parse_format_frame(ff_header, <<>>, opts, ctx, acc) do
-    finalize_format_frame(ff_header, <<>>, opts, ctx, acc)
+  defp _parse_format_frame(ff_header, <<>>, ctx, acc) do
+    finalize_format_frame(ff_header, <<>>, ctx, acc)
   end
 
-  defp _parse_format_frame(ff_header, bin, opts, ctx, acc) do
-    case DataRecord.Header.parse(bin, opts, ctx) do
+  defp _parse_format_frame(ff_header, bin, ctx, acc) do
+    case DataRecord.Header.parse(bin, ctx.opts, ctx) do
       {:ok, header, rest} ->
-        _parse_format_frame(ff_header, rest, opts, ctx, [header | acc])
+        _parse_format_frame(ff_header, rest, ctx, [header | acc])
 
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        _parse_format_frame(ff_header, rest, opts, ctx, acc)
+        _parse_format_frame(ff_header, rest, ctx, acc)
 
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        finalize_format_frame(ff_header, rest, opts, ctx, acc)
+        finalize_format_frame(ff_header, rest, ctx, acc)
 
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        finalize_format_frame(ff_header, rest, opts, ctx, acc)
+        finalize_format_frame(ff_header, rest, ctx, acc)
     end
   end
 
   # TODO: should we check length?
-  defp finalize_format_frame({_len, format_signature}, <<>>, opts, ctx, acc) do
+  defp finalize_format_frame({_len, format_signature}, <<>>, ctx, acc) do
     full_frame = %__MODULE__{
       headers: Enum.reverse(acc)
     }
 
     check_result =
-      if Map.get(opts, :verify_format_signature, true) do
+      if Map.get(ctx.opts, :verify_format_signature, true) do
         case format_signature(full_frame) do
           {:ok, ^format_signature} ->
             :ok
@@ -51,7 +51,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
       end
 
     with :ok <- check_result do
-      {:ok, Context.layer(ctx, :apl, full_frame), <<>>}
+      {:continue, Context.merge(ctx, apl: full_frame, rest: <<>>)}
     end
   end
 

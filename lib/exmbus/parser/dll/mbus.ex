@@ -1,10 +1,10 @@
 defmodule Exmbus.Parser.Dll.Mbus do
+  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Data Link Layer for Mbus
   """
 
   alias Exmbus.Parser.Context
-  alias Exmbus.Parser
 
   defstruct control: nil,
             address: nil
@@ -12,7 +12,8 @@ defmodule Exmbus.Parser.Dll.Mbus do
   @doc """
   Parse an mbus message
   """
-  def parse(<<0x68, len, len, 0x68, rest::binary>>, opts, ctx) when byte_size(rest) == len + 2 do
+  def parse(%{rest: <<0x68, len, len, 0x68, rest::binary>>} = ctx)
+      when byte_size(rest) == len + 2 do
     <<payload::binary-size(len), checksum, 0x16>> = rest
 
     # the mbus checksum is just the sum of all the payload bytes in one byte
@@ -23,14 +24,14 @@ defmodule Exmbus.Parser.Dll.Mbus do
 
     case sum_of_payload do
       ^checksum ->
-        _parse(payload, opts, ctx)
+        _parse(payload, ctx)
 
       bad_checksum ->
-        {:error, {:bad_mbus_checksum, bad_checksum}}
+        {:abort, Context.add_error(ctx, {:bad_mbus_checksum, bad_checksum})}
     end
   end
 
-  defp _parse(<<c::binary-size(1), a, rest::binary>>, opts, ctx) do
+  defp _parse(<<c::binary-size(1), a, rest::binary>>, ctx) do
     {:ok, control} = decode_c_field(c)
 
     dll = %__MODULE__{
@@ -38,7 +39,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
       address: a
     }
 
-    Parser.ci_route(rest, opts, Context.layer(ctx, :dll, dll))
+    {:continue, Context.merge(ctx, dll: dll, rest: rest)}
   end
 
   @doc """

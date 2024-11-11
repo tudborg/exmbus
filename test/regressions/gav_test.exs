@@ -1,7 +1,6 @@
 defmodule Regressions.GAVTest do
   use ExUnit.Case, async: true
 
-  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Tpl
@@ -13,7 +12,7 @@ defmodule Regressions.GAVTest do
         "6869696808017222070000361CDE02A12000000703AD3D00000000000004FB827501000000042A59F5FFFF04FB977224E4FFFF04FBB772C22C000002FDBA7313FF84808040FD48BD0F000004FD48160900008440FD59C6050000848040FD59E206000084C040FD59950600001F9616"
         |> Base.decode16!()
 
-      assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{length: false}, Context.new())
+      assert {:ok, ctx} = Exmbus.parse(bytes, length: false)
 
       assert %{
                apl: %FullFrame{

@@ -13,7 +13,7 @@ defmodule FullFrameTest do
         "2E4493157856341233037A2A0000002F2F0C1427048502046D32371F1502FD1700002F2F2F2F2F2F2F2F2F2F2F2F2F"
       )
 
-    assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: false)
+    assert {:ok, %{rest: ""} = ctx} = Exmbus.parse(datagram, length: true, crc: false)
 
     assert %{
              apl: %Apl.FullFrame{
@@ -133,11 +133,11 @@ defmodule FullFrameTest do
     key = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17>>
 
     # always return our one key.
-    keyfn = fn _parsed, _opts ->
+    keyfn = fn _ctx ->
       {:ok, [key]}
     end
 
-    assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: true)
+    assert {:ok, ctx, <<>>} = Exmbus.parse(datagram, length: true, crc: true)
     assert %{apl: %Apl.Unparsed{} = raw} = ctx
     assert %{tpl: %Tpl{}} = ctx
     assert %{dll: %Wmbus{}} = ctx
@@ -150,7 +150,7 @@ defmodule FullFrameTest do
            } = raw
 
     assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
-             Exmbus.Parser.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
+             Exmbus.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
 
     assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
   end
@@ -171,12 +171,12 @@ defmodule FullFrameTest do
       <<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
         0x0F>>
 
-    keyfn = fn _parsed, _opts ->
+    keyfn = fn _ctx ->
       {:ok, [key]}
     end
 
     assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
-             Exmbus.Parser.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
+             Exmbus.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
 
     assert [
              %DataRecord{
@@ -288,12 +288,12 @@ defmodule FullFrameTest do
       <<0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
         0x0F>>
 
-    keyfn = fn _parsed, _opts ->
+    keyfn = fn _ctx ->
       {:ok, [key]}
     end
 
-    assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
-             Exmbus.Parser.parse(datagram, length: false, crc: false, key: Key.by_fn!(keyfn))
+    assert {:ok, %{apl: %Apl.FullFrame{records: records}, rest: ""}} =
+             Exmbus.parse(datagram, length: false, crc: false, key: Key.by_fn!(keyfn))
 
     assert [
              %DataRecord{

@@ -10,7 +10,7 @@ defmodule Regressions.MillerAlexTest do
         "6644496A3100015514377203926314496A00075000500598A78E0D71AA6358EEBD0B20BFDF99EDA2D22FA25314F3F1B84470898E495303923770BA8DDA97C964F0EA6CE24F5650C0A6CDF3DE37DE33FBFBEBACE4009BB0D8EBA2CBE80433FF131328206020B1BF"
       )
 
-    assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: false, key: key)
+    assert {:ok, ctx} = Exmbus.parse(datagram, length: true, crc: false, key: key)
 
     assert %Exmbus.Parser.Context{
              apl: %Exmbus.Parser.Apl.FullFrame{
@@ -570,6 +570,6 @@ defmodule Regressions.MillerAlexTest do
         "684D4D680801720100000096150100180000000C785600000001FD1B0002FC0348522574440D22FC0348522574F10C12FC034852257463110265B409226586091265B70901720072650000B2016500001FB316"
       )
 
-    assert {:ok, _ctx, <<>>} = Exmbus.Parser.parse(datagram, length: true, crc: false)
+    assert {:ok, _ctx, <<>>} = Exmbus.parse(datagram, length: true, crc: false)
   end
 end

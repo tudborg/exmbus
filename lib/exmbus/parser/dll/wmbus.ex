@@ -3,7 +3,6 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   Data Link Layer for WMbus
   """
   alias Exmbus.Parser.Context
-  alias Exmbus.Parser
   alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Tpl.Device
@@ -32,18 +31,20 @@ defmodule Exmbus.Parser.Dll.Wmbus do
 
   # Expect length and crc in frame: Check CRC and length match.
   # Be aware of Frame format A vs B
-  def parse(<<_len, _rest::binary>> = bin, %{length: true, crc: true} = opts, ctx) do
-    case validate_frame_format_b(bin) do
+  def parse(%{rest: <<_len, _rest::binary>>, opts: %{length: true, crc: true}} = ctx) do
+    case validate_frame_format_b(ctx.rest) do
       {:ok, valid_bin} ->
-        parse(valid_bin, %{opts | length: false, crc: false}, ctx)
+        Context.merge(ctx, rest: valid_bin, opts: %{length: false, crc: false})
+        |> parse()
 
       {:error, {:not_valid_frame_format_b, _}} ->
-        case validate_frame_format_a(bin) do
+        case validate_frame_format_a(ctx.rest) do
           {:ok, valid_bin} ->
-            parse(valid_bin, %{opts | length: false, crc: false}, ctx)
+            Context.merge(ctx, rest: valid_bin, opts: %{length: false, crc: false})
+            |> parse()
 
           {:error, {:not_valid_frame_format_a, _}} ->
-            {:error, {:error, {:bad_length_or_crc, bin}}, ctx}
+            {:abort, Context.add_error(ctx, {:bad_length_or_crc, ctx.rest})}
         end
     end
   end
@@ -55,19 +56,22 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   # There is a chance that this isn't wmbus length but some other application's length.
   # A same assumption is that length describes the length if `rest`, but that is _an assumption!_
   # We just can't really validate the length here.
-  def parse(<<len, rest::binary>>, %{length: true, crc: false} = opts, ctx) do
-    if byte_size(rest) == len or Map.get(opts, :ignore_length, false) do
-      parse(rest, %{opts | length: false}, ctx)
+  def parse(%{rest: <<len, rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
+    if byte_size(rest) == len or Map.get(ctx.opts, :ignore_length, false) do
+      Context.merge(ctx, rest: rest, opts: %{length: false})
+      |> parse()
     else
-      {:error, :bad_length}
+      {:abort, Context.add_error(ctx, :bad_length)}
     end
   end
 
   def parse(
-        <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v,
-          d::binary-size(1), rest::binary>>,
-        %{length: false, crc: false} = opts,
-        ctx
+        %{
+          rest:
+            <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v,
+              d::binary-size(1), rest::binary>>,
+          opts: %{length: false, crc: false}
+        } = ctx
       ) do
     {:ok, control} = decode_c_field(c)
     {:ok, identification_no, <<>>} = DataType.decode_type_a(i_bytes, 32)
@@ -82,16 +86,16 @@ defmodule Exmbus.Parser.Dll.Wmbus do
       device: device
     }
 
-    Parser.ci_route(rest, opts, Context.layer(ctx, :dll, dll))
+    {:continue, Context.merge(ctx, rest: rest, dll: dll)}
   end
 
   # set some defaults.
   # maybe move this out of the core parsing logic.
-  def parse(bin, %{} = opts, ctx) when not is_map_key(opts, :length),
-    do: parse(bin, Map.put(opts, :length, false), ctx)
+  def parse(%{opts: opts} = ctx) when not is_map_key(opts, :length),
+    do: parse(%{ctx | opts: Map.put(opts, :length, true)})
 
-  def parse(bin, %{} = opts, ctx) when not is_map_key(opts, :crc),
-    do: parse(bin, Map.put(opts, :crc, false), ctx)
+  def parse(%{opts: opts} = ctx) when not is_map_key(opts, :crc),
+    do: parse(%{ctx | opts: Map.put(opts, :crc, false)})
 
   @doc """
   Return the communication direction of a Wmbus struct.

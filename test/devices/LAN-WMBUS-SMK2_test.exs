@@ -21,8 +21,8 @@ defmodule Devices.LAN_WMBUS_SMK2Test do
       "047C03335344A081080002FD3A68018240FD3A380102FD46D00A8240FD46C50D02230000828040FD3A2D05027C035446237000027C034C41234501"
       |> Base.decode16!()
 
-    {:ok, ctx, <<>>} =
-      Apl.FullFrame.parse(apl_bytes, %{}, Context.new())
+    {:continue, ctx} =
+      Apl.FullFrame.parse(Context.new(rest: apl_bytes))
 
     assert [
              %Apl.DataRecord{

@@ -54,7 +54,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
           other -> [other]
         end)
 
-      {:ok, Context.layer(ctx, :apl, %{ctx.apl | records: new_records})}
+      {:continue, Context.merge(ctx, apl: %{ctx.apl | records: new_records})}
     end
   end
 

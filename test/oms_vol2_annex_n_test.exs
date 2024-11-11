@@ -29,7 +29,8 @@ defmodule OMSVol2AnnexNTest do
            "D3529B520EDFF0EA6DEFC99D6D69EBF3")
         |> Base.decode16!()
 
-      assert {:ok, ctx, <<>>} = Wmbus.parse(bytes, %{length: false, key: aes_key}, Context.new())
+      assert {:ok, %{rest: <<>>} = ctx} =
+               Exmbus.parse(bytes, %{length: false, key: aes_key})
 
       assert %Context{
                apl: %FullFrame{
@@ -120,7 +121,7 @@ defmodule OMSVol2AnnexNTest do
            "8916")
         |> Base.decode16!()
 
-      assert {:ok, ctx, <<>>} = Mbus.parse(bytes, %{}, Context.new())
+      assert {:ok, %{rest: <<>>} = ctx} = Exmbus.parse(bytes)
 
       assert %{
                apl: %Apl.FullFrame{
@@ -253,7 +254,7 @@ defmodule OMSVol2AnnexNTest do
     test "N.5.2 wM-Bus Example with ACC-NR " do
       # TODO include CRC in this frame, it seems like we've skipped typing it
       frame = "194793444433221155378C20758B8877665593445508FF040000" |> Base.decode16!()
-      assert {:ok, _ctx, <<>>} = Exmbus.Parser.parse(frame, length: true, crc: false)
+      assert {:ok, %{rest: <<>>}} = Exmbus.parse(frame, length: true, crc: false)
     end
 
     test "N.5.3 wM-Bus Example with partial encryption" do
@@ -263,7 +264,7 @@ defmodule OMSVol2AnnexNTest do
         |> Base.decode16!()
 
       key = "000102030405060708090A0B0C0D0E0F" |> Base.decode16!()
-      assert {:ok, ctx, <<>>} = Exmbus.Parser.parse(frame, length: true, crc: false, key: key)
+      assert {:ok, %{rest: <<>>} = ctx} = Exmbus.parse(frame, length: true, crc: false, key: key)
 
       assert %{
                apl: %Apl.FullFrame{
@@ -422,7 +423,7 @@ defmodule OMSVol2AnnexNTest do
       # TODO: fill in this frame from the example (page 46)
       frame = "" |> Base.decode16!()
       key = "000102030405060708090A0B0C0D0E0F" |> Base.decode16!()
-      assert {:ok, _ctx, <<>>} = Exmbus.Parser.parse(frame, key: key)
+      assert {:ok, _ctx, <<>>} = Exmbus.parse(frame, key: key)
     end
   end
 end

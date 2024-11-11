@@ -53,10 +53,12 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
               e,
               rest,
               opts,
-              Context.layer(ctx, :vib, %VIB{
-                vib
-                | extensions: [{:record_error, record_error} | exts]
-              })
+              Context.merge(ctx,
+                vib: %VIB{
+                  vib
+                  | extensions: [{:record_error, record_error} | exts]
+                }
+              )
             )
 
           # TODO:
@@ -68,7 +70,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
               e,
               rest,
               opts,
-              Context.layer(ctx, :vib, %VIB{vib | extensions: [{:record_error, r} | exts]})
+              Context.merge(ctx, merge: %VIB{vib | extensions: [{:record_error, r} | exts]})
             )
         end
     end
@@ -77,7 +79,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   def parse(1, rest, opts, %{vib: %VIB{extensions: exts} = vib} = ctx) do
     case exts(1, rest, opts, exts) do
       {:ok, rest, exts} ->
-        parse(0, rest, opts, Context.layer(ctx, :vib, %VIB{vib | extensions: exts}))
+        parse(0, rest, opts, Context.merge(ctx, vib: %VIB{vib | extensions: exts}))
     end
   end
 

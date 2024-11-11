@@ -31,12 +31,14 @@ defmodule CompactFrameTest do
       bytes_format = "6908313B02020215022A" |> Base.decode16!()
       bytes_compact = "79313B42A6D2042E163423" |> Base.decode16!()
 
+      handlers = [&Exmbus.Parser.Tpl.parse/1, &Exmbus.Parser.Apl.parse/1]
+
       # assert that the parsed full frame contains what the docs says it contains
       assert {:ok,
               %{
                 apl: %FullFrame{} = full_frame,
                 tpl: %Tpl{frame_type: :full_frame, header: %Tpl.None{}}
-              }, <<>>} = Tpl.parse(bytes_full, %{}, Context.new())
+              }} = Exmbus.parse(bytes_full, Context.new(handlers: handlers))
 
       assert records:
                [
@@ -52,7 +54,7 @@ defmodule CompactFrameTest do
               %{
                 apl: %FormatFrame{} = format_frame,
                 tpl: %Tpl{frame_type: :format_frame, header: %Tpl.None{}}
-              }, <<>>} = Tpl.parse(bytes_format, %{}, Context.new())
+              }} = Exmbus.parse(bytes_format, Context.new(handlers: handlers))
 
       assert {:ok, 15153} == FormatFrame.format_signature(format_frame)
 
@@ -65,14 +67,17 @@ defmodule CompactFrameTest do
               %{
                 apl: %CompactFrame{format_signature: 15153},
                 tpl: %Tpl{frame_type: :compact_frame, header: %Tpl.None{}}
-              } = compact_frame_ctx, <<>>} = Tpl.parse(bytes_compact, %{}, Context.new())
+              } = compact_frame_ctx} =
+               Exmbus.parse(bytes_compact, Context.new(handlers: handlers))
 
       ffl = fn 15153, _opts ->
         {:ok, format_frame}
       end
 
-      assert {:ok, %{apl: %FullFrame{} = full_frame_from_compact, tpl: %Tpl{}}} =
-               CompactFrame.expand(%{format_frame_fn: ffl}, compact_frame_ctx)
+      assert {:continue, %{apl: %FullFrame{} = full_frame_from_compact, tpl: %Tpl{}}} =
+               compact_frame_ctx
+               |> Context.merge(opts: [format_frame_fn: ffl])
+               |> CompactFrame.expand()
 
       assert full_frame == full_frame_from_compact
     end
@@ -82,19 +87,27 @@ defmodule CompactFrameTest do
       bytes_format = "6A0100000008313B02020215022A" |> Base.decode16!()
       bytes_compact = "7B01000000313B42A6D2042E163423" |> Base.decode16!()
 
-      assert {:ok, %{apl: %FullFrame{} = _full_frame}, <<>>} =
-               Tpl.parse(bytes_full, %{}, Context.new())
+      # only parse TPL and APL
+      handlers = [&Exmbus.Parser.Tpl.parse/1, &Exmbus.Parser.Apl.parse/1]
 
-      assert {:ok, %{apl: %FormatFrame{} = format_frame}, <<>>} =
-               Tpl.parse(bytes_format, %{}, Context.new())
+      assert {:ok, %{apl: %FullFrame{} = _full_frame}} =
+               Exmbus.parse(bytes_full, Context.new(handlers: handlers))
 
-      assert {:ok, %{apl: %CompactFrame{} = _compact_frame} = compact_frame_ctx, <<>>} =
-               Tpl.parse(bytes_compact, %{}, Context.new())
+      assert {:ok, %{apl: %FormatFrame{} = format_frame}} =
+               Exmbus.parse(bytes_format, Context.new(handlers: handlers))
 
-      format_frame_fn = fn _, _ -> {:ok, format_frame} end
+      assert {:ok, %{apl: %CompactFrame{} = _compact_frame} = compact_frame_ctx} =
+               Exmbus.parse(bytes_compact, Context.new(handlers: handlers))
 
-      assert {:ok, %{apl: %FullFrame{} = _full_frame_from_compact}} =
-               CompactFrame.expand(%{format_frame_fn: format_frame_fn}, compact_frame_ctx)
+      # add a format_frame_fn to lookup format frames.
+      # this one just hardcodes the format frame to the one we have parsed
+      # which is the frame we expect to expand on
+      compact_frame_ctx =
+        compact_frame_ctx
+        |> Context.merge(opts: [format_frame_fn: fn _, _ -> {:ok, format_frame} end])
+
+      assert {:continue, %{apl: %FullFrame{} = _full_frame_from_compact}} =
+               CompactFrame.expand(compact_frame_ctx)
     end
   end
 
@@ -103,14 +116,16 @@ defmodule CompactFrameTest do
     # different full frame CRC than what the compact frame expected.
     # The problem turned out to be a bug in the unparse functions, causing the Full-Frame-CRC to not match
     test "Full frame CRC problem 2022-01-14" do
+      handlers = [&Exmbus.Parser.Tpl.parse/1, &Exmbus.Parser.Apl.parse/1]
+
       bytes_full = "780306EB24004306E723000314285E00426CBF2C022D030001FF2100" |> Base.decode16!()
       bytes_compact = "79E7F1A3FCED2400E723002E5E00BF2C0D0000" |> Base.decode16!()
       # parse the frames
-      assert {:ok, %{apl: %FullFrame{} = full_frame}, ""} =
-               Tpl.parse(bytes_full, %{}, Context.new())
+      assert {:ok, %{apl: %FullFrame{} = full_frame}} =
+               Exmbus.parse(bytes_full, Context.new(handlers: handlers))
 
-      assert {:ok, %{apl: %CompactFrame{} = compact_frame}, ""} =
-               Tpl.parse(bytes_compact, %{}, Context.new())
+      assert {:ok, %{apl: %CompactFrame{} = compact_frame}} =
+               Exmbus.parse(bytes_compact, Context.new(handlers: handlers))
 
       # derive the format frame from the full
       assert %FormatFrame{} = format_frame = FormatFrame.from_full_frame!(full_frame)
@@ -121,11 +136,9 @@ defmodule CompactFrameTest do
       # the lookup function to fund the format frame is then just a function tht returns the format frame:
       format_frame_fn = fn _fs, _opts -> {:ok, format_frame} end
       # expand the compact frame which should succeed:
-      assert {:ok, _expanded_layers} =
-               CompactFrame.expand(
-                 %{format_frame_fn: format_frame_fn},
-                 Context.new(apl: compact_frame)
-               )
+      assert {:continue, _expanded_layers} =
+               Context.new(apl: compact_frame, opts: [format_frame_fn: format_frame_fn])
+               |> CompactFrame.expand()
     end
   end
 end
