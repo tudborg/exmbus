@@ -5,8 +5,13 @@ defmodule Exmbus do
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.ParseError
 
+  @spec parse(binary, opts :: Keyword.t(), ctx :: Context.t()) ::
+          {:ok, Context.t(), binary} | {:error, Context.t()}
   def parse(bin, opts \\ nil, ctx \\ nil) do
-    Exmbus.Parser.parse(bin, opts, ctx)
+    case Exmbus.Parser.parse(bin, opts, ctx) do
+      {:ok, context, rest} -> {:ok, context, rest}
+      {:error, context} -> {:error, context}
+    end
   end
 
   def parse!(bin, opts \\ nil, ctx \\ nil) do
