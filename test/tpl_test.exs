@@ -6,7 +6,7 @@ defmodule TplTest do
   test "MBus full frame, long header" do
     # tpl_layer = Base.decode16!("7278563412931533032A0000000C1427048502046D32371F1502FD170000")
     # assert {:ok, %Tpl{
-    #   header: %Tpl.Long{
+    #   header: %Tpl.Header.Long{
     #     manufacturer: "ELS",
     #     identification_no: 12345678,
     #     device: :gas,

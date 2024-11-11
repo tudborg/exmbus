@@ -9,7 +9,7 @@ defmodule OMSVol2AnnexNTest do
   alias Exmbus.Parser.Dll
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
-  alias Exmbus.Parser.Tpl.Short
+  alias Exmbus.Parser.Tpl.Header.Short
   alias Exmbus.Parser.Tpl.Status
   alias Exmbus.Parser.Tpl.ConfigurationField
   alias Exmbus.Parser.Dll.Wmbus
@@ -214,7 +214,7 @@ defmodule OMSVol2AnnexNTest do
                },
                tpl: %Tpl{
                  frame_type: :full_frame,
-                 header: %Tpl.Long{
+                 header: %Tpl.Header.Long{
                    access_no: 42,
                    configuration_field: %Tpl.ConfigurationField{
                      accessibility: false,
@@ -370,7 +370,7 @@ defmodule OMSVol2AnnexNTest do
                },
                tpl: %Tpl{
                  frame_type: :full_frame,
-                 header: %Tpl.Long{
+                 header: %Tpl.Header.Long{
                    access_no: 0,
                    configuration_field: %Tpl.ConfigurationField{
                      accessibility: false,

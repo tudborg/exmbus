@@ -14,35 +14,17 @@ defmodule Exmbus.Parser.Tpl do
   alias Exmbus.Parser.Tpl.Status
   alias Exmbus.Parser.Tpl.ConfigurationField
   alias Exmbus.Parser.Tpl.Encryption
+  alias Exmbus.Parser.Tpl.Header.None
+  alias Exmbus.Parser.Tpl.Header.Short
+  alias Exmbus.Parser.Tpl.Header.Long
 
-  defstruct [
-    # :format_frame | :full_frame | :compact_frame
-    frame_type: nil,
-    header: nil
-  ]
+  @type t :: %__MODULE__{
+          frame_type: :format_frame | :full_frame | :compact_frame,
+          header: None.t() | Short.t() | Long.t()
+        }
 
-  ##
-  ## TPL Header structs
-  ##
-  defmodule None do
-    defstruct []
-  end
-
-  defmodule Short do
-    defstruct access_no: nil,
-              status: nil,
-              configuration_field: nil
-  end
-
-  defmodule Long do
-    defstruct identification_no: nil,
-              manufacturer: nil,
-              version: nil,
-              device: nil,
-              access_no: nil,
-              status: nil,
-              configuration_field: nil
-  end
+  defstruct frame_type: nil,
+            header: nil
 
   @doc """
   Parses a transport layer and adds it to the parse context.
@@ -159,7 +141,7 @@ defmodule Exmbus.Parser.Tpl do
   Decode a TPL long header.
 
     iex> parse_tpl_header_long(<<0x78,0x56,0x34,0x12,0x93,0x15,0x33,0x03,0x2A,0x00,0x00,0x00,0xFF,0xFF>>)
-    {:ok, %Exmbus.Parser.Tpl.Long{
+    {:ok, %Exmbus.Parser.Tpl.Header.Long{
       identification_no: 12345678,
       manufacturer: "ELS",
       version: 51,

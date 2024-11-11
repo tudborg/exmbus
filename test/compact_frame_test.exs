@@ -37,7 +37,7 @@ defmodule CompactFrameTest do
       assert {:ok,
               %{
                 apl: %FullFrame{} = full_frame,
-                tpl: %Tpl{frame_type: :full_frame, header: %Tpl.None{}}
+                tpl: %Tpl{frame_type: :full_frame, header: %Tpl.Header.None{}}
               }} = Exmbus.parse(bytes_full, Context.new(handlers: handlers))
 
       assert records:
@@ -53,7 +53,7 @@ defmodule CompactFrameTest do
       assert {:ok,
               %{
                 apl: %FormatFrame{} = format_frame,
-                tpl: %Tpl{frame_type: :format_frame, header: %Tpl.None{}}
+                tpl: %Tpl{frame_type: :format_frame, header: %Tpl.Header.None{}}
               }} = Exmbus.parse(bytes_format, Context.new(handlers: handlers))
 
       assert {:ok, 15153} == FormatFrame.format_signature(format_frame)
@@ -66,7 +66,7 @@ defmodule CompactFrameTest do
       assert {:ok,
               %{
                 apl: %CompactFrame{format_signature: 15153},
-                tpl: %Tpl{frame_type: :compact_frame, header: %Tpl.None{}}
+                tpl: %Tpl{frame_type: :compact_frame, header: %Tpl.Header.None{}}
               } = compact_frame_ctx} =
                Exmbus.parse(bytes_compact, Context.new(handlers: handlers))
 

@@ -524,7 +524,7 @@ defmodule Regressions.MillerAlexTest do
              },
              tpl: %Exmbus.Parser.Tpl{
                frame_type: :full_frame,
-               header: %Exmbus.Parser.Tpl.Long{
+               header: %Exmbus.Parser.Tpl.Header.Long{
                  access_no: 80,
                  configuration_field: %Exmbus.Parser.Tpl.ConfigurationField{
                    accessibility: false,

@@ -34,7 +34,7 @@ defmodule Regressions.GAVTest do
                },
                tpl: %Tpl{
                  frame_type: :full_frame,
-                 header: %Tpl.Long{
+                 header: %Tpl.Header.Long{
                    access_no: 161,
                    configuration_field: %Tpl.ConfigurationField{
                      accessibility: false,

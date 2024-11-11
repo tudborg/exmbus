@@ -99,7 +99,7 @@ defmodule FullFrameTest do
              },
              tpl: %Tpl{
                frame_type: :full_frame,
-               header: %Tpl.Short{
+               header: %Tpl.Header.Short{
                  access_no: 42,
                  configuration_field: %Tpl.ConfigurationField{mode: 0},
                  status: %Tpl.Status{

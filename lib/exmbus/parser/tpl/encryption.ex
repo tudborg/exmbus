@@ -19,35 +19,37 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   Return configured encryption mode as {:mode, m}
   """
   def encryption_mode(%Tpl{header: header}), do: encryption_mode(header)
-  def encryption_mode(%Tpl.None{}), do: 0
-  def encryption_mode(%Tpl.Short{configuration_field: %{mode: m}}), do: m
-  def encryption_mode(%Tpl.Long{configuration_field: %{mode: m}}), do: m
+  def encryption_mode(%Tpl.Header.None{}), do: 0
+  def encryption_mode(%Tpl.Header.Short{configuration_field: %{mode: m}}), do: m
+  def encryption_mode(%Tpl.Header.Long{configuration_field: %{mode: m}}), do: m
 
   @doc """
   Is tpl encrypted?
   """
   def encrypted?(%Tpl{header: header}), do: encrypted?(header)
-  def encrypted?(%Tpl.None{}), do: false
-  def encrypted?(%Tpl.Short{configuration_field: %{mode: 0}}), do: false
-  def encrypted?(%Tpl.Short{configuration_field: %{mode: _}}), do: true
-  def encrypted?(%Tpl.Long{configuration_field: %{mode: 0}}), do: false
-  def encrypted?(%Tpl.Long{configuration_field: %{mode: _}}), do: true
+  def encrypted?(%Tpl.Header.None{}), do: false
+  def encrypted?(%Tpl.Header.Short{configuration_field: %{mode: 0}}), do: false
+  def encrypted?(%Tpl.Header.Short{configuration_field: %{mode: _}}), do: true
+  def encrypted?(%Tpl.Header.Long{configuration_field: %{mode: 0}}), do: false
+  def encrypted?(%Tpl.Header.Long{configuration_field: %{mode: _}}), do: true
 
   @doc """
   Get the number of expected encrypted bytes in the APL binary
   """
   def encrypted_byte_count(%Tpl{header: header}), do: encrypted_byte_count(header)
-  def encrypted_byte_count(%Tpl.None{}), do: {:ok, 0}
+  def encrypted_byte_count(%Tpl.Header.None{}), do: {:ok, 0}
 
-  def encrypted_byte_count(%Tpl.Short{configuration_field: %{mode: m, blocks: n}}) when m != 0,
-    do: {:ok, n * 16}
+  def encrypted_byte_count(%Tpl.Header.Short{configuration_field: %{mode: m, blocks: n}})
+      when m != 0,
+      do: {:ok, n * 16}
 
-  def encrypted_byte_count(%Tpl.Long{configuration_field: %{mode: m, blocks: n}}) when m != 0,
-    do: {:ok, n * 16}
+  def encrypted_byte_count(%Tpl.Header.Long{configuration_field: %{mode: m, blocks: n}})
+      when m != 0,
+      do: {:ok, n * 16}
 
   # when mode is 0, then encrypted byte count is 0
-  def encrypted_byte_count(%Tpl.Short{configuration_field: %{mode: 0}}), do: {:ok, 0}
-  def encrypted_byte_count(%Tpl.Long{configuration_field: %{mode: 0}}), do: {:ok, 0}
+  def encrypted_byte_count(%Tpl.Header.Short{configuration_field: %{mode: 0}}), do: {:ok, 0}
+  def encrypted_byte_count(%Tpl.Header.Long{configuration_field: %{mode: 0}}), do: {:ok, 0}
 
   defp decrypt_to_context(0, ctx) do
     {:continue, ctx}
@@ -105,7 +107,7 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   end
 
   # Generate the IV for mode 5 encryption
-  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Short{} = header}, dll: %Wmbus{} = wmbus}) do
+  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Header.Short{} = header}, dll: %Wmbus{} = wmbus}) do
     mode_5_iv(
       wmbus.manufacturer,
       wmbus.identification_no,
@@ -115,7 +117,7 @@ defmodule Exmbus.Parser.Tpl.Encryption do
     )
   end
 
-  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Long{} = header}}) do
+  defp ctx_to_mode_5_iv(%{tpl: %Tpl{header: %Tpl.Header.Long{} = header}}) do
     mode_5_iv(
       header.manufacturer,
       header.identification_no,
