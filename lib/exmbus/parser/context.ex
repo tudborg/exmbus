@@ -46,7 +46,7 @@ defmodule Exmbus.Parser.Context do
     opts: %{},
     # handlers to apply, in order:
     handlers: nil,
-    __current_handler__: nil,
+    handler: nil,
     # lower layers:
     dll: nil,
     ell: nil,
@@ -126,7 +126,7 @@ defmodule Exmbus.Parser.Context do
   end
 
   def handle(%__MODULE__{handlers: [handler | handlers]} = ctx) do
-    case handler.(%{ctx | handlers: handlers, __current_handler__: handler}) do
+    case handler.(%{ctx | handlers: handlers, handler: handler}) do
       {:continue, ctx} -> {:continue, ctx}
       {:abort, ctx} -> {:abort, ctx}
     end
@@ -136,13 +136,13 @@ defmodule Exmbus.Parser.Context do
   Add an error to the context and return the updated context.
   """
   def add_error(ctx, error) do
-    %__MODULE__{ctx | errors: [{ctx.__current_handler__, error} | ctx.errors]}
+    %__MODULE__{ctx | errors: [{ctx.handler, error} | ctx.errors]}
   end
 
   @doc """
   Add a warning to the context and return the updated context.
   """
   def add_warning(ctx, warning) do
-    %__MODULE__{ctx | warnings: [{ctx.__current_handler__, warning} | ctx.warnings]}
+    %__MODULE__{ctx | warnings: [{ctx.handler, warning} | ctx.warnings]}
   end
 end
