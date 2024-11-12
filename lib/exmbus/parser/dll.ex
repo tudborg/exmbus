@@ -1,5 +1,4 @@
 defmodule Exmbus.Parser.Dll do
-  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Routes the parsing to the correct Dll parser,
   either Mbus or Wmbus.

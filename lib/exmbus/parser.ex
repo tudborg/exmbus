@@ -1,5 +1,4 @@
 defmodule Exmbus.Parser do
-  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Responsible for parsing the binary data into a structured format.
   """
@@ -7,20 +6,21 @@ defmodule Exmbus.Parser do
 
   @doc """
   Parse the parse context until it's handler stack is empty, or it has errors.
+
+  Returns {:ok, ctx} if parsing was successful, or {:error, ctx} if parsing failed.
   """
-  @spec parse(Context.t()) :: Context.t()
-  def parse(%Context{handlers: []} = ctx) do
-    {:continue, ctx}
-  end
+  @spec parse(Context.t()) :: {:ok, Context.t()} | {:error, Context.t()}
+  def parse(ctx), do: handle(ctx)
 
-  def parse(%Context{errors: [_ | _]} = ctx) do
-    {:abort, ctx}
-  end
+  defp handle(%Context{handlers: []} = ctx), do: reply(ctx)
 
-  def parse(%Context{handlers: [next | remaining]} = ctx) do
-    # recursively parse the context while parse/1 returns {:continue, ctx}
-    with {:continue, ctx} <- next.(%{ctx | handlers: remaining}) do
-      parse(ctx)
+  defp handle(%Context{handlers: [_ | _]} = ctx) do
+    case Context.handle(ctx) do
+      {:continue, ctx} -> handle(ctx)
+      {:abort, ctx} -> reply(ctx)
     end
   end
+
+  defp reply(%Context{errors: [_ | _]} = ctx), do: {:error, ctx}
+  defp reply(%Context{errors: []} = ctx), do: {:ok, ctx}
 end

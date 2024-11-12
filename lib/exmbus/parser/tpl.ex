@@ -1,5 +1,4 @@
 defmodule Exmbus.Parser.Tpl do
-  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Module responsible for handling the transport layer.
   Primarily described in EN 13757-7:2018.

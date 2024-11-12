@@ -1,5 +1,4 @@
 defmodule Exmbus.Parser.Ell do
-  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Module responsible for handling the extended link layer
   Spec taken from EN 13757-4:2019.
@@ -13,6 +12,26 @@ defmodule Exmbus.Parser.Ell do
   alias Exmbus.Parser.Ell.None
   alias Exmbus.Parser.Ell.Encrypted
   alias Exmbus.Parser.Ell.Unencrypted
+
+  @doc """
+  Parses an extended link layer and adds it to the parse context.
+
+  In contrast to `parse/1`, this function will not fail if the data
+  doesn't contain an ELL. Instead, it will assign a `%None{}` struct
+  to the ell context field.
+  """
+  def maybe_parse(%{} = ctx) do
+    case parse(ctx) do
+      {:abort, %Context{errors: [{_handler_func, {:ci_not_ell, _ci}} | _]}} ->
+        {:continue, Context.merge(ctx, ell: %None{})}
+
+      {:abort, ctx} ->
+        {:abort, ctx}
+
+      {:continue, ctx} ->
+        {:continue, ctx}
+    end
+  end
 
   # > This value of the CI-field is used if data encryption at the link layer is not used in the frame.
   # > Table 44 below, shows the complete extension block in this case.
@@ -82,10 +101,10 @@ defmodule Exmbus.Parser.Ell do
     raise "TODO: ELL V"
   end
 
-  # When the CI is not an ELL CI, we set the ELL to none and continue
-  def parse(%{bin: _} = ctx) do
-    {:continue, Context.merge(ctx, ell: %None{})}
+  def parse(%{bin: <<ci, _rest::binary>>} = ctx) do
+    {:abort, Context.add_error(ctx, {:ci_not_ell, ci})}
   end
 
+  defdelegate maybe_decrypt_bin(ctx), to: Encrypted
   defdelegate decrypt_bin(ctx), to: Encrypted
 end

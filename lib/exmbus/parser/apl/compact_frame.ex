@@ -60,6 +60,17 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
     raise "No format_frame_fn function given as option for context: #{inspect(ctx)}"
   end
 
+  @doc """
+  This function will expand the compact frame into a full frame.
+  If the APL in the context is not a CompactFrame, it will return {:continue, ctx}
+  """
+  def maybe_expand(ctx) do
+    case ctx.apl do
+      %__MODULE__{} -> expand(ctx)
+      _ -> {:continue, ctx}
+    end
+  end
+
   def _expand([], <<>> = _data_bytes, ctx, acc) do
     %{apl: %__MODULE__{full_frame_crc: ffc}} = ctx
 

@@ -24,15 +24,17 @@ defmodule Exmbus.Parser.Context do
     # parse the DLL
     &Exmbus.Parser.Dll.parse/1,
     # parse the ELL
-    &Exmbus.Parser.Ell.parse/1,
+    &Exmbus.Parser.Ell.maybe_parse/1,
     # apply decryption from the ELL to remaining data
-    &Exmbus.Parser.Ell.decrypt_bin/1,
+    &Exmbus.Parser.Ell.maybe_decrypt_bin/1,
     # parse the TPL
     &Exmbus.Parser.Tpl.parse/1,
     # apply decryption from the TPL to remaining data
     &Exmbus.Parser.Tpl.decrypt_bin/1,
     # parse the APL
-    &Exmbus.Parser.Apl.parse/1
+    &Exmbus.Parser.Apl.parse/1,
+    # Expand compact frames
+    &Exmbus.Parser.Apl.CompactFrame.maybe_expand/1
   ]
 
   defstruct [
@@ -40,6 +42,7 @@ defmodule Exmbus.Parser.Context do
     opts: %{},
     # handlers to apply, in order:
     handlers: @default_handlers,
+    current_handler: nil,
     # remaining binary data
     bin: nil,
     # lower layers:
@@ -82,17 +85,31 @@ defmodule Exmbus.Parser.Context do
     do: %{ctx | key => value}
 
   @doc """
+  Apply the context to the next handler in the list.
+  """
+  def handle(%__MODULE__{handlers: []} = ctx) do
+    {:abort, ctx}
+  end
+
+  def handle(%__MODULE__{handlers: [handler | handlers]} = ctx) do
+    case handler.(%{ctx | handlers: handlers, current_handler: handler}) do
+      {:continue, ctx} -> {:continue, ctx}
+      {:abort, ctx} -> {:abort, ctx}
+    end
+  end
+
+  @doc """
   Add an error to the context and return the updated context.
   """
   def add_error(ctx, error) do
-    %__MODULE__{ctx | errors: [error | ctx.errors]}
+    %__MODULE__{ctx | errors: [{ctx.current_handler, error} | ctx.errors]}
   end
 
   @doc """
   Add a warning to the context and return the updated context.
   """
   def add_warning(ctx, warning) do
-    %__MODULE__{ctx | warnings: [warning | ctx.warnings]}
+    %__MODULE__{ctx | warnings: [{ctx.current_handler, warning} | ctx.warnings]}
   end
 
   @doc """

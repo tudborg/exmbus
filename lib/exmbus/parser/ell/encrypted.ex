@@ -11,11 +11,19 @@ defmodule Exmbus.Parser.Ell.Encrypted do
             session_number: nil
 
   @doc """
+    decrypts the context data according to the ELL layer.
+
+    This function will decrypt the encrypted bytes according to the ELL encryption mode.
+    If the ell is not set, or is none, this function will return `{:continue, ctx}`.
+  """
+  def maybe_decrypt_bin(%{ell: %__MODULE__{}} = ctx), do: decrypt_bin(ctx)
+  def maybe_decrypt_bin(%{} = ctx), do: {:continue, ctx}
+
+  @doc """
   decrypts the context data according to the ELL layer.
 
   This function will decrypt the encrypted bytes according to the ELL encryption mode.
   """
-
   def decrypt_bin(
         %{
           bin: <<payload_crc::little-size(16), plain::binary>>,
@@ -38,11 +46,6 @@ defmodule Exmbus.Parser.Ell.Encrypted do
         {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
       end
     end
-  end
-
-  def decrypt_bin(ctx) do
-    # no encryption mode found, continue assuming payload not ELL encrypted
-    {:continue, ctx}
   end
 
   # calculate the initial counter block for the ELL AES-128-CTR decryption

@@ -1,5 +1,4 @@
 defmodule Exmbus.Parser.Dll.Mbus do
-  @behaviour Exmbus.Parser.ParseBehaviour
   @moduledoc """
   Data Link Layer for Mbus
   """

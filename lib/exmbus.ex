@@ -17,25 +17,12 @@ defmodule Exmbus do
     end
     # send down the parser
     |> Exmbus.Parser.parse()
-    # rewrap maps the internal returns of the ParseBehaviour to {:ok, ctx} or {:error, ctx}
-    |> rewrap()
   end
 
   def parse!(bin, options_or_context \\ nil) do
     case parse(bin, options_or_context) do
       {:ok, ctx} -> ctx
       {:error, ctx} -> raise ParseError, message: "Failed to parse data", errors: ctx.errors
-    end
-  end
-
-  defp rewrap({:continue, ctx}) do
-    {:ok, ctx}
-  end
-
-  defp rewrap({:abort, ctx}) do
-    case Context.has_errors?(ctx) do
-      true -> {:error, ctx}
-      false -> {:ok, ctx}
     end
   end
 
