@@ -34,7 +34,9 @@ defmodule Exmbus.Parser.Context do
     # parse the APL
     &Exmbus.Parser.Apl.parse/1,
     # expand compact frames
-    &Exmbus.Parser.Apl.CompactFrame.maybe_expand/1
+    &Exmbus.Parser.Apl.CompactFrame.maybe_expand/1,
+    # expand compact profiles
+    &Exmbus.Parser.Apl.FullFrame.maybe_expand_compact_profiles/1
   ]
 
   defstruct [

@@ -12,9 +12,20 @@ defmodule DataRecord.CompactProfileTest do
 
 
   """
-  alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Context
   use ExUnit.Case, async: true
+
+  # in these tests we only look at APL full frame bytes
+  # so we use the full frame parsing handler
+  # and the compact profile expand handler.
+  def parsing_context() do
+    Context.new(
+      handlers: [
+        &Exmbus.Parser.Apl.FullFrame.parse/1,
+        &Exmbus.Parser.Apl.FullFrame.expand_compact_profiles/1
+      ]
+    )
+  end
 
   test "compact profile - orthogonal VIFE 0x1F - F.2.7" do
     apl_bytes =
@@ -29,7 +40,7 @@ defmodule DataRecord.CompactProfileTest do
       |> Enum.join()
       |> Base.decode16!()
 
-    assert {:continue, ctx} = FullFrame.parse(Context.new(bin: apl_bytes))
+    assert {:ok, ctx} = Exmbus.parse(apl_bytes, parsing_context())
 
     assert [
              # base time:
@@ -101,7 +112,7 @@ defmodule DataRecord.CompactProfileTest do
       |> Enum.join()
       |> Base.decode16!()
 
-    assert {:continue, ctx} = FullFrame.parse(Context.new(bin: apl_bytes))
+    assert {:ok, ctx} = Exmbus.parse(apl_bytes, parsing_context())
 
     assert [
              # base

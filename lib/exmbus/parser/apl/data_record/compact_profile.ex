@@ -46,15 +46,19 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
   @spec expand_compact_profile(DataRecord.t(), Context.t()) ::
           {:ok, Context.t()} | {:error, term()}
   def expand_compact_profile(record, ctx) do
-    with {:ok, additional_records} <- compact_profile_records(record, ctx.apl.records) do
-      new_records =
-        ctx.apl.records
-        |> Enum.flat_map(fn
-          ^record -> additional_records
-          other -> [other]
-        end)
+    case compact_profile_records(record, ctx.apl.records) do
+      {:ok, additional_records} ->
+        new_records =
+          ctx.apl.records
+          |> Enum.flat_map(fn
+            ^record -> additional_records
+            other -> [other]
+          end)
 
-      {:continue, Context.merge(ctx, apl: %{ctx.apl | records: new_records})}
+        {:ok, Context.merge(ctx, apl: %{ctx.apl | records: new_records})}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 

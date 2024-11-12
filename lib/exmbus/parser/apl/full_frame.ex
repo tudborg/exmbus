@@ -8,48 +8,45 @@ defmodule Exmbus.Parser.Apl.FullFrame do
             manufacturer_bytes: nil
 
   def parse(%Context{} = ctx) do
-    parse_full_frame(ctx.bin, ctx, [])
+    parse_full_frame(ctx, [])
   end
 
-  defp parse_full_frame(<<>>, ctx, acc) do
-    finalize_full_frame(<<>>, ctx, acc)
+  defp parse_full_frame(%{bin: <<>>} = ctx, acc) do
+    finalize_full_frame(ctx, acc)
   end
 
-  defp parse_full_frame(bin, ctx, acc) do
-    case DataRecord.parse(bin, ctx.opts, ctx) do
+  defp parse_full_frame(ctx, acc) do
+    case DataRecord.parse(ctx.bin, ctx.opts, ctx) do
       {:ok, %DataRecord{} = data_record, rest} ->
-        parse_full_frame(rest, ctx, [data_record | acc])
+        parse_full_frame(Context.merge(ctx, bin: rest), [data_record | acc])
 
       {:ok, %InvalidDataRecord{} = data_record, rest} ->
-        parse_full_frame(rest, ctx, [data_record | acc])
+        parse_full_frame(Context.merge(ctx, bin: rest), [data_record | acc])
 
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        parse_full_frame(rest, ctx, acc)
+        parse_full_frame(Context.merge(ctx, bin: rest), acc)
 
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        finalize_full_frame(rest, ctx, acc)
+        finalize_full_frame(Context.merge(ctx, bin: rest), acc)
 
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        finalize_full_frame(rest, ctx, acc)
+        finalize_full_frame(Context.merge(ctx, bin: rest), acc)
 
       {:error, _reason, _rest} = e ->
         e
     end
   end
 
-  defp finalize_full_frame(rest, ctx, acc) do
+  defp finalize_full_frame(%{} = ctx, acc) do
     full_frame = %__MODULE__{
       records: Enum.reverse(acc),
-      manufacturer_bytes: rest
+      # all remaining bytes are manufacturer specific:
+      manufacturer_bytes: ctx.bin
     }
 
-    ctx = Context.merge(ctx, apl: full_frame)
-
-    with {:ok, ctx} <- maybe_expand_compact_profiles(ctx) do
-      {:continue, Context.merge(ctx, bin: <<>>)}
-    end
+    {:continue, Context.merge(ctx, bin: <<>>, apl: full_frame)}
   end
 
   def format_signature(%__MODULE__{} = ff) do
@@ -70,18 +67,33 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     {:ok, Exmbus.crc!(record_bytes)}
   end
 
-  defp maybe_expand_compact_profiles(%{opts: %{expand_compact_profiles: false}} = ctx),
-    do: {:ok, ctx}
+  @doc """
+  This function will expand compact profiles in the APL unless the option `expand_compact_profiles` is false.
+  """
+  def maybe_expand_compact_profiles(%{opts: %{expand_compact_profiles: false}} = ctx) do
+    {:continue, ctx}
+  end
 
-  defp maybe_expand_compact_profiles(%{apl: %{records: records}} = ctx) do
+  def maybe_expand_compact_profiles(%{apl: %{records: []}} = ctx) do
+    {:continue, ctx}
+  end
+
+  def maybe_expand_compact_profiles(ctx) do
+    expand_compact_profiles(ctx)
+  end
+
+  def expand_compact_profiles(%{apl: %__MODULE__{records: records}} = ctx) do
     records
     |> Enum.filter(&DataRecord.is_compact_profile?/1)
-    |> Enum.reduce({:ok, ctx}, fn
-      compact_profile_record, {:ok, ctx} ->
-        DataRecord.expand_compact_profile(compact_profile_record, ctx)
+    |> Enum.reduce({:continue, ctx}, fn
+      compact_profile_record, {:continue, ctx} ->
+        case DataRecord.expand_compact_profile(compact_profile_record, ctx) do
+          {:ok, ctx} -> {:continue, ctx}
+          {:error, reason} -> {:continue, Context.add_warning(ctx, reason)}
+        end
 
-      _compact_profile_record, not_ok ->
-        not_ok
+      _compact_profile_record, {:abort, ctx} ->
+        {:abort, ctx}
     end)
   end
 end
