@@ -21,11 +21,17 @@ defmodule Exmbus.Parser.Context do
         }
 
   @default_handlers [
+    # parse the DLL
     &Exmbus.Parser.Dll.parse/1,
+    # parse the ELL
     &Exmbus.Parser.Ell.parse/1,
+    # apply decryption from the ELL to remaining data
     &Exmbus.Parser.Ell.decrypt_bin/1,
+    # parse the TPL
     &Exmbus.Parser.Tpl.parse/1,
+    # apply decryption from the TPL to remaining data
     &Exmbus.Parser.Tpl.decrypt_bin/1,
+    # parse the APL
     &Exmbus.Parser.Apl.parse/1
   ]
 
@@ -50,8 +56,9 @@ defmodule Exmbus.Parser.Context do
     # that other layers can use?
     dib: nil,
     vib: nil,
-    # error accumulator
-    errors: []
+    # error and warning accumulator
+    errors: [],
+    warnings: []
   ]
 
   def new(attrs \\ []) do
@@ -79,6 +86,13 @@ defmodule Exmbus.Parser.Context do
   """
   def add_error(ctx, error) do
     %__MODULE__{ctx | errors: [error | ctx.errors]}
+  end
+
+  @doc """
+  Add a warning to the context and return the updated context.
+  """
+  def add_warning(ctx, warning) do
+    %__MODULE__{ctx | warnings: [warning | ctx.warnings]}
   end
 
   @doc """

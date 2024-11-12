@@ -31,6 +31,8 @@ defmodule Exmbus.Parser.Dll.Wmbus do
 
   # Expect length and crc in frame: Check CRC and length match.
   # Be aware of Frame format A vs B
+  # We generally receive frames with the CRC stripped,
+  # so I've not yet needed to _actually_ implement this function head.
   def parse(%{bin: <<_len, _rest::binary>>, opts: %{length: true, crc: true}} = ctx) do
     case validate_frame_format_b(ctx.bin) do
       {:ok, valid_bin} ->
@@ -54,14 +56,20 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   # either be including or excluding CRC.
   # At this point, we don't know the frame format, so we can't validate the length.
   # There is a chance that this isn't wmbus length but some other application's length.
-  # A same assumption is that length describes the length if `rest`, but that is _an assumption!_
-  # We just can't really validate the length here.
+  # A sane assumption is that length describes the length of the `rest`.
   def parse(%{bin: <<len, rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
-    if byte_size(rest) == len or Map.get(ctx.opts, :ignore_length, false) do
-      Context.merge(ctx, bin: rest, opts: %{length: false})
+    if byte_size(rest) == len do
+      # if the length matches the `rest` we strip the length and continue parsing
+      ctx
+      |> Context.merge(bin: rest, opts: %{length: false})
       |> parse()
     else
-      {:abort, Context.add_error(ctx, :bad_length)}
+      # if the length doesn't match we add a warning,
+      # and we do not strip the length (we assume that the length was in fact already stripped)
+      ctx
+      |> Context.add_warning({:frame_length_mismatch, {len, byte_size(rest)}})
+      |> Context.merge(opts: %{length: false})
+      |> parse()
     end
   end
 
