@@ -11,7 +11,6 @@ defmodule Exmbus.Parser.Apl do
 
   The function assumes that the entire input is the APL layer data.
   """
-
   def parse(%{tpl: %{frame_type: :full_frame}} = ctx) do
     # NOTE:
     # Should we possibly calculate the format signature here and attach it to the FullFrame struct?

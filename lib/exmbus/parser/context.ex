@@ -31,7 +31,7 @@ defmodule Exmbus.Parser.Context do
     &Exmbus.Parser.Tpl.parse/1,
     # apply decryption from the TPL to remaining data
     &Exmbus.Parser.Tpl.decrypt_bin/1,
-    # parse the APL
+    # parse the APL based on the frame type specified in the TPL
     &Exmbus.Parser.Apl.parse/1,
     # expand compact frames
     &Exmbus.Parser.Apl.CompactFrame.maybe_expand/1,
