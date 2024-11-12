@@ -33,7 +33,7 @@ defmodule Exmbus.Parser.Context do
     &Exmbus.Parser.Tpl.decrypt_bin/1,
     # parse the APL
     &Exmbus.Parser.Apl.parse/1,
-    # Expand compact frames
+    # expand compact frames
     &Exmbus.Parser.Apl.CompactFrame.maybe_expand/1
   ]
 
@@ -42,7 +42,7 @@ defmodule Exmbus.Parser.Context do
     opts: %{},
     # handlers to apply, in order:
     handlers: @default_handlers,
-    current_handler: nil,
+    __current_handler__: nil,
     # remaining binary data
     bin: nil,
     # lower layers:
@@ -92,7 +92,7 @@ defmodule Exmbus.Parser.Context do
   end
 
   def handle(%__MODULE__{handlers: [handler | handlers]} = ctx) do
-    case handler.(%{ctx | handlers: handlers, current_handler: handler}) do
+    case handler.(%{ctx | handlers: handlers, __current_handler__: handler}) do
       {:continue, ctx} -> {:continue, ctx}
       {:abort, ctx} -> {:abort, ctx}
     end
@@ -102,14 +102,14 @@ defmodule Exmbus.Parser.Context do
   Add an error to the context and return the updated context.
   """
   def add_error(ctx, error) do
-    %__MODULE__{ctx | errors: [{ctx.current_handler, error} | ctx.errors]}
+    %__MODULE__{ctx | errors: [{ctx.__current_handler__, error} | ctx.errors]}
   end
 
   @doc """
   Add a warning to the context and return the updated context.
   """
   def add_warning(ctx, warning) do
-    %__MODULE__{ctx | warnings: [{ctx.current_handler, warning} | ctx.warnings]}
+    %__MODULE__{ctx | warnings: [{ctx.__current_handler__, warning} | ctx.warnings]}
   end
 
   @doc """
