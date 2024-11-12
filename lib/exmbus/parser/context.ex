@@ -143,11 +143,4 @@ defmodule Exmbus.Parser.Context do
   def add_warning(ctx, warning) do
     %__MODULE__{ctx | warnings: [{ctx.__current_handler__, warning} | ctx.warnings]}
   end
-
-  @doc """
-  Check if there are any errors in the context.
-  """
-  @spec has_errors?(t) :: boolean
-  def has_errors?(%__MODULE__{errors: []}), do: false
-  def has_errors?(%__MODULE__{errors: [_ | _]}), do: true
 end
