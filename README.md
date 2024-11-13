@@ -17,12 +17,12 @@ mix run benchmarks/<name>.exs
 
 ## Profiling
 
-Some profiling scripts are available under `profiles/`.
+Some profiling scripts are available under `profiling/`.
 
 You can run then with e.g. eprof:
 
 ```sh
- mix profile.eprof profiles/oms_vol2_annex_n.exs
+ mix profile.eprof profiling/oms_vol2_annex_n.exs
 ```
 
 ## TODO
