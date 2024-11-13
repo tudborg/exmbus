@@ -1,4 +1,5 @@
 defmodule Exmbus.Parser.Apl do
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.FormatFrame
   alias Exmbus.Parser.Apl.CompactFrame
@@ -12,18 +13,14 @@ defmodule Exmbus.Parser.Apl do
   The function assumes that the entire input is the APL layer data.
   """
   def parse(%{tpl: %{frame_type: :full_frame}} = ctx) do
-    # NOTE:
-    # Should we possibly calculate the format signature here and attach it to the FullFrame struct?
-    # That way we don't need the expensive unparse operation to get the format signature,
-    # BUT we'd calculate it on every single parse? Option to turn off maybe?
-    FullFrame.parse(ctx)
+    {:next, Context.prepend_handlers(ctx, [&FullFrame.parse/1])}
   end
 
   def parse(%{tpl: %{frame_type: :format_frame}} = ctx) do
-    FormatFrame.parse(ctx)
+    {:next, Context.prepend_handlers(ctx, [&FormatFrame.parse/1])}
   end
 
   def parse(%{tpl: %{frame_type: :compact_frame}} = ctx) do
-    CompactFrame.parse(ctx)
+    {:next, Context.prepend_handlers(ctx, [&CompactFrame.parse/1])}
   end
 end

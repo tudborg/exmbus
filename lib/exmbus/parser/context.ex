@@ -115,8 +115,17 @@ defmodule Exmbus.Parser.Context do
   @doc """
   Append additional handlers to the context.
   """
-  def append_handlers(%__MODULE__{} = ctx, handlers) do
+  def append_handlers(%__MODULE__{} = ctx, handlers) when is_list(handlers) do
     %__MODULE__{ctx | handlers: (ctx.handlers || []) ++ handlers}
+  end
+
+  @doc """
+  Prepend additional handlers to the context.
+
+  Prepending handlers will make the given handlers run before the existing handlers.
+  """
+  def prepend_handlers(%__MODULE__{} = ctx, handlers) when is_list(handlers) do
+    %__MODULE__{ctx | handlers: handlers ++ (ctx.handlers || [])}
   end
 
   @doc """
