@@ -14,13 +14,6 @@ defmodule Exmbus.Parser.TableLoader do
     |> Exmbus.Parser.TableLoader.TableCSV.parse_stream()
     |> Enum.map(&auto_format_columns/1)
     |> Enum.map(&List.to_tuple/1)
-  rescue
-    e ->
-      Logger.error(
-        "Failed #{__MODULE__}.from_enumerable!(#{inspect(stream)})\n#{Exception.message(e)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
-      )
-
-      reraise e, __STACKTRACE__
   end
 
   defp auto_format_columns(cols) do
@@ -36,7 +29,7 @@ defmodule Exmbus.Parser.TableLoader do
   defp auto_format_column("float:" <> float), do: parse_float!(float)
   defp auto_format_column("str:" <> str), do: str
   defp auto_format_column("atom:" <> name), do: String.to_atom(name)
-  defp auto_format_column(":" <> name), do: String.to_atom(name)
+  defp auto_format_column(":" <> name), do: auto_format_column("atom:" <> name)
 
   defp auto_format_column(str) do
     cond do
@@ -49,15 +42,16 @@ defmodule Exmbus.Parser.TableLoader do
 
       # Looks like a float?
       Regex.match?(~r"^\d+\.\d+$", str) ->
-        parse_float!(str)
+        auto_format_column("float:" <> str)
 
       # Looks like an int?
       Regex.match?(~r"^\d+$", str) ->
+        auto_format_column("int:" <> str)
         parse_int!(str)
 
       # Looks like hex?
       Regex.match?(~r"^0x[0-9A-Fa-f]+$", str) ->
-        parse_hex!(str)
+        auto_format_column("hex:" <> str)
 
       true ->
         str
