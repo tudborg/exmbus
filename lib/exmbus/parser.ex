@@ -10,11 +10,9 @@ defmodule Exmbus.Parser do
   Returns {:ok, ctx} if parsing was successful, or {:error, ctx} if parsing failed.
   """
   @spec parse(Context.t()) :: {:ok, Context.t()} | {:error, Context.t()}
-  def parse(ctx), do: handle(ctx)
+  def parse(%Context{} = ctx), do: handle(ctx)
 
-  defp handle(%Context{handlers: []} = ctx), do: reply(ctx)
-
-  defp handle(%Context{handlers: [_ | _]} = ctx) do
+  defp handle(ctx) do
     case Context.handle(ctx) do
       {:next, ctx} -> handle(ctx)
       {:halt, ctx} -> reply(ctx)

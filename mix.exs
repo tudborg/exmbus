@@ -21,6 +21,10 @@ defmodule Exmbus.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # development and test dependencies
+      {:benchee, "~> 1.0", only: :dev},
+      {:benchee_html, "~> 1.0", only: :dev},
+      # dependencies
       {:nimble_csv, "~> 1.1"},
       {:crc, "~> 0.10.1"}
     ]
