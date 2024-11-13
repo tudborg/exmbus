@@ -99,10 +99,12 @@ defmodule Parser.DataTypeTest do
   end
 
   # Type G
-  test "test encode_type_g/1 and decode_type_g/1" do
-    {:ok, ndt} = Date.new(2021, 12, 31)
-    {:ok, <<data::binary-size(2)>>} = DataType.encode_type_g(ndt)
-    {:ok, ^ndt, <<>>} = DataType.decode_type_g(data)
+  for value <- [~D[2021-12-31], ~D[1999-01-01], ~D[2050-01-01], ~D[1981-01-01], ~D[2080-01-01]] do
+    test "test #{value} |> encode_type_g/1 |> decode_type_g/1" do
+      value = unquote(Macro.escape(value))
+      {:ok, <<data::binary-size(2)>>} = DataType.encode_type_g(value)
+      {:ok, ^value, <<>>} = DataType.decode_type_g(data)
+    end
   end
 
   # Type H
