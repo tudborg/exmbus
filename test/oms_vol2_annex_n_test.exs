@@ -251,7 +251,7 @@ defmodule OMSVol2AnnexNTest do
   describe "N.5 Heat Cost Allocator" do
     # ACC-NR is not yet implemented
     @tag :skip
-    test "N.5.2 wM-Bus Example with ACC-NR " do
+    test "N.5.2 wM-Bus Example with ACC-NR" do
       # TODO include CRC in this frame, it seems like we've skipped typing it
       frame = "194793444433221155378C20758B8877665593445508FF040000" |> Base.decode16!()
       assert {:ok, %{bin: <<>>}} = Exmbus.parse(frame, length: true, crc: false)
@@ -417,12 +417,142 @@ defmodule OMSVol2AnnexNTest do
              } = ctx
     end
 
-    @tag :skip
     test "N.5.4 M-Bus Example with partial encryption" do
       # TODO: fill in this frame from the example (page 46)
-      frame = "" |> Base.decode16!()
+      frame =
+        [
+          # mbus DLL
+          "682C2C6808FD",
+          # TPL
+          "72887766559344550800041005",
+          # APL #1
+          "00DFE2A782146D1513581CD2F83F3904",
+          # APL #2
+          "0CFD10785634120C7844332211",
+          # mbus DLL (checksum + stop byte)
+          "2616"
+        ]
+        |> Enum.join()
+        |> Base.decode16!()
+
       key = "000102030405060708090A0B0C0D0E0F" |> Base.decode16!()
-      assert {:ok, _ctx, <<>>} = Exmbus.parse(frame, key: key)
+      assert {:ok, %Context{} = ctx} = Exmbus.parse(frame, key: key)
+      records = ctx.apl.records
+
+      assert length(records) == 5
+
+      assert [
+               %Exmbus.Parser.Apl.DataRecord{
+                 header: %Exmbus.Parser.Apl.DataRecord.Header{
+                   dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                     device: 0,
+                     tariff: 0,
+                     storage: 0,
+                     function_field: :instantaneous,
+                     data_type: :bcd,
+                     size: 24
+                   },
+                   vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                     description: :units_for_hca,
+                     multiplier: nil,
+                     unit: nil,
+                     extensions: [],
+                     coding: nil,
+                     table: :main
+                   },
+                   coding: :type_a
+                 },
+                 data: 1234
+               },
+               %Exmbus.Parser.Apl.DataRecord{
+                 header: %Exmbus.Parser.Apl.DataRecord.Header{
+                   dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                     device: 0,
+                     tariff: 0,
+                     storage: 1,
+                     function_field: :instantaneous,
+                     data_type: :int_or_bin,
+                     size: 16
+                   },
+                   vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                     description: :date,
+                     multiplier: nil,
+                     unit: nil,
+                     extensions: [],
+                     coding: :type_g,
+                     table: :main
+                   },
+                   coding: :type_g
+                 },
+                 data: ~D[2007-04-30]
+               },
+               %Exmbus.Parser.Apl.DataRecord{
+                 header: %Exmbus.Parser.Apl.DataRecord.Header{
+                   dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                     device: 0,
+                     tariff: 0,
+                     storage: 1,
+                     function_field: :instantaneous,
+                     data_type: :bcd,
+                     size: 24
+                   },
+                   vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                     description: :units_for_hca,
+                     multiplier: nil,
+                     unit: nil,
+                     extensions: [],
+                     coding: nil,
+                     table: :main
+                   },
+                   coding: :type_a
+                 },
+                 data: 23456
+               },
+               %Exmbus.Parser.Apl.DataRecord{
+                 header: %Exmbus.Parser.Apl.DataRecord.Header{
+                   dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                     device: 0,
+                     tariff: 0,
+                     storage: 0,
+                     function_field: :instantaneous,
+                     data_type: :bcd,
+                     size: 32
+                   },
+                   vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                     description: :customer_location,
+                     multiplier: nil,
+                     unit: nil,
+                     extensions: [],
+                     coding: :type_a,
+                     table: :fd
+                   },
+                   coding: :type_a
+                 },
+                 data: 12_345_678
+               },
+               %Exmbus.Parser.Apl.DataRecord{
+                 header: %Exmbus.Parser.Apl.DataRecord.Header{
+                   dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                     device: 0,
+                     tariff: 0,
+                     storage: 0,
+                     function_field: :instantaneous,
+                     data_type: :bcd,
+                     size: 32
+                   },
+                   vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                     description: :fabrication_no,
+                     multiplier: nil,
+                     unit: nil,
+                     extensions: [],
+                     coding: nil,
+                     table: :main
+                   },
+                   coding: :type_a
+                 },
+                 data: 11_22_33_44
+               }
+             ] = records
     end
   end
 end
