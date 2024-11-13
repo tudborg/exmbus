@@ -23,6 +23,9 @@ defmodule Exmbus.MixProject do
     [
       ignore_modules: [
         Exmbus.Parser.TableLoader.TableCSV
+      ],
+      summary: [
+        threshold: 50
       ]
     ]
   end
