@@ -1,4 +1,4 @@
-defmodule CompactFrameTest do
+defmodule Parser.Apl.CompactFrameTest do
   use ExUnit.Case, async: true
 
   alias Exmbus.Parser.Apl.DataRecord

@@ -1,4 +1,4 @@
-defmodule DataRecord.DataRecordTest do
+defmodule Parser.Apl.DataRecord.DataRecordTest do
   use ExUnit.Case, async: true
 
   alias Exmbus.Parser.Context

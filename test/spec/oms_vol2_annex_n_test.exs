@@ -1,4 +1,4 @@
-defmodule OMSVol2AnnexNTest do
+defmodule Spec.OMSVol2AnnexNTest do
   # OMS Spec Vol2 Annex N D103 2020-10-22
   use ExUnit.Case, async: true
 

@@ -1,4 +1,4 @@
-defmodule Devices.LAN_WMBUS_SMK2Test do
+defmodule Compatibility.LAN_WMBUS_SMK2Test do
   use ExUnit.Case, async: true
 
   @moduledoc """

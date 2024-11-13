@@ -1,4 +1,4 @@
-defmodule DataRecord.CompactProfileTest do
+defmodule Parser.Apl.DataRecord.CompactProfileTest do
   @moduledoc """
   Compact Profile is a way to encode multiple values into a single data record
   for efficient transfer, typically because there is an even spacing between

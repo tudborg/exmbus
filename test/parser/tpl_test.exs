@@ -1,4 +1,4 @@
-defmodule TplTest do
+defmodule Parser.TplTest do
   use ExUnit.Case, async: true
 
   doctest Exmbus.Parser.Tpl, import: true

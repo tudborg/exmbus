@@ -1,4 +1,4 @@
-defmodule FullFrameTest do
+defmodule Parser.Apl.FullFrameTest do
   use ExUnit.Case, async: true
 
   alias Exmbus.Parser.Apl.DataRecord

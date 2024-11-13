@@ -1,4 +1,4 @@
-defmodule EllTest do
+defmodule Parser.EllTest do
   use ExUnit.Case, async: true
   doctest Exmbus.Parser.Ell, import: true
 

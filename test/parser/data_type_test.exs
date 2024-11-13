@@ -1,4 +1,4 @@
-defmodule DataTypeTest do
+defmodule Parser.DataTypeTest do
   use ExUnit.Case, async: true
   alias Exmbus.Parser.DataType
 
