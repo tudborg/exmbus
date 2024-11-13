@@ -520,6 +520,13 @@ defmodule Exmbus.Parser.DataType do
   #   iex> bitstring_to_bool_list(<<0b0000000011111111::size(16)>>)
   #   [false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true]
   # """
+  # optimized for 8-bit 0x00 byte.
+  # It's quite a common case that most flags are 0, so we can optimize for that.
+  # this significantly reduces the amount of work needed to decode a bitstring in the common case.
+  defp bitstring_to_bool_list(<<0x00, rest::binary>>) do
+    [false, false, false, false, false, false, false, false | bitstring_to_bool_list(rest)]
+  end
+
   defp bitstring_to_bool_list(<<>>), do: []
 
   defp bitstring_to_bool_list(<<0::1, rest::bitstring>>),
