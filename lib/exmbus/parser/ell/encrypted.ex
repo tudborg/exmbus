@@ -48,6 +48,25 @@ defmodule Exmbus.Parser.Ell.Encrypted do
     end
   end
 
+  @doc """
+  Encrypt the binary data according to the ELL layer encryption.
+
+  Mostly useful for re-keying an ELL.
+
+  Will use the first key found in the key list if multiple keys are returned.
+  """
+  def encrypt_bin(%{ell: %__MODULE__{session_number: %{encryption: :aes_128_ctr}}} = ctx) do
+    with {:ok, icb} <- icb(ctx),
+         {:ok, keys} <- Exmbus.Key.get(ctx),
+         crc = Exmbus.crc!(ctx.bin),
+         payload = <<crc::little-size(16), ctx.bin::binary>>,
+         {:ok, encrypted} <- encrypt_aes_ctr(payload, icb, hd(keys)) do
+      {:continue, Context.merge(ctx, bin: encrypted)}
+    else
+      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+    end
+  end
+
   # calculate the initial counter block for the ELL AES-128-CTR decryption
   defp icb(ctx) do
     frame_number = 0
@@ -95,8 +114,8 @@ defmodule Exmbus.Parser.Ell.Encrypted do
     end
   end
 
-  # defp encrypt_aes_ctr(bin, icb, key),
-  #   do: Exmbus.Crypto.crypto_one_time(:aes_ctr, key, icb, bin, true)
+  defp encrypt_aes_ctr(bin, icb, key),
+    do: Exmbus.Crypto.crypto_one_time(:aes_ctr, key, icb, bin, true)
 
   defp decrypt_aes_ctr(bin, icb, key),
     do: Exmbus.Crypto.crypto_one_time(:aes_ctr, key, icb, bin, false)

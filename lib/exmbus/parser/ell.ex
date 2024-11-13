@@ -107,4 +107,6 @@ defmodule Exmbus.Parser.Ell do
 
   defdelegate maybe_decrypt_bin(ctx), to: Encrypted
   defdelegate decrypt_bin(ctx), to: Encrypted
+
+  defdelegate encrypt_bin(ctx), to: Encrypted
 end

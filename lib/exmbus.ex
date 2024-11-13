@@ -29,7 +29,8 @@ defmodule Exmbus do
   @doc """
   Calculate the CRC relevant for mbus (crc_16_en_13757)
   """
-  def crc!(bytes) when is_binary(bytes) do
+  @spec crc!(iodata()) :: non_neg_integer()
+  def crc!(bytes) do
     CRC.crc(:crc_16_en_13757, bytes)
   end
 end

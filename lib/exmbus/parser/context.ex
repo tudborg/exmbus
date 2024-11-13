@@ -46,6 +46,7 @@ defmodule Exmbus.Parser.Context do
     opts: %{},
     # handlers to apply, in order:
     handlers: nil,
+    # current (most recent) handler being applied
     handler: nil,
     # lower layers:
     dll: nil,
