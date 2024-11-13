@@ -5,7 +5,7 @@ defmodule Exmbus.Parser.Dll do
   """
 
   @spec parse(ctx :: Exmbus.Parser.Context.t()) ::
-          {:continue, Context.t()} | {:abort, Context.t()}
+          {:next, Context.t()} | {:halt, Context.t()}
   def parse(%{bin: <<0x68, len, len, 0x68, _::binary>>} = ctx) do
     # mbus with length
     Exmbus.Parser.Dll.Mbus.parse(ctx)

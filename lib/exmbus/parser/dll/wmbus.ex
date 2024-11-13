@@ -46,7 +46,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
             |> parse()
 
           {:error, {:not_valid_frame_format_a, _}} ->
-            {:abort, Context.add_error(ctx, {:bad_length_or_crc, ctx.bin})}
+            {:halt, Context.add_error(ctx, {:bad_length_or_crc, ctx.bin})}
         end
     end
   end
@@ -94,7 +94,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
       device: device
     }
 
-    {:continue, Context.merge(ctx, bin: rest, dll: dll)}
+    {:next, Context.merge(ctx, bin: rest, dll: dll)}
   end
 
   # set some defaults.

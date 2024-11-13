@@ -46,7 +46,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
       manufacturer_bytes: ctx.bin
     }
 
-    {:continue, Context.merge(ctx, bin: <<>>, apl: full_frame)}
+    {:next, Context.merge(ctx, bin: <<>>, apl: full_frame)}
   end
 
   def format_signature(%__MODULE__{} = ff) do
@@ -71,11 +71,11 @@ defmodule Exmbus.Parser.Apl.FullFrame do
   This function will expand compact profiles in the APL unless the option `expand_compact_profiles` is false.
   """
   def maybe_expand_compact_profiles(%{opts: %{expand_compact_profiles: false}} = ctx) do
-    {:continue, ctx}
+    {:next, ctx}
   end
 
   def maybe_expand_compact_profiles(%{apl: %{records: []}} = ctx) do
-    {:continue, ctx}
+    {:next, ctx}
   end
 
   def maybe_expand_compact_profiles(ctx) do
@@ -85,15 +85,15 @@ defmodule Exmbus.Parser.Apl.FullFrame do
   def expand_compact_profiles(%{apl: %__MODULE__{records: records}} = ctx) do
     records
     |> Enum.filter(&DataRecord.is_compact_profile?/1)
-    |> Enum.reduce({:continue, ctx}, fn
-      compact_profile_record, {:continue, ctx} ->
+    |> Enum.reduce({:next, ctx}, fn
+      compact_profile_record, {:next, ctx} ->
         case DataRecord.expand_compact_profile(compact_profile_record, ctx) do
-          {:ok, ctx} -> {:continue, ctx}
-          {:error, reason} -> {:continue, Context.add_warning(ctx, reason)}
+          {:ok, ctx} -> {:next, ctx}
+          {:error, reason} -> {:next, Context.add_warning(ctx, reason)}
         end
 
-      _compact_profile_record, {:abort, ctx} ->
-        {:abort, ctx}
+      _compact_profile_record, {:halt, ctx} ->
+        {:halt, ctx}
     end)
   end
 end

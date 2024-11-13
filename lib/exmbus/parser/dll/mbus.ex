@@ -26,7 +26,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
         _parse(payload, ctx)
 
       bad_checksum ->
-        {:abort, Context.add_error(ctx, {:bad_mbus_checksum, bad_checksum})}
+        {:halt, Context.add_error(ctx, {:bad_mbus_checksum, bad_checksum})}
     end
   end
 
@@ -38,7 +38,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
       address: a
     }
 
-    {:continue, Context.merge(ctx, dll: dll, bin: rest)}
+    {:next, Context.merge(ctx, dll: dll, bin: rest)}
   end
 
   @doc """

@@ -39,14 +39,14 @@ defmodule Parser.Ell.DecryptEncryptTest do
     # grab the encrypted bin:
     encrypted = ctx.bin
     # decrypt it:
-    {:continue, ctx} = Ell.decrypt_bin(ctx)
+    {:next, ctx} = Ell.decrypt_bin(ctx)
     decrypted = ctx.bin
     # re-encrypt it:
-    {:continue, ctx} = Ell.encrypt_bin(ctx)
+    {:next, ctx} = Ell.encrypt_bin(ctx)
     # grab the re-encrypted bin:
     reencrypted = ctx.bin
     # attempt to decrypt again:
-    {:continue, rectx} = Ell.decrypt_bin(ctx)
+    {:next, rectx} = Ell.decrypt_bin(ctx)
     redecrypted = rectx.bin
 
     # rekeying should change the decrypted payload

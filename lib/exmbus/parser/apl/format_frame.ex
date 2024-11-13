@@ -51,7 +51,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
       end
 
     with :ok <- check_result do
-      {:continue, Context.merge(ctx, apl: full_frame, bin: <<>>)}
+      {:next, Context.merge(ctx, apl: full_frame, bin: <<>>)}
     end
   end
 

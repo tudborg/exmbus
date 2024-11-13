@@ -12,7 +12,7 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
   This function will decrypt the encrypted bytes according to the TPL encryption mode.
   """
-  def decrypt_bin(%{tpl: nil} = ctx), do: {:continue, ctx}
+  def decrypt_bin(%{tpl: nil} = ctx), do: {:next, ctx}
   def decrypt_bin(%{tpl: tpl} = ctx), do: decrypt_to_context(encryption_mode(tpl), ctx)
 
   @doc """
@@ -52,7 +52,7 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   def encrypted_byte_count(%Tpl.Header.Long{configuration_field: %{mode: 0}}), do: {:ok, 0}
 
   defp decrypt_to_context(0, ctx) do
-    {:continue, ctx}
+    {:next, ctx}
   end
 
   defp decrypt_to_context(5, ctx) do
@@ -61,15 +61,15 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
     case decrypt_mode_5(encrypted, ctx) do
       {:ok, decrypted} ->
-        {:continue, Context.merge(ctx, bin: <<decrypted::binary, plain::binary>>)}
+        {:next, Context.merge(ctx, bin: <<decrypted::binary, plain::binary>>)}
 
       {:error, reason} ->
-        {:abort, Context.add_error(ctx, reason)}
+        {:halt, Context.add_error(ctx, reason)}
     end
   end
 
   defp decrypt_to_context(mode, ctx) do
-    {:abort, Context.add_error(ctx, {:unknown_encryption_mode, mode})}
+    {:halt, Context.add_error(ctx, {:unknown_encryption_mode, mode})}
   end
 
   # decrypt mode 5 bytes

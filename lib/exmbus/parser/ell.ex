@@ -22,14 +22,14 @@ defmodule Exmbus.Parser.Ell do
   """
   def maybe_parse(%{} = ctx) do
     case parse(ctx) do
-      {:abort, %Context{errors: [{_handler_func, {:ci_not_ell, _ci}} | _]}} ->
-        {:continue, Context.merge(ctx, ell: %None{})}
+      {:halt, %Context{errors: [{_handler_func, {:ci_not_ell, _ci}} | _]}} ->
+        {:next, Context.merge(ctx, ell: %None{})}
 
-      {:abort, ctx} ->
-        {:abort, ctx}
+      {:halt, ctx} ->
+        {:halt, ctx}
 
-      {:continue, ctx} ->
-        {:continue, ctx}
+      {:next, ctx} ->
+        {:next, ctx}
     end
   end
 
@@ -44,7 +44,7 @@ defmodule Exmbus.Parser.Ell do
       access_no: acc
     }
 
-    {:continue, Context.merge(ctx, ell: ell, bin: rest)}
+    {:next, Context.merge(ctx, ell: ell, bin: rest)}
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
@@ -66,7 +66,7 @@ defmodule Exmbus.Parser.Ell do
       session_number: session_number
     }
 
-    {:continue, Context.merge(ctx, ell: ell, bin: <<payload_crc::size(16), rest::binary>>)}
+    {:next, Context.merge(ctx, ell: ell, bin: <<payload_crc::size(16), rest::binary>>)}
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is not used in the frame.
@@ -102,7 +102,7 @@ defmodule Exmbus.Parser.Ell do
   end
 
   def parse(%{bin: <<ci, _rest::binary>>} = ctx) do
-    {:abort, Context.add_error(ctx, {:ci_not_ell, ci})}
+    {:halt, Context.add_error(ctx, {:ci_not_ell, ci})}
   end
 
   defdelegate maybe_decrypt_bin(ctx), to: Encrypted

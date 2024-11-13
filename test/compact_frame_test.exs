@@ -74,7 +74,7 @@ defmodule CompactFrameTest do
         {:ok, format_frame}
       end
 
-      assert {:continue, %{apl: %FullFrame{} = full_frame_from_compact, tpl: %Tpl{}}} =
+      assert {:next, %{apl: %FullFrame{} = full_frame_from_compact, tpl: %Tpl{}}} =
                compact_frame_ctx
                |> Context.merge(opts: [format_frame_fn: ffl])
                |> CompactFrame.expand()
@@ -106,7 +106,7 @@ defmodule CompactFrameTest do
         compact_frame_ctx
         |> Context.merge(opts: [format_frame_fn: fn _, _ -> {:ok, format_frame} end])
 
-      assert {:continue, %{apl: %FullFrame{} = _full_frame_from_compact}} =
+      assert {:next, %{apl: %FullFrame{} = _full_frame_from_compact}} =
                CompactFrame.expand(compact_frame_ctx)
     end
   end
@@ -136,7 +136,7 @@ defmodule CompactFrameTest do
       # the lookup function to fund the format frame is then just a function tht returns the format frame:
       format_frame_fn = fn _fs, _opts -> {:ok, format_frame} end
       # expand the compact frame which should succeed:
-      assert {:continue, _expanded_layers} =
+      assert {:next, _expanded_layers} =
                Context.new(apl: compact_frame, opts: [format_frame_fn: format_frame_fn])
                |> CompactFrame.expand()
     end

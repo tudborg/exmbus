@@ -14,10 +14,10 @@ defmodule Exmbus.Parser.Ell.Encrypted do
     decrypts the context data according to the ELL layer.
 
     This function will decrypt the encrypted bytes according to the ELL encryption mode.
-    If the ell is not set, or is none, this function will return `{:continue, ctx}`.
+    If the ell is not set, or is none, this function will return `{:next, ctx}`.
   """
   def maybe_decrypt_bin(%{ell: %__MODULE__{}} = ctx), do: decrypt_bin(ctx)
-  def maybe_decrypt_bin(%{} = ctx), do: {:continue, ctx}
+  def maybe_decrypt_bin(%{} = ctx), do: {:next, ctx}
 
   @doc """
   decrypts the context data according to the ELL layer.
@@ -33,8 +33,8 @@ defmodule Exmbus.Parser.Ell.Encrypted do
     # encryption mode is none, so we just need to verify the payload crc
     # assuming that this was a CI=8D or CI=8F
     case verify_crc(payload_crc, plain) do
-      {:ok, rest} -> {:continue, Context.merge(ctx, bin: rest)}
-      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+      {:ok, rest} -> {:next, Context.merge(ctx, bin: rest)}
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -42,8 +42,8 @@ defmodule Exmbus.Parser.Ell.Encrypted do
     with {:ok, icb} <- icb(ctx),
          {:ok, keys} <- Exmbus.Key.get(ctx) do
       case try_decrypt_and_verify(ctx.bin, icb, keys, []) do
-        {:ok, rest} -> {:continue, Context.merge(ctx, bin: rest)}
-        {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+        {:ok, rest} -> {:next, Context.merge(ctx, bin: rest)}
+        {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
       end
     end
   end
@@ -61,9 +61,9 @@ defmodule Exmbus.Parser.Ell.Encrypted do
          crc = Exmbus.crc!(ctx.bin),
          payload = <<crc::little-size(16), ctx.bin::binary>>,
          {:ok, encrypted} <- encrypt_aes_ctr(payload, icb, hd(keys)) do
-      {:continue, Context.merge(ctx, bin: encrypted)}
+      {:next, Context.merge(ctx, bin: encrypted)}
     else
-      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 

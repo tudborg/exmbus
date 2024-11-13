@@ -21,7 +21,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
       data_bytes: rest
     }
 
-    {:continue, Context.merge(ctx, apl: compact_frame, bin: <<>>)}
+    {:next, Context.merge(ctx, apl: compact_frame, bin: <<>>)}
   end
 
   @doc """
@@ -44,12 +44,12 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
     case f.(format_signature, ctx.opts) do
       {:ok, %FormatFrame{headers: headers}} ->
         case _expand(headers, data_bytes, ctx, []) do
-          {:continue, ctx} -> {:continue, ctx}
-          {:abort, ctx} -> {:abort, ctx}
+          {:next, ctx} -> {:next, ctx}
+          {:halt, ctx} -> {:halt, ctx}
         end
 
       {:error, reason} ->
-        {:abort, Context.add_error(ctx, {:format_frame_lookup_failed, reason})}
+        {:halt, Context.add_error(ctx, {:format_frame_lookup_failed, reason})}
 
       bad_return ->
         raise "Unexpected return from the format_frame_fn function, expected {:ok, %FormatFrame{}}, got: #{inspect(bad_return)}"
@@ -62,12 +62,12 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
 
   @doc """
   This function will expand the compact frame into a full frame.
-  If the APL in the context is not a CompactFrame, it will return {:continue, ctx}
+  If the APL in the context is not a CompactFrame, it will return {:next, ctx}
   """
   def maybe_expand(ctx) do
     case ctx.apl do
       %__MODULE__{} -> expand(ctx)
-      _ -> {:continue, ctx}
+      _ -> {:next, ctx}
     end
   end
 
@@ -100,10 +100,10 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
 
     case check_result do
       :ok ->
-        {:continue, Context.merge(ctx, apl: full_frame, bin: <<>>)}
+        {:next, Context.merge(ctx, apl: full_frame, bin: <<>>)}
 
       {:error, reason} ->
-        {:abort, Context.add_error(ctx, reason)}
+        {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -113,7 +113,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
         _expand(headers, rest, ctx, [%DataRecord{header: header, data: data} | acc])
 
       {:error, reason, rest} ->
-        {:abort, Context.add_error(ctx, reason) |> Context.merge(bin: rest)}
+        {:halt, Context.add_error(ctx, reason) |> Context.merge(bin: rest)}
     end
   end
 end

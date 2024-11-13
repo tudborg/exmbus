@@ -123,13 +123,13 @@ defmodule Exmbus.Parser.Context do
   Apply the context to the next handler in the list.
   """
   def handle(%__MODULE__{handlers: []} = ctx) do
-    {:abort, ctx}
+    {:halt, ctx}
   end
 
   def handle(%__MODULE__{handlers: [handler | handlers]} = ctx) do
     case handler.(%{ctx | handlers: handlers, handler: handler}) do
-      {:continue, ctx} -> {:continue, ctx}
-      {:abort, ctx} -> {:abort, ctx}
+      {:next, ctx} -> {:next, ctx}
+      {:halt, ctx} -> {:halt, ctx}
     end
   end
 

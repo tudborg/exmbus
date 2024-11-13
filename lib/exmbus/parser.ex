@@ -16,8 +16,8 @@ defmodule Exmbus.Parser do
 
   defp handle(%Context{handlers: [_ | _]} = ctx) do
     case Context.handle(ctx) do
-      {:continue, ctx} -> handle(ctx)
-      {:abort, ctx} -> reply(ctx)
+      {:next, ctx} -> handle(ctx)
+      {:halt, ctx} -> reply(ctx)
     end
   end
 

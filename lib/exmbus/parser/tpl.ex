@@ -44,7 +44,7 @@ defmodule Exmbus.Parser.Tpl do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
       finalize_tpl(:format_frame, header, rest, ctx)
     else
-      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -67,7 +67,7 @@ defmodule Exmbus.Parser.Tpl do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
       finalize_tpl(:full_frame, header, rest, ctx)
     else
-      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -97,7 +97,7 @@ defmodule Exmbus.Parser.Tpl do
     with {:ok, header, rest} <- parse_tpl_header_short(rest) do
       finalize_tpl(:compact_frame, header, rest, ctx)
     else
-      {:error, reason} -> {:abort, Context.add_error(ctx, reason)}
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -114,7 +114,7 @@ defmodule Exmbus.Parser.Tpl do
       header: header
     }
 
-    {:continue, Context.merge(ctx, bin: rest, tpl: tpl)}
+    {:next, Context.merge(ctx, bin: rest, tpl: tpl)}
   end
 
   # TPL header decoders
