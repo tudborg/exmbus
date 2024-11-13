@@ -1,17 +1,4 @@
-defmodule Exmbus.Parser.Binary do
-  @doc """
-  Collect a sequence of bytes where the first bit in each byte
-  represents if the next byte is part of the sequence.
-  Meaning the returned binary will have the first bit of each byte set, except the last byte.
-
-  ## Examples:
-
-      iex> {:ok, <<0xFF, 0x00>>, <<0x00>>} = collect_by_extension_bit(<<0xFF, 0x00, 0x00>>)
-
-      iex> {:ok, <<0x00>>, <<0x00>>} = collect_by_extension_bit(<<0x00, 0x00>>)
-
-      iex> {:ok, <<0x80, 0x80, 0x00>>, <<0x00>>} = collect_by_extension_bit(<<1::1, 0::7, 1::1, 0::7, 0x00, 0x00>>)
-  """
+defmodule Bench do
   def collect_by_extension_bit(<<0::1, _::7, _::binary>> = bin) do
     <<block::binary-size(1), rest::binary>> = bin
     {:ok, block, rest}
@@ -28,16 +15,13 @@ defmodule Exmbus.Parser.Binary do
   end
 
   def collect_by_extension_bit(
-        <<1::1, _::7, 1::1, _::7, 1::1, _::7, 0::1, _::7, _::binary>> = bin
+        <<1::1, _::7, 1::1, _::7, 0::1, _::7, 0::1, _::7, _::binary>> = bin
       ) do
     <<block::binary-size(4), rest::binary>> = bin
     {:ok, block, rest}
   end
 
   def collect_by_extension_bit(bin) do
-    # our pre-defined patterns didn't match, so we'll try a generic approach.
-    # we start at 4 bytes, because we know the first 4 bytes are not a match
-    # due to the above function clauses.
     generic_collect_by_extension_bit(bin, 4)
   end
 
@@ -52,3 +36,29 @@ defmodule Exmbus.Parser.Binary do
     end
   end
 end
+
+iterations = 10000
+
+Benchee.run(
+  %{
+    "current" => fn input ->
+      Enum.each(1..iterations, fn _ ->
+        Exmbus.Parser.Binary.collect_by_extension_bit(input)
+      end)
+    end,
+    "proposed" => fn input ->
+      Enum.each(1..iterations, fn _ ->
+        Bench.collect_by_extension_bit(input)
+      end)
+    end
+  },
+  formatters: [
+    {Benchee.Formatters.HTML, file: "benchmarks/results/collect_by_extension_bit.html"},
+    Benchee.Formatters.Console
+  ],
+  time: 5,
+  warmup: 2,
+  inputs: %{
+    "Realistic" => <<1::1, 0::7, 1::1, 0::7, 0x00, 0x00, 1::1, 0::7, 1::1, 0::7, 0x00, 0x00>>
+  }
+)
