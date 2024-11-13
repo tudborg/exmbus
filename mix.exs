@@ -7,7 +7,8 @@ defmodule Exmbus.MixProject do
       version: "0.1.0",
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      test_coverage: test_coverage()
     ]
   end
 
@@ -15,6 +16,14 @@ defmodule Exmbus.MixProject do
   def application do
     [
       extra_applications: [:logger, :crypto]
+    ]
+  end
+
+  def test_coverage() do
+    [
+      ignore_modules: [
+        Exmbus.Parser.TableLoader.TableCSV
+      ]
     ]
   end
 
