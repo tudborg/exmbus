@@ -1,5 +1,4 @@
 defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD do
-
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife
@@ -63,7 +62,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   def parse(<<e::1, 0b111_0110::7, rest::binary>>, opts, ctx),      do: Vife.parse(e, rest, opts, %{ctx | vib: %VIB{table: :fd, description: {:container, :manufacturer}}})
   # ... skipped some vifs ...
   def parse(<<_::1, vif::7, rest::binary>>, _opts, ctx) do
-    raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.u8_to_hex_str(vif)} (#{Exmbus.Debug.u8_to_binary_str(vif)}), ctx was: #{inspect ctx}, rest was: #{inspect rest}"
+    raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.to_hex(vif)} (#{Exmbus.Debug.to_bits(vif)}), ctx was: #{inspect ctx}, rest was: #{inspect rest}"
   end
 
 

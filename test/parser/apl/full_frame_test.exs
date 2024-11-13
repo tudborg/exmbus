@@ -125,34 +125,14 @@ defmodule Parser.Apl.FullFrameTest do
   @tag :skip
   @tag :frame_format_b
   test "wmbus, encrypted: mode 5 Table P.1 from en13757-3:2003" do
-    datagram =
+    _datagram =
       Base.decode16!(
         "2E4493157856341233037A2A0020055923C95AAA26D1B2E7493B013EC4A6F6D3529B520EDFF0EA6DEFC99D6D69EBF3"
       )
 
-    key = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17>>
+    _key = <<1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17>>
 
-    # always return our one key.
-    keyfn = fn _ctx ->
-      {:ok, [key]}
-    end
-
-    assert {:ok, ctx, <<>>} = Exmbus.parse(datagram, length: true, crc: true)
-    assert %{apl: %Apl.Unparsed{} = raw} = ctx
-    assert %{tpl: %Tpl{}} = ctx
-    assert %{dll: %Wmbus{}} = ctx
-
-    assert %Apl.Unparsed{
-             encrypted_bytes:
-               <<89, 35, 201, 90, 170, 38, 209, 178, 231, 73, 59, 1, 62, 196, 166, 246, 211, 82,
-                 155, 82, 14, 223, 240, 234, 109, 239, 201, 157, 109, 105, 235, 243>>,
-             plain_bytes: ""
-           } = raw
-
-    assert {:ok, %{apl: %Apl.FullFrame{records: records}}, ""} =
-             Exmbus.parse(datagram, length: true, crc: true, key: Key.by_fn!(keyfn))
-
-    assert [%DataRecord{}, %DataRecord{}, %DataRecord{}] = records
+    assert false
   end
 
   # we've not implemented frame format A with CRC checking yet.

@@ -36,7 +36,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFB do
   # skipping some HCA things here
 
   def parse(<<vif, _rest::binary>>, _opts, ctx) do
-    raise "decoding from VIF linear extension table 0xFB not implemented. VIFE was: #{Exmbus.Debug.u8_to_binary_str(vif)}, ctx was: #{inspect ctx}"
+    raise "decoding from VIF linear extension table 0xFB not implemented. VIFE was: #{Exmbus.Debug.to_bits(vif)}, ctx was: #{inspect ctx}"
   end
 
 

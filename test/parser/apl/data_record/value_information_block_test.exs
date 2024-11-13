@@ -16,7 +16,7 @@ defmodule Parser.Apl.DataRecord.ValueInformationBlockTest do
         end
 
       <<_::8>> = vib_bytes ->
-        test "non-extended vib parse/unparse: #{Exmbus.Debug.u8_to_binary_str(i)}" do
+        test "non-extended vib parse/unparse: #{Exmbus.Debug.to_bits(i)}" do
           bin = unquote(vib_bytes)
 
           dib =
