@@ -65,6 +65,9 @@ defmodule Exmbus.Parser.DataType do
     iex> decode_lvar(<<0xE4, -123456789::signed-little-size(32), 0xFF>>)
     {:ok, -123456789, <<0xFF>>}
 
+    iex> decode_lvar(<<5, "hel">>, :container)
+    {:error, {:not_enough_bytes_for_lvar, 5, "hel"}, <<>>}
+
   """
   # LVAR 0x00–0xBF: (0 to 191) characters 8-bit text string according to ISO/IEC 8859-1 (latin-1)
   # (If a wireless M-Bus data container is used it counts the number of bytes inside the container)
@@ -142,6 +145,9 @@ defmodule Exmbus.Parser.DataType do
 
     iex> decode_type_a(<<0x23, 0xF1, 0xFF>>, 16)
     {:ok, -123, <<0xFF>>}
+
+    iex> decode_type_a(<<0x23, 0xC1, 0xFF>>, 16)
+    {:ok, {:invalid, {:type_a, 0xC123}}, <<0xFF>>}
   """
   def decode_type_a(bin, bitsize) do
     # TODO: performance of using digits/undigits.
@@ -300,6 +306,10 @@ defmodule Exmbus.Parser.DataType do
 
     iex> decode_type_g(<<0b101::3, 1::5, 0b0010::4, 2::4, 0xFF>>)
     {:ok, ~D[2021-02-01], <<0xFF>>}
+
+    iex> decode_type_g(<<0xFF, 0xFF, 0xFF>>)
+    {:ok, :invalid, <<0xFF>>}
+
   """
   # TYPE G, date (16 bit)
   def decode_type_g(<<0xFF, 0xFF, rest::binary>>) do
