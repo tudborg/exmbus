@@ -17,12 +17,12 @@ defmodule Exmbus.Parser.Apl.Unparsed do
     {:ok, enclen} = Tpl.Encryption.encrypted_byte_count(tpl)
     <<enc::binary-size(enclen), plain::binary>> = bin
     apl = %__MODULE__{mode: mode, encrypted_bytes: enc, plain_bytes: plain}
-    {:next, Context.merge(ctx, apl: apl, bin: <<>>)}
+    {:next, %{ctx | apl: apl, bin: <<>>}}
   end
 
   def parse(%{bin: bin} = ctx) do
     apl = %__MODULE__{mode: 0, encrypted_bytes: <<>>, plain_bytes: bin}
-    {:next, Context.merge(ctx, apl: apl, bin: <<>>)}
+    {:next, %{ctx | apl: apl, bin: <<>>}}
   end
 
   @doc """
@@ -34,7 +34,7 @@ defmodule Exmbus.Parser.Apl.Unparsed do
   def move_to_context(
         %{apl: %__MODULE__{mode: 0, plain_bytes: plain, encrypted_bytes: <<>>}} = ctx
       ) do
-    {:next, Context.merge(ctx, bin: plain, apl: nil)}
+    {:next, %{ctx | bin: plain, apl: nil}}
   end
 
   def move_to_context(
@@ -44,6 +44,6 @@ defmodule Exmbus.Parser.Apl.Unparsed do
     # assert that the %Unparsed{} information and the TPL information match
     ^mode = Tpl.Encryption.encryption_mode(tpl)
     {:ok, ^enclen} = Tpl.Encryption.encrypted_byte_count(tpl)
-    {:next, Context.merge(ctx, apl: nil, bin: <<enc::binary, plain::binary>>)}
+    {:next, %{ctx | apl: nil, bin: <<enc::binary, plain::binary>>}}
   end
 end

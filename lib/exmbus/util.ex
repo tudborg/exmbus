@@ -19,8 +19,8 @@ defmodule Exmbus.Util do
     ctx = Context.new(handlers: handlers, opts: opts)
     {:ok, ctx} = Exmbus.parse(frame, ctx)
     encrypted = ctx.bin
-    {:next, ctx} = Exmbus.Parser.Ell.decrypt_bin(Context.merge(ctx, opts: [key: old_key]))
-    {:next, ctx} = Exmbus.Parser.Ell.encrypt_bin(Context.merge(ctx, opts: [key: new_key]))
+    {:next, ctx} = Exmbus.Parser.Ell.decrypt_bin(Context.merge_opts(ctx, key: old_key))
+    {:next, ctx} = Exmbus.Parser.Ell.encrypt_bin(Context.merge_opts(ctx, key: new_key))
     reencrypted = ctx.bin
     # now we graft the reencrypted payload onto the original headers
     {:ok, :binary.part(frame, 0, byte_size(frame) - byte_size(encrypted)) <> reencrypted}

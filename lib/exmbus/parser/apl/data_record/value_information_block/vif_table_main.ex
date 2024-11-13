@@ -5,7 +5,6 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
   EN 13757-3:2018(EN) - 6.4.2 Primary VIFs (main table)
   """
 
-  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFB, as: FB
@@ -25,9 +24,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
       coding: Keyword.get(keywords, :coding, nil)
     }
 
-    ctx = Context.merge(ctx, vib: vib)
-
-    Vife.parse(e, rest, opts, ctx)
+    Vife.parse(e, rest, opts, %{ctx | vib: vib})
   end
 
   ###

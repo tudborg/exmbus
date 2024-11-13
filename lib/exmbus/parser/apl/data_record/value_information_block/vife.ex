@@ -7,7 +7,6 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   VIF tables, so we gather it all here.
   """
 
-  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.ErrorCode
 
@@ -49,37 +48,23 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
       {:ok, :from_meter} ->
         case ErrorCode.decode(xxxx) do
           {:ok, record_error} ->
-            parse(
-              e,
-              rest,
-              opts,
-              Context.merge(ctx,
-                vib: %VIB{
-                  vib
-                  | extensions: [{:record_error, record_error} | exts]
-                }
-              )
-            )
+            vib = %VIB{vib | extensions: [{:record_error, record_error} | exts]}
+            parse(e, rest, opts, %{ctx | vib: vib})
 
           # TODO:
           # for now we just pass the reserved numbers through.
           # if they are being used it is most likely because we have not implemented them.
           # I've already seen 0b0_1000 in use in the real world.
           {:error, {:reserved, _} = r} ->
-            parse(
-              e,
-              rest,
-              opts,
-              Context.merge(ctx, merge: %VIB{vib | extensions: [{:record_error, r} | exts]})
-            )
+            vib = %VIB{vib | extensions: [{:record_error, r} | exts]}
+            parse(e, rest, opts, %{ctx | vib: vib})
         end
     end
   end
 
   def parse(1, rest, opts, %{vib: %VIB{extensions: exts} = vib} = ctx) do
     case exts(1, rest, opts, exts) do
-      {:ok, rest, exts} ->
-        parse(0, rest, opts, Context.merge(ctx, vib: %VIB{vib | extensions: exts}))
+      {:ok, rest, exts} -> parse(0, rest, opts, %{ctx | vib: %VIB{vib | extensions: exts}})
     end
   end
 

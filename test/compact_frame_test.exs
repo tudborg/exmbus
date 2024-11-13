@@ -76,7 +76,7 @@ defmodule CompactFrameTest do
 
       assert {:next, %{apl: %FullFrame{} = full_frame_from_compact, tpl: %Tpl{}}} =
                compact_frame_ctx
-               |> Context.merge(opts: [format_frame_fn: ffl])
+               |> Context.merge_opts(format_frame_fn: ffl)
                |> CompactFrame.expand()
 
       assert full_frame == full_frame_from_compact
@@ -104,7 +104,7 @@ defmodule CompactFrameTest do
       # which is the frame we expect to expand on
       compact_frame_ctx =
         compact_frame_ctx
-        |> Context.merge(opts: [format_frame_fn: fn _, _ -> {:ok, format_frame} end])
+        |> Context.merge_opts(format_frame_fn: fn _, _ -> {:ok, format_frame} end)
 
       assert {:next, %{apl: %FullFrame{} = _full_frame_from_compact}} =
                CompactFrame.expand(compact_frame_ctx)

@@ -1,6 +1,5 @@
 defmodule Exmbus.Parser.Apl.DataRecord.Header do
   alias Exmbus.Parser.Binary
-  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
 
@@ -38,7 +37,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(rest_after_dib, opts, Context.merge(ctx, dib: dib)) do
+        case VIB.parse(rest_after_dib, opts, %{ctx | dib: dib}) do
           {:ok, %VIB{} = vib, rest_after_vib} ->
             vib_bytes =
               binary_part(

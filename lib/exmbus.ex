@@ -10,7 +10,7 @@ defmodule Exmbus do
   def parse(bin, options_or_context \\ nil) do
     # normalize input to a Context struct
     case options_or_context do
-      %Context{} = ctx -> Context.merge(ctx, bin: bin)
+      %Context{} = ctx -> %{ctx | bin: bin}
       opts when is_map(opts) -> Context.new(opts: opts, bin: bin)
       opts when is_list(opts) -> Context.new(opts: opts, bin: bin)
       nil -> Context.new(bin: bin)

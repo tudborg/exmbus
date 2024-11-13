@@ -114,7 +114,7 @@ defmodule Exmbus.Parser.Tpl do
       header: header
     }
 
-    {:next, Context.merge(ctx, bin: rest, tpl: tpl)}
+    {:next, %{ctx | bin: rest, tpl: tpl}}
   end
 
   # TPL header decoders

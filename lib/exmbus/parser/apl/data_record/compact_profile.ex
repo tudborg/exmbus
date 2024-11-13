@@ -55,7 +55,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
             other -> [other]
           end)
 
-        {:ok, Context.merge(ctx, apl: %{ctx.apl | records: new_records})}
+        {:ok, %{ctx | apl: %{ctx.apl | records: new_records}}}
 
       {:error, reason} ->
         {:error, reason}

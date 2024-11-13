@@ -61,7 +61,7 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
     case decrypt_mode_5(encrypted, ctx) do
       {:ok, decrypted} ->
-        {:next, Context.merge(ctx, bin: <<decrypted::binary, plain::binary>>)}
+        {:next, %{ctx | bin: <<decrypted::binary, plain::binary>>}}
 
       {:error, reason} ->
         {:halt, Context.add_error(ctx, reason)}

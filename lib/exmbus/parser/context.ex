@@ -78,39 +78,20 @@ defmodule Exmbus.Parser.Context do
   Create a new context  with default handlers, and merge the given attributes into the context.
   """
   def new(attrs \\ []) do
-    %__MODULE__{}
-    |> append_handlers(default_handlers())
-    |> merge(attrs)
+    attrs
+    |> Keyword.drop([:opts])
+    |> Keyword.put_new_lazy(:handlers, &default_handlers/0)
+    # |> Enum.reduce(attrs, %__MODULE__{}, &merge_key/2)
+    |> __struct__()
+    |> merge_opts(Keyword.get(attrs, :opts, %{}))
   end
 
   @doc """
-  Merge the given attributes into the context.
-
-  The attributes are merged in the following way:
-  - `:errors` - appended to the existing list of errors
-  - `:warnings` - appended to the existing list of warnings
-  - `:opts` - merged with the existing opts
-  - any other key - overwritten
+  Merge options with the existing options in the context.
   """
-  def merge(%__MODULE__{} = ctx, attrs \\ []) do
-    Enum.reduce(attrs, ctx, &merge_key/2)
+  def merge_opts(ctx, opts) do
+    %{ctx | opts: Map.merge(ctx.opts, Enum.into(opts || [], %{}))}
   end
-
-  # errors are appended:
-  defp merge_key({:errors, errors}, ctx),
-    do: Map.update(ctx, :errors, [], &(&1 ++ errors))
-
-  # warnings are appended:
-  defp merge_key({:warnings, warnings}, ctx),
-    do: Map.update(ctx, :warnings, [], &(&1 ++ warnings))
-
-  # optionsare Map.merge/2'ed:
-  defp merge_key({:opts, opts}, ctx),
-    do: %{ctx | opts: Map.merge(ctx.opts, Enum.into(opts || [], %{}))}
-
-  # any other key is overwritten:
-  defp merge_key({key, value}, ctx),
-    do: %{ctx | key => value}
 
   @doc """
   Append additional handlers to the context.

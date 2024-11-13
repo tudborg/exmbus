@@ -36,13 +36,15 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   def parse(%{bin: <<_len, _rest::binary>>, opts: %{length: true, crc: true}} = ctx) do
     case validate_frame_format_b(ctx.bin) do
       {:ok, valid_bin} ->
-        Context.merge(ctx, bin: valid_bin, opts: %{length: false, crc: false})
+        %{ctx | bin: valid_bin}
+        |> Context.merge_opts(%{length: false, crc: false})
         |> parse()
 
       {:error, {:not_valid_frame_format_b, _}} ->
         case validate_frame_format_a(ctx.bin) do
           {:ok, valid_bin} ->
-            Context.merge(ctx, bin: valid_bin, opts: %{length: false, crc: false})
+            %{ctx | bin: valid_bin}
+            |> Context.merge_opts(%{length: false, crc: false})
             |> parse()
 
           {:error, {:not_valid_frame_format_a, _}} ->
@@ -60,15 +62,15 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   def parse(%{bin: <<len, rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
     if byte_size(rest) == len do
       # if the length matches the `rest` we strip the length and continue parsing
-      ctx
-      |> Context.merge(bin: rest, opts: %{length: false})
+      %{ctx | bin: rest}
+      |> Context.merge_opts(%{length: false})
       |> parse()
     else
       # if the length doesn't match we add a warning,
       # and we do not strip the length (we assume that the length was in fact already stripped)
       ctx
+      |> Context.merge_opts(%{length: false})
       |> Context.add_warning({:frame_length_mismatch, {len, byte_size(rest)}})
-      |> Context.merge(opts: %{length: false})
       |> parse()
     end
   end
@@ -94,7 +96,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
       device: device
     }
 
-    {:next, Context.merge(ctx, bin: rest, dll: dll)}
+    {:next, %{ctx | bin: rest, dll: dll}}
   end
 
   # set some defaults.

@@ -57,7 +57,7 @@ defmodule Parser.Ell.DecryptEncryptTest do
     # check that the frame still parses when applying the remaining handlers
     # to the re-encrypted data
     remaining_handlers = Context.default_handlers() -- handlers
-    ctx = Context.merge(ctx, handlers: remaining_handlers)
+    ctx = %{ctx | handlers: remaining_handlers}
     assert {:ok, _ctx} = Exmbus.parse(reencrypted, ctx)
   end
 end

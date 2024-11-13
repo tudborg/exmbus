@@ -1,7 +1,6 @@
 defmodule Exmbus.Parser.Apl.FormatFrame do
   defstruct headers: nil
 
-  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
 
@@ -51,7 +50,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
       end
 
     with :ok <- check_result do
-      {:next, Context.merge(ctx, apl: full_frame, bin: <<>>)}
+      {:next, %{ctx | apl: full_frame, bin: <<>>}}
     end
   end
 

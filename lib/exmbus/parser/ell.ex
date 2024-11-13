@@ -23,7 +23,7 @@ defmodule Exmbus.Parser.Ell do
   def maybe_parse(%{} = ctx) do
     case parse(ctx) do
       {:halt, %Context{errors: [{_handler_func, {:ci_not_ell, _ci}} | _]}} ->
-        {:next, Context.merge(ctx, ell: %None{})}
+        {:next, %{ctx | ell: %None{}}}
 
       {:halt, ctx} ->
         {:halt, ctx}
@@ -44,7 +44,7 @@ defmodule Exmbus.Parser.Ell do
       access_no: acc
     }
 
-    {:next, Context.merge(ctx, ell: ell, bin: rest)}
+    {:next, %{ctx | ell: ell, bin: rest}}
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
@@ -66,7 +66,7 @@ defmodule Exmbus.Parser.Ell do
       session_number: session_number
     }
 
-    {:next, Context.merge(ctx, ell: ell, bin: <<payload_crc::size(16), rest::binary>>)}
+    {:next, %{ctx | ell: ell, bin: <<payload_crc::size(16), rest::binary>>}}
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is not used in the frame.

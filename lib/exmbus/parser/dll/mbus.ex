@@ -38,7 +38,7 @@ defmodule Exmbus.Parser.Dll.Mbus do
       address: a
     }
 
-    {:next, Context.merge(ctx, dll: dll, bin: rest)}
+    {:next, %{ctx | dll: dll, bin: rest}}
   end
 
   @doc """
