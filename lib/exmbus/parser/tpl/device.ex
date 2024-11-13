@@ -1,5 +1,5 @@
 defmodule Exmbus.Parser.Tpl.Device do
-  @table Exmbus.Parser.TableLoader.from_file!(__DIR__, "device.csv")
+  @table Exmbus.Parser.TableLoader.from_file!(Application.app_dir(:exmbus, "priv/device.csv"))
 
   def encode!(value) do
     case encode(value) do

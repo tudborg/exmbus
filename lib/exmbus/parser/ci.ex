@@ -6,7 +6,7 @@ defmodule Exmbus.Parser.CI do
       The Transport Layer and the Application Layer uses a shared CI-field.
       For that reason, a Transport Layer shall be present whenever the Application Layer is used in a message.
   """
-  @table Exmbus.Parser.TableLoader.from_file!(__DIR__, "ci.csv")
+  @table Exmbus.Parser.TableLoader.from_file!(Application.app_dir(:exmbus, "priv/ci.csv"))
 
   # define lookup function based on above table.
   # CI low;CI high;Answer ;Layer ;TPL header type ;Direction ;higher layer protocol note

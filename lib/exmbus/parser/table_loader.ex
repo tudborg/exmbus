@@ -1,17 +1,23 @@
 defmodule Exmbus.Parser.TableLoader do
   require Logger
-  NimbleCSV.define(TableCSV, separator: ";", escape: "\"")
 
-  def from_file!(dir, filename) do
-    Path.join(dir, filename)
+  NimbleCSV.define(Exmbus.Parser.TableLoader.TableCSV, separator: ";", escape: "\"")
+
+  def from_file!(path) do
+    path
     |> File.stream!()
-    |> TableCSV.parse_stream()
+    |> from_enumerable!()
+  end
+
+  def from_enumerable!(stream) do
+    stream
+    |> Exmbus.Parser.TableLoader.TableCSV.parse_stream()
     |> Enum.map(&auto_format_columns/1)
     |> Enum.map(&List.to_tuple/1)
   rescue
     e ->
       Logger.error(
-        "Failed #{__MODULE__}.from_file!(#{inspect(dir)}, #{inspect(filename)})\n#{Exception.message(e)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
+        "Failed #{__MODULE__}.from_enumerable!(#{inspect(stream)})\n#{Exception.message(e)}\n#{Exception.format_stacktrace(__STACKTRACE__)}"
       )
 
       reraise e, __STACKTRACE__
