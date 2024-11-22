@@ -59,12 +59,19 @@ defmodule Exmbus.Parser.Tpl.Encryption do
     {:ok, encrypted_byte_count} = encrypted_byte_count(ctx.tpl)
     <<encrypted::binary-size(encrypted_byte_count), plain::binary>> = ctx.bin
 
-    case decrypt_mode_5(encrypted, ctx) do
-      {:ok, decrypted} ->
-        {:next, %{ctx | bin: <<decrypted::binary, plain::binary>>}}
+    {:ok, iv} = ctx_to_mode_5_iv(ctx)
 
-      {:error, reason} ->
-        {:halt, Context.add_error(ctx, reason)}
+    with {:ok, byte_keys} <- Key.get(ctx) do
+      case decrypt_mode_5(encrypted, byte_keys, iv) do
+        {:ok, decrypted} ->
+          {:next, %{ctx | bin: <<decrypted::binary, plain::binary>>}}
+
+        {:error, reason} ->
+          {:halt, Context.add_error(ctx, reason)}
+      end
+    else
+      {:error, e} ->
+        {:halt, Context.add_error(ctx, e)}
     end
   end
 
@@ -75,34 +82,27 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   # decrypt mode 5 bytes
   # Decrypt the encrypted_bytes according to mode 5 encryption.
   # The context is required to get the keys, and build the IV.
-  defp decrypt_mode_5(encrypted_bytes, ctx) do
-    {:ok, iv} = ctx_to_mode_5_iv(ctx)
+  defp decrypt_mode_5(encrypted_bytes, byte_keys, iv) do
+    answer =
+      Enum.find_value(byte_keys, fn
+        byte_key when byte_size(byte_key) == 16 ->
+          case Exmbus.Crypto.crypto_one_time(:aes_cbc, byte_key, iv, encrypted_bytes, false) do
+            # Valid key, decrypts with marker 0x2F2F:
+            {:ok, <<0x2F, 0x2F, rest::binary>>} -> {:ok, rest}
+            # Not valid key, marker not found as prefix:
+            {:ok, _other} -> nil
+            # decryption error:
+            {:error, e} -> {:error, {:mode_5_decryption, {:decrypt_failed, e}}}
+          end
 
-    with {:ok, byte_keys} <- Key.get(ctx) do
-      answer =
-        Enum.find_value(byte_keys, fn
-          byte_key when byte_size(byte_key) == 16 ->
-            case Exmbus.Crypto.crypto_one_time(:aes_cbc, byte_key, iv, encrypted_bytes, false) do
-              # Valid key, decrypts with marker 0x2F2F:
-              {:ok, <<0x2F, 0x2F, rest::binary>>} -> {:ok, rest}
-              # Not valid key, marker not found as prefix:
-              {:ok, _other} -> nil
-              # decryption error:
-              {:error, e} -> {:error, {:mode_5_decryption_failed, e}}
-            end
+        byte_key ->
+          {:error, {:invalid_key, {:not_16_bytes, byte_key}}}
+      end)
 
-          byte_key ->
-            {:error, {:invalid_key, {:not_16_bytes, byte_key}}, ctx}
-        end)
-
-      case answer do
-        {:ok, _bin} = ok -> ok
-        {:error, _reason, _ctx} = e -> e
-        nil -> {:error, {:mode_5_decryption_failed, byte_keys}, ctx}
-      end
-    else
-      {:error, e} ->
-        {:error, e, ctx}
+    case answer do
+      {:ok, _bin} = ok -> ok
+      {:error, _reason, _ctx} = e -> e
+      nil -> {:error, {:mode_5_decryption, {:no_valid_key, {:tried, length(byte_keys)}}}}
     end
   end
 
