@@ -58,20 +58,18 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   # either be including or excluding CRC.
   # At this point, we don't know the frame format, so we can't validate the length.
   # There is a chance that this isn't wmbus length but some other application's length.
-  # A sane assumption is that length describes the length of the `rest`.
-  def parse(%{bin: <<len, rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
-    if byte_size(rest) == len do
-      # if the length matches the `rest` we strip the length and continue parsing
-      %{ctx | bin: rest}
-      |> Context.merge_opts(%{length: false})
-      |> parse()
-    else
-      # if the length doesn't match we add a warning,
-      # and we do not strip the length (we assume that the length was in fact already stripped)
-      ctx
-      |> Context.merge_opts(%{length: false})
-      |> Context.add_warning({:frame_length_mismatch, {len, byte_size(rest)}})
-      |> parse()
+  # A sane assumption is that length describes the length of the `rest`,
+  # But it could also be the length of the wmbus frame, and some additional data remains at the end.
+  # (e.g. RSSI appended at the end)
+  def parse(
+        %{bin: <<len, rest::binary-size(len), tail::binary>>, opts: %{length: true, crc: false}} =
+          ctx
+      ) do
+    ctx = Context.merge_opts(%{ctx | bin: rest}, %{length: false})
+
+    case tail do
+      <<>> -> parse(ctx)
+      tail -> parse(Context.add_warning(ctx, {:trailing_data, tail}))
     end
   end
 
