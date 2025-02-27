@@ -1,6 +1,11 @@
 # Exmbus
 
-[![Elixir CI](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml/badge.svg?branch=main)](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml)
+---
+
+[![Build Status](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml/badge.svg?branch=main)](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/exmbus.svg)](https://hex.pm/packages/exmbus)
+[![Documentation](https://img.shields.io/badge/documentation-gray)](https://hexdocs.pm/exmbus/)
+
 
 Elixir M-Bus & Wireless M-Bus (wM-bus) parser library.
 
