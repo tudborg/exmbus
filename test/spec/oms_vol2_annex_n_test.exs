@@ -23,14 +23,14 @@ defmodule Spec.OMSVol2AnnexNTest do
       # APL #1
       # APL #2
       bytes =
-        ("449315785634123303" <>
+        ("2E449315785634123303" <>
            "7A2A0020255923" <>
            "C95AAA26D1B2E7493B013EC4A6F6" <>
            "D3529B520EDFF0EA6DEFC99D6D69EBF3")
         |> Base.decode16!()
 
       assert {:ok, %{bin: <<>>} = ctx} =
-               Exmbus.parse(bytes, %{length: false, key: aes_key})
+               Exmbus.parse(bytes, %{length: true, key: aes_key})
 
       assert %Context{
                apl: %FullFrame{
