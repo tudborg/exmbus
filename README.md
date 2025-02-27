@@ -1,6 +1,20 @@
-# Exmbus [![Elixir CI](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml/badge.svg?branch=main)](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml)
+# Exmbus
+
+[![Elixir CI](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml/badge.svg?branch=main)](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml)
 
 Elixir M-Bus & Wireless M-Bus (wM-bus) parser library.
+
+## Installation
+
+The package can be installed by adding `exmbus` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:exmbus, "~> 0.2.0"}
+  ]
+end
+```
 
 ## Features
 
