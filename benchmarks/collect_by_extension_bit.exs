@@ -37,7 +37,7 @@ defmodule Bench do
   end
 end
 
-iterations = 10000
+iterations = 1000
 
 Benchee.run(
   %{
@@ -56,8 +56,8 @@ Benchee.run(
     {Benchee.Formatters.HTML, file: "benchmarks/results/collect_by_extension_bit.html"},
     Benchee.Formatters.Console
   ],
-  time: 5,
-  warmup: 2,
+  time: 3,
+  warmup: 1,
   inputs: %{
     "Realistic" => <<1::1, 0::7, 1::1, 0::7, 0x00, 0x00, 1::1, 0::7, 1::1, 0::7, 0x00, 0x00>>
   }
