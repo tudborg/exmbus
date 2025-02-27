@@ -1,4 +1,4 @@
-# Exmbus
+# Exmbus [![Elixir CI](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml/badge.svg?branch=main)](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml)
 
 Elixir M-Bus & Wireless M-Bus (wM-bus) parser library.
 
