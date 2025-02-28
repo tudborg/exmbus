@@ -42,6 +42,28 @@ end
 
 - [ ] Authentication and Fragmentation layer CI=90
 
+
+## Performance
+
+It's fine.
+
+You can run the benchmarks under `benchmarks/` to get an idea of the performance on the relevant hardware.
+
+You should test on frames that matches your deployment scenario, but if you just want a rough estimate,
+there is a benchmark using an example frame from OMS Vol2 Annex N:
+
+```
+mix run benchmarks/oms_vol2_annex_n.exs
+```
+
+Here are the results we've gathered so far for the "With input N.2.1. wM-Bus Meter with Security profile A" bench
+
+
+| Hardware                  |        ips |       average | deviation |        median |        99th % |
+|---------------------------|------------|---------------|-----------|---------------|---------------|
+| Apple 12 core M3 Pro 36GB |   289.61 K |       3.45 μs |   ±63.73% |       3.13 μs |       7.21 μs |
+
+
 ## Examples
 
 ### Parse wM-Bus
@@ -184,15 +206,6 @@ iex> "2E4493157856341233037A2A0020255923C95AAA26D1B2E7493B013EC4A6F6D3529B520EDF
 
 `mix test`
 
-
-## Benchmarks
-
-Using Benchee, located in `benchmarks/`. Run with
-
-```sh
-mix run benchmarks/<name>.exs
-```
-
 ## Profiling
 
 Some profiling scripts are available under `profiling/`.
@@ -202,6 +215,7 @@ You can run then with e.g. eprof:
 ```sh
  mix profile.eprof profiling/oms_vol2_annex_n.exs
 ```
+
 
 ## TODO
 
