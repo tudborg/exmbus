@@ -36,7 +36,7 @@ end
 If you'd like a specific device supported, open an issue and attach or link to the datasheet for the device.  
 If you can provide data from a real test device even better.
 
-No effort will be made towards supporting a device without an example of a payload from the device.
+No effort will be made towards supporting a device without an example of a payload from the device (either from the datasheet or real world capture)
 
 > [!IMPORTANT]  
 > Under no circumstances should you publish data to the issue tracker or repository from a device that is actually deployed, as those might contain PII or other sensitive information.
