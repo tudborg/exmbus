@@ -31,6 +31,18 @@ end
 - Compact Profiles
 - VIF extension tables 0xFD and 0xFB (with a few exceptions)
 
+### Feature Requests
+
+If you'd like a specific device supported, open an issue and attach or link to the datasheet for the device.  
+If you can provide data from a real test device even better.
+
+No effort will be made towards supporting a device without an example of a payload from the device.
+
+> [!IMPORTANT]  
+> Under no circumstances should you publish data to the issue tracker or repository from a device that is actually deployed, as those might contain PII or other sensitive information.
+> The same is true encryption keys where the key might potentially be used in more than once device.
+
+
 ### Planned
 
 - [ ] Transition the parser fully to handler + context based, and avoid raising on error but instead attach an error to the context. The APL layer in particular needs a lot of work here.
