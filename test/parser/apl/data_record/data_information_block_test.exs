@@ -17,7 +17,7 @@ defmodule Parser.Apl.DataRecord.DataInformationBlockTest do
           bin = unquote(dib_bytes)
 
           assert {:error, {:reserved_special_function, f}, <<>>} =
-                   DIB.parse(bin, %{}, Context.new())
+                   DIB.parse(bin, Context.new())
 
           assert is_integer(f)
         end
@@ -26,15 +26,15 @@ defmodule Parser.Apl.DataRecord.DataInformationBlockTest do
       <<special::4, 0b1111::4>> = dib_bytes ->
         test "special function: #{special}" do
           bin = unquote(dib_bytes)
-          assert {:special_function, _, <<>>} = DIB.parse(bin, %{}, Context.new())
+          assert {:special_function, _, <<>>} = DIB.parse(bin, Context.new())
         end
 
       # test non-extended dib
       <<0::1, storage::1, ff::2, df::4>> = dib_bytes ->
         test "non-extended dib parse/unparse storage=#{storage} function_field=#{ff} data_field=#{df}" do
           bin = unquote(dib_bytes)
-          assert {:ok, dib, <<>>} = DIB.parse(bin, %{}, Context.new())
-          assert {:ok, ^bin} = DIB.unparse(%{}, dib)
+          assert {:ok, dib, <<>>} = DIB.parse(bin, Context.new())
+          assert {:ok, ^bin} = DIB.unparse(dib)
         end
     end
   end
