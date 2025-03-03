@@ -2,7 +2,6 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   @moduledoc """
   This module represents the header of a DataRecord.
   """
-  alias Exmbus.Parser.Binary
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
 
@@ -37,28 +36,27 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   @doc """
   Parses the next DataRecord Header from a binary.
   """
-  def parse(bin, opts, ctx) do
-    {:ok, dib_bytes, rest_after_dib} = Binary.collect_by_extension_bit(bin)
-
-    case DIB.parse(dib_bytes, opts, ctx) do
-      {:special_function, type, <<>>} ->
+  def parse(bin, ctx) do
+    case DIB.parse(bin, ctx) do
+      {:special_function, type, rest_after_dib} ->
         # we just return the special function. The parser upstream will have to decide what to do,
         # but there isn't a real header here. The APL layer knows what to do.
         {:special_function, type, rest_after_dib}
 
-      {:ok, %DIB{} = dib, <<>>} ->
-        # {:ok, vib_bytes, rest_after_vib} = Binary.collect_by_extension_bit(rest_after_dib)
+      {:ok, %DIB{} = dib, rest_after_dib} ->
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(rest_after_dib, opts, %{ctx | dib: dib}) do
+        case VIB.parse(rest_after_dib, %{ctx | dib: dib}) do
           {:ok, %VIB{} = vib, rest_after_vib} ->
-            vib_bytes =
-              binary_part(
-                rest_after_dib,
-                0,
-                byte_size(rest_after_dib) - byte_size(rest_after_vib)
-              )
+            dib_size = byte_size(bin) - byte_size(rest_after_dib)
+            vib_size = byte_size(rest_after_dib) - byte_size(rest_after_vib)
+
+            <<
+              dib_bytes::binary-size(dib_size),
+              vib_bytes::binary-size(vib_size),
+              _::binary
+            >> = bin
 
             {:ok, coding} = summarize_coding(dib, vib)
 
@@ -84,15 +82,15 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
              }, rest_after_vib}
         end
 
-      {:error, reason, <<>>} ->
+      {:error, reason, rest_after_dib} ->
         {:ok, %InvalidHeader{error_message: "Parsing DIB failed: #{inspect(reason)}"},
          rest_after_dib}
     end
   end
 
-  def unparse(opts, %__MODULE__{vib: vib, dib: dib}) do
-    with {:ok, vib_bytes} <- VIB.unparse(opts, vib),
-         {:ok, dib_bytes} <- DIB.unparse(opts, dib) do
+  def unparse(%__MODULE__{vib: vib, dib: dib}) do
+    with {:ok, vib_bytes} <- VIB.unparse(vib),
+         {:ok, dib_bytes} <- DIB.unparse(dib) do
       {:ok, <<dib_bytes::binary, vib_bytes::binary>>}
     end
   end

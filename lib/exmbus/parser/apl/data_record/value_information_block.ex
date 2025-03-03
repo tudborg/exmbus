@@ -52,15 +52,15 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock do
     table: nil
   ]
 
-  @spec parse(binary, opts :: map(), Context.t()) ::
+  @spec parse(binary, Context.t()) ::
           {:ok, VIB.t(), rest :: binary} | {:error, any, binary}
-  def parse(bin, opts, ctx) do
+  def parse(bin, ctx) do
     # delegate the parsing to the primary table
-    VifTableMain.parse(bin, opts, ctx)
+    VifTableMain.parse(bin, ctx)
   end
 
   # Basic unparse, main table, no extensions
-  def unparse(opts, %VIB{table: :main} = vib) do
-    VifTableMain.unparse(opts, vib)
+  def unparse(%VIB{table: :main} = vib) do
+    VifTableMain.unparse(vib)
   end
 end

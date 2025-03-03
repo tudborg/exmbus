@@ -12,7 +12,7 @@ defmodule Parser.Apl.DataRecord.HeaderTest do
     test "parse/unparse header mismatch 2022-01-14" do
       # unparsing this yielded 01FA21 which ofc is wrong, it should be same as input
       orignal_drh = "01FF21" |> Base.decode16!()
-      {:ok, %Header{} = header, ""} = Header.parse(orignal_drh, %{}, Context.new())
+      {:ok, %Header{} = header, ""} = Header.parse(orignal_drh, Context.new())
 
       assert %Header{
                coding: :type_b,
@@ -38,7 +38,7 @@ defmodule Parser.Apl.DataRecord.HeaderTest do
 
       # be sure we don't "cheat" :)
       header = Map.drop(header, [:dib_bytes, :vib_bytes])
-      assert {:ok, <<0x01, 0xFF, 0x21>>} = Header.unparse(%{}, header)
+      assert {:ok, <<0x01, 0xFF, 0x21>>} = Header.unparse(header)
     end
   end
 end
