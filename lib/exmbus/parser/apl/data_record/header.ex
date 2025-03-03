@@ -23,10 +23,10 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   @doc """
   Parses the next DataRecord Header from a binary.
   """
-  def parse(bin, opts, ctx) do
+  def parse(bin, ctx) do
     {:ok, dib_bytes, rest_after_dib} = Binary.collect_by_extension_bit(bin)
 
-    case DIB.parse(dib_bytes, opts, ctx) do
+    case DIB.parse(dib_bytes, ctx) do
       {:special_function, type, <<>>} ->
         # we just return the special function. The parser upstream will have to decide what to do,
         # but there isn't a real header here. The APL layer knows what to do.
@@ -37,7 +37,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(rest_after_dib, opts, %{ctx | dib: dib}) do
+        case VIB.parse(rest_after_dib, %{ctx | dib: dib}) do
           {:ok, %VIB{} = vib, rest_after_vib} ->
             vib_bytes =
               binary_part(
@@ -76,9 +76,9 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
     end
   end
 
-  def unparse(opts, %__MODULE__{vib: vib, dib: dib}) do
-    with {:ok, vib_bytes} <- VIB.unparse(opts, vib),
-         {:ok, dib_bytes} <- DIB.unparse(opts, dib) do
+  def unparse(%__MODULE__{vib: vib, dib: dib}) do
+    with {:ok, vib_bytes} <- VIB.unparse(vib),
+         {:ok, dib_bytes} <- DIB.unparse(dib) do
       {:ok, <<dib_bytes::binary, vib_bytes::binary>>}
     end
   end

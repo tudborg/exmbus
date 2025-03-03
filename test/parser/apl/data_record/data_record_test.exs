@@ -14,7 +14,6 @@ defmodule Parser.Apl.DataRecord.DataRecordTest do
       {:ok, record, <<0xFF, 0xFF>>} =
         DataRecord.parse(
           <<0x02, 0xFD, 0x17, 0b00000100, 0b10000000, 0xFF, 0xFF>>,
-          %{},
           Context.new()
         )
 
@@ -75,7 +74,7 @@ defmodule Parser.Apl.DataRecord.DataRecordTest do
       0x75
     >>
 
-    {:ok, data_record, ""} = DataRecord.parse(data_record_bytes, %{}, Context.new())
+    {:ok, data_record, ""} = DataRecord.parse(data_record_bytes, Context.new())
 
     assert %DataRecord{
              data: 75_420_826,

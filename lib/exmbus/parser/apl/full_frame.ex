@@ -16,7 +16,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
   end
 
   defp parse_full_frame(ctx, acc) do
-    case DataRecord.parse(ctx.bin, ctx.opts, ctx) do
+    case DataRecord.parse(ctx.bin, ctx) do
       {:ok, %DataRecord{} = data_record, rest} ->
         parse_full_frame(%{ctx | bin: rest}, [data_record | acc])
 
@@ -59,7 +59,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     record_bytes =
       records
       |> Enum.map(fn record ->
-        {:ok, bytes} = DataRecord.unparse(%{}, record)
+        {:ok, bytes} = DataRecord.unparse(record)
         bytes
       end)
       |> Enum.into("")
