@@ -135,13 +135,15 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b0100111::7, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:per, :misc, :revolution_or_measurement} | acc])
 
-  # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b010100::6, _p::1, _rest::binary>>, _opts, _acc),
-    do: raise("E010 100p Increment per input pulse on input channel number p not supported")
+  defp exts(1, <<e::1, 0b010100::6, p::1, rest::binary>>, opts, acc) do
+    # Increment per input pulse on input channel number p
+    exts(e, rest, opts, [{:per, :input_pulse, {:channel_number, p}} | acc])
+  end
 
-  # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b010101::6, _p::1, _rest::binary>>, _opts, _acc),
-    do: raise("E010 101p Increment per output pulse on output channel number p not supported")
+  defp exts(1, <<e::1, 0b010101::6, p::1, rest::binary>>, opts, acc) do
+    # Increment per output pulse on output channel number p
+    exts(e, rest, opts, [{:per, :output_pulse, {:channel_number, p}} | acc])
+  end
 
   defp exts(1, <<e::1, 0b0101100::7, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:per, :unit, "l"} | acc])
@@ -205,20 +207,26 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<_::1, 0b0111111::7, _rest::binary>>, _opts, _acc),
     do: raise("E011 1111 OBIS-declaration not supported")
 
-  defp exts(1, <<e::1, 0b100::3, 0::1, 000::7, rest::binary>>, opts, acc),
+  defp exts(1, <<e::1, 0b100::3, 0::1, 000::3, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:limit_value, :lower} | acc])
 
-  defp exts(1, <<e::1, 0b100::3, 1::1, 000::7, rest::binary>>, opts, acc),
+  defp exts(1, <<e::1, 0b100::3, 1::1, 000::3, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:limit_value, :upper} | acc])
 
-  defp exts(1, <<e::1, 0b100::3, 0::1, 001::7, rest::binary>>, opts, acc),
+  defp exts(1, <<e::1, 0b100::3, 0::1, 001::3, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:number_of_exceeds_of_limit_value, :lower} | acc])
 
-  defp exts(1, <<e::1, 0b100::3, 1::1, 001::7, rest::binary>>, opts, acc),
+  defp exts(1, <<e::1, 0b100::3, 1::1, 001::3, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:number_of_exceeds_of_limit_value, :upper} | acc])
 
-  defp exts(1, <<_::1, 0b100::3, _u::1, _f::1, 1::1, _b::1, _rest::binary>>, _opts, _acc),
-    do: raise("E100 uf1b not supported")
+  defp exts(1, <<e::1, 0b100::3, u::1, f::1, 1::1, b::1, rest::binary>>, opts, acc) do
+    # Date (/time) of: b = 0: begin, b = 1: end of, f = 0: first, f= 1: last, u = 0: lower, u = 1: upper limit exceeded
+    begin_end = if b == 0, do: :begin, else: :end
+    first_last = if f == 0, do: :first, else: :last
+    upper_lower = if u == 0, do: :lower, else: :upper
+    extension = {:limit_exceeded, upper_lower, first_last, begin_end}
+    exts(e, rest, opts, [extension | acc])
+  end
 
   defp exts(1, <<_::1, 0b101::3, _u::1, _f::1, _nn::2, _rest::binary>>, _opts, _acc),
     do: raise("E101 ufnn Duration of limit exceed not supported")
