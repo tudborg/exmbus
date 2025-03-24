@@ -96,12 +96,12 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
     do: exts(e, rest, opts, [{:compact_profile, :inverse} | acc])
 
   # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b0010100::7, _rest::binary>>, _opts, _acc),
-    do: raise("E001 0100 Relative deviation not supported")
+  defp exts(1, <<e::1, 0b0010100::7, rest::binary>>, opts, acc),
+    do: exts(e, rest, opts, [:standard_conform | acc])
 
   # EN 13757-3:2018 table 15
-  defp exts(1, <<_::1, 0b0011101::7, _rest::binary>>, _opts, _acc),
-    do: raise("E001 1101 Standard conform data content not supported")
+  defp exts(1, <<e::1, 0b0011101::7, rest::binary>>, opts, acc),
+    do: exts(e, rest, opts, [:standard_conform | acc])
 
   # EN 13757-3:2018 table 15
   defp exts(1, <<e::1, 0b0011110::7, rest::binary>>, opts, acc),
