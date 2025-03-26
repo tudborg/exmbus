@@ -12,6 +12,7 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
 
 
   """
+  alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Context
   use ExUnit.Case, async: true
 
@@ -25,6 +26,84 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
         &Exmbus.Parser.Apl.FullFrame.expand_compact_profiles/1
       ]
     )
+  end
+
+  test "compact profile with register numbers - orthogonal VIFE 0x1E - F.2.6" do
+    apl_bytes =
+      [
+        # base time, storage=32, tariff=0
+        "868081006D0000A0411135",
+        # base value, storage=32, tariff=1
+        "8490810003F0490200",
+        # profile 1 (2 values: storage 33 and 34) storage=32, tariff=1:
+        "8D908100831E0A34FEA0860100D0FB0100",
+        # base time, storage=35, tariff=0
+        "C68181006D0B0C8D59130C",
+        # base value, storage=35, tariff=1
+        "C491810003905F0100",
+        # base time, storage=36, tariff=0
+        "868281006D00008041140D",
+        # base value, storage=36, tariff=1
+        "849281000350C30000",
+        # profile 2 (1 value: storage 37) storage=37, tariff=1:
+        "8D928100831E0634FE00710200"
+      ]
+      |> Enum.join()
+      |> Base.decode16!()
+
+    assert {:ok, ctx} = Exmbus.parse(apl_bytes, parsing_context())
+    assert %{errors: [], warnings: []} = ctx
+
+    assert [
+             %DataRecord{
+               header: %{dib: %{storage: 32, tariff: 0}},
+               data: ~N[2010-01-01 00:00:00]
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 32, tariff: 1}},
+               data: 150_000
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 33, tariff: 0}},
+               data: ~N[2010-02-01 00:00:00]
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 33, tariff: 1}},
+               data: 100_000
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 34, tariff: 0}},
+               data: ~N[2010-03-01 00:00:00]
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 34, tariff: 1}},
+               data: 130_000
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 35, tariff: 0}},
+               data: ~N[2010-03-25 13:12:11]
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 35, tariff: 1}},
+               data: 90_000
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 36, tariff: 0}},
+               data: ~N[2010-04-01 00:00:00]
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 36, tariff: 1}},
+               data: 50_000
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 37, tariff: 0}},
+               data: ~N[2010-05-01 00:00:00]
+             },
+             %DataRecord{
+               header: %{dib: %{storage: 37, tariff: 1}},
+               data: 160_000
+             }
+           ] = ctx.apl.records
   end
 
   test "compact profile - orthogonal VIFE 0x1F - F.2.7" do
@@ -44,9 +123,9 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
 
     assert [
              # base time:
-             %Exmbus.Parser.Apl.DataRecord{
-               header: %Exmbus.Parser.Apl.DataRecord.Header{
-                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+             %DataRecord{
+               header: %DataRecord.Header{
+                 dib: %DataRecord.DataInformationBlock{
                    device: 0,
                    tariff: 0,
                    storage: 8,
@@ -54,7 +133,7 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
                    data_type: :int_or_bin,
                    size: 32
                  },
-                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                 vib: %DataRecord.ValueInformationBlock{
                    description: :naive_datetime,
                    multiplier: nil,
                    unit: nil,
@@ -67,9 +146,9 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
                data: ~N[2010-01-01 00:00:00]
              },
              # base value:
-             %Exmbus.Parser.Apl.DataRecord{
-               header: %Exmbus.Parser.Apl.DataRecord.Header{
-                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+             %DataRecord{
+               header: %DataRecord.Header{
+                 dib: %DataRecord.DataInformationBlock{
                    device: 0,
                    tariff: 0,
                    storage: 8,
@@ -77,7 +156,7 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
                    data_type: :bcd,
                    size: 24
                  },
-                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                 vib: %DataRecord.ValueInformationBlock{
                    description: :volume,
                    multiplier: 0.1,
                    unit: "m^3",
@@ -116,11 +195,11 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
 
     assert [
              # base
-             %Exmbus.Parser.Apl.DataRecord{
-               header: %Exmbus.Parser.Apl.DataRecord.Header{
+             %DataRecord{
+               header: %DataRecord.Header{
                  dib_bytes: <<132, 4>>,
                  vib_bytes: "m",
-                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                 dib: %DataRecord.DataInformationBlock{
                    device: 0,
                    tariff: 0,
                    storage: 8,
@@ -128,7 +207,7 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
                    data_type: :int_or_bin,
                    size: 32
                  },
-                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                 vib: %DataRecord.ValueInformationBlock{
                    description: :naive_datetime,
                    multiplier: nil,
                    unit: nil,
@@ -141,11 +220,11 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
                data: ~N[2010-01-01 03:00:00]
              },
              # value
-             %Exmbus.Parser.Apl.DataRecord{
-               header: %Exmbus.Parser.Apl.DataRecord.Header{
+             %DataRecord{
+               header: %DataRecord.Header{
                  dib_bytes: <<139, 4>>,
                  vib_bytes: <<21>>,
-                 dib: %Exmbus.Parser.Apl.DataRecord.DataInformationBlock{
+                 dib: %DataRecord.DataInformationBlock{
                    device: 0,
                    tariff: 0,
                    storage: 8,
@@ -153,7 +232,7 @@ defmodule Parser.Apl.DataRecord.CompactProfileTest do
                    data_type: :bcd,
                    size: 24
                  },
-                 vib: %Exmbus.Parser.Apl.DataRecord.ValueInformationBlock{
+                 vib: %DataRecord.ValueInformationBlock{
                    description: :volume,
                    multiplier: 0.1,
                    unit: "m^3",
