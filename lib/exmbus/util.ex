@@ -25,4 +25,25 @@ defmodule Exmbus.Util do
     # now we graft the reencrypted payload onto the original headers
     {:ok, :binary.part(frame, 0, byte_size(frame) - byte_size(encrypted)) <> reencrypted}
   end
+
+  @doc """
+  Extract the APL bytes (after decryption) from the frame.
+  """
+  def extract_apl_bytes(frame, opts) when is_binary(frame) do
+    handlers =
+      Enum.take_while(Context.default_handlers(), fn handler ->
+        handler != (&Exmbus.Parser.Apl.parse/1)
+      end)
+
+    ctx = Context.new(handlers: handlers, opts: opts)
+
+    with {:ok, %{errors: [], warnings: []} = ctx} <- Exmbus.parse(frame, ctx) do
+      # if the frame parsed successfully with no errors and no warnings
+      # the ctx.bin is the remaining bytes, which should be the APL bytes.
+      {:ok, ctx.bin}
+    else
+      {:error, %Context{} = ctx} -> {:error, ctx}
+      {:ok, %Context{} = ctx} -> {:error, ctx}
+    end
+  end
 end

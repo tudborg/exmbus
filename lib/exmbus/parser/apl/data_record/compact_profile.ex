@@ -72,17 +72,11 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
           {:ok, [DataRecord.t()]} | {:error, term()}
   def compact_profile_records(%DataRecord{} = record, all_records) when is_list(all_records) do
     case Keyword.get(record.header.vib.extensions, :compact_profile) do
-      nil ->
-        {:error, {:record_not_compact_profile, record}}
-
-      :compact_profile ->
-        compact_profile_records(:compact_profile, record, all_records)
-
-      :inverse ->
-        compact_profile_records(:inverse, record, all_records)
-
-      :with_register_numbers ->
-        {:error, {:not_implemented, {:compact_profile_with_register_numbers, record}}}
+      nil -> {:error, {:record_not_compact_profile, record}}
+      :compact_profile -> compact_profile_records(:compact_profile, record, all_records)
+      :inverse -> compact_profile_records(:inverse, record, all_records)
+      :register_numbers -> compact_profile_records(:register_numbers, record, all_records)
+      compact_profile -> {:error, {:unknown_compact_profile_type, compact_profile}}
     end
   end
 
@@ -144,29 +138,33 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
     {:ok, Enum.reverse(acc)}
   end
 
-  defp unfold([value | values], profile_type, header, time_record, value_record, acc) do
+  defp unfold([value | tail], profile_type, header, time_record, value_record, acc) do
     with {:ok, time} <- shift_time_record(profile_type, header.spacing, time_record),
          {:ok, data} <- shift_value_record(profile_type, header, value, value_record) do
       case header.increment_mode do
         # if the increment mode is absolute_value, we keep the value_record as the base record,
-        # but set it's storage +1
+        # but set it's storage +1 from the current value_record
         :absolute_value ->
           absolute_value_record =
-            set_data_and_storage(value_record, value_record.data, data.header.dib.storage + 1)
+            set_data_and_storage(
+              value_record,
+              value_record.data,
+              value_record.header.dib.storage + 1
+            )
 
-          unfold(values, profile_type, header, time, absolute_value_record, [data, time | acc])
+          unfold(tail, profile_type, header, time, absolute_value_record, [data, time | acc])
 
         # if the increment mode is increments, we use our new data as the base record:
         :increments ->
-          unfold(values, profile_type, header, time, data, [data, time | acc])
+          unfold(tail, profile_type, header, time, data, [data, time | acc])
 
         # if the increment mode is decrements, we use our new data as the base record:
         :decrements ->
-          unfold(values, profile_type, header, time, data, [data, time | acc])
+          unfold(tail, profile_type, header, time, data, [data, time | acc])
 
         # if the increment mode is signed_difference, we use our new data as the base record:
         :signed_difference ->
-          unfold(values, profile_type, header, time, data, [data, time | acc])
+          unfold(tail, profile_type, header, time, data, [data, time | acc])
       end
     end
 
