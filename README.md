@@ -100,7 +100,7 @@ iex> "2E4493157856341233037A2A0020255923C95AAA26D1B2E7493B013EC4A6F6D3529B520EDF
   dll: %Exmbus.Parser.Dll.Wmbus{
     control: :snd_nr,
     manufacturer: "ELS",
-    identification_no: 12345678,
+    identification_no: "12345678",
     version: 51,
     device: :gas
   },

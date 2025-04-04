@@ -5,7 +5,7 @@ defmodule CrashResistanceTest do
 
   use ExUnit.Case, async: true
 
-  test "Frame with invalid identification_no" do
+  test "Frame with invalid identification_no and manufacturer specific CI" do
     frame = Base.decode16!("1944304C716F55212404A1031A0013BA03D5FEC7CECF82D14B7E")
     {:error, ctx} = Exmbus.parse(frame)
 
