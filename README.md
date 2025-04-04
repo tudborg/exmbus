@@ -1,13 +1,16 @@
 # Exmbus
 
----
-
 [![Build Status](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml/badge.svg?branch=main)](https://github.com/tudborg/exmbus/actions/workflows/elixir.yml)
 [![Hex.pm](https://img.shields.io/hexpm/v/exmbus.svg)](https://hex.pm/packages/exmbus)
 [![Documentation](https://img.shields.io/badge/documentation-gray)](https://hexdocs.pm/exmbus/)
 
 
 Elixir M-Bus & Wireless M-Bus (wM-bus) parser library.
+
+> [!IMPORTANT]  
+> Although this library is already used in production I do not consider it robust enough to be crash-resistant against uncontrolled input.
+> It is a long-term goal of this library to never raise on parse failure.
+> However, we are not there yet. You'll probably want to wrap your calls to `Exmbus.parse` in a `try`.
 
 ## Installation
 
@@ -45,8 +48,8 @@ No effort will be made towards supporting a device without an example of a paylo
 
 ### Planned
 
-- [ ] Transition the parser fully to handler + context based, and avoid raising on error but instead attach an error to the context. The APL layer in particular needs a lot of work here.
 - [ ] Better API for encryption key storage.
+- [ ] Transition the parser fully to handler + context based, and avoid raising on error but instead attach an error to the context. The APL layer in particular needs a lot of work here.
 - [ ] DLL CRC support.
 - [ ] Split parsing and decoding into two steps. Currently the code parses the binary and decodes it in the same walk, but this causes errors when we can't decode an unsupported feature.
 
