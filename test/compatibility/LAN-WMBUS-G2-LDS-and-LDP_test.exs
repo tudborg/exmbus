@@ -18,7 +18,7 @@ defmodule Compatibility.LAN_WMBUS_G2_LDS_LDSTest do
 
     assert %Context{
              bin: <<>>,
-             dll: %{manufacturer: "LAS", identification_no: 10067, version: 11},
+             dll: %{manufacturer: "LAS", identification_no: "00010067", version: 11},
              tpl: %{header: %{access_no: 7}},
              apl: %{records: records, manufacturer_bytes: <<>>}
            } = ctx

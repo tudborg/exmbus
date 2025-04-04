@@ -2,8 +2,8 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   @moduledoc """
   Data Link Layer for WMbus
   """
+  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Context
-  alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Tpl.Device
 
@@ -81,20 +81,23 @@ defmodule Exmbus.Parser.Dll.Wmbus do
           opts: %{length: false, crc: false}
         } = ctx
       ) do
-    {:ok, control} = decode_c_field(c)
-    {:ok, identification_no, <<>>} = DataType.decode_type_a(i_bytes, 32)
-    {:ok, manufacturer} = Manufacturer.decode(man_bytes)
-    {:ok, device} = Device.decode(d)
+    with {:ok, control} <- decode_c_field(c),
+         {:ok, identification_no} <- IdentificationNo.decode(i_bytes),
+         {:ok, manufacturer} <- Manufacturer.decode(man_bytes),
+         {:ok, device} <- Device.decode(d) do
+      dll = %__MODULE__{
+        control: control,
+        manufacturer: manufacturer,
+        identification_no: identification_no,
+        version: v,
+        device: device
+      }
 
-    dll = %__MODULE__{
-      control: control,
-      manufacturer: manufacturer,
-      identification_no: identification_no,
-      version: v,
-      device: device
-    }
-
-    {:next, %{ctx | bin: rest, dll: dll}}
+      {:next, %{ctx | bin: rest, dll: dll}}
+    else
+      {:error, reason} ->
+        {:halt, Context.add_error(ctx, reason)}
+    end
   end
 
   # set some defaults.

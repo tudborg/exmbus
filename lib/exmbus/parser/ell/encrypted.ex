@@ -1,7 +1,7 @@
 defmodule Exmbus.Parser.Ell.Encrypted do
+  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Manufacturer
-  alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Tpl.Device
   alias Exmbus.Parser.Ell.SessionNumber
   alias Exmbus.Parser.Ell.CommunicationControl
@@ -139,7 +139,7 @@ defmodule Exmbus.Parser.Ell.Encrypted do
          }
        }) do
     {:ok, m_bytes} = Manufacturer.encode(m)
-    {:ok, i_bytes} = DataType.encode_type_a(i, 32)
+    {:ok, i_bytes} = IdentificationNo.encode(i)
     {:ok, d_byte} = Device.encode(d)
     {:ok, <<m_bytes::binary, i_bytes::binary, v, d_byte::binary>>}
   end

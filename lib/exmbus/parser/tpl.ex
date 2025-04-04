@@ -6,9 +6,9 @@ defmodule Exmbus.Parser.Tpl do
   See also the Exmbus.Parser.CI module.
   """
 
+  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.CI
   alias Exmbus.Parser.Context
-  alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Tpl.Device
   alias Exmbus.Parser.Tpl.Status
@@ -35,10 +35,21 @@ defmodule Exmbus.Parser.Tpl do
     # Allow only TPL and APL CI codes.
     # If if hit an ELL, AFL or similar, we error out.
     case CI.lookup(ctx.bin) do
-      {:ok, {:tpl, _layer_ext}} -> _parse(ctx)
-      {:ok, {:apl, _layer_ext}} -> _parse(ctx)
-      {:ok, {_layer, _layer_ext} = l} -> {:halt, Context.add_error(ctx, {:unexpected_ci, l})}
-      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+      # cowardly refusing to parse manufacturer specific CI
+      {:ok, {_layer, :manufacturer_specific} = l} ->
+        {:halt, Context.add_error(ctx, {:unexpected_ci, l})}
+
+      {:ok, {:tpl, _layer_ext}} ->
+        _parse(ctx)
+
+      {:ok, {:apl, _layer_ext}} ->
+        _parse(ctx)
+
+      {:ok, {_layer, _layer_ext} = l} ->
+        {:halt, Context.add_error(ctx, {:unexpected_ci, l})}
+
+      {:error, reason} ->
+        {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -129,15 +140,13 @@ defmodule Exmbus.Parser.Tpl do
   end
 
   # TPL header decoders
-  # NOTE, rest contains the Configuration Field but we can't parse it out becaise
-  # it might have extensions, so we leave the parsing to ConfigurationField.decode/1
-  defp parse_tpl_header_short(<<access_no, status_byte::binary-size(1), rest::binary>>) do
-    status = Status.decode(status_byte)
-
-    with {:ok, configuration_field, rest} <- ConfigurationField.decode(rest) do
+  defp parse_tpl_header_short(
+         <<access_no, status_byte::binary-size(1), cf_bytes::binary-size(2), rest::binary>>
+       ) do
+    with {:ok, configuration_field} <- ConfigurationField.decode(cf_bytes) do
       header = %Short{
         access_no: access_no,
-        status: status,
+        status: Status.decode(status_byte),
         configuration_field: configuration_field
       }
 
@@ -152,7 +161,7 @@ defmodule Exmbus.Parser.Tpl do
 
     iex> parse_tpl_header_long(<<0x78,0x56,0x34,0x12,0x93,0x15,0x33,0x03,0x2A,0x00,0x00,0x00,0xFF,0xFF>>)
     {:ok, %Exmbus.Parser.Tpl.Header.Long{
-      identification_no: 12345678,
+      identification_no: "12345678",
       manufacturer: "ELS",
       version: 51,
       device: :gas,
@@ -161,29 +170,29 @@ defmodule Exmbus.Parser.Tpl do
       configuration_field: %Exmbus.Parser.Tpl.ConfigurationField{},
     }, <<0xFF, 0xFF>>}
   """
-  # NOTE, rest contains the Configuration Field but we can't parse it out becaise
-  # it might have extensions, so we leave the parsing to ConfigurationField.decode/1
   def parse_tpl_header_long(
         <<ident_bytes::binary-size(4), man_bytes::binary-size(2), version,
-          device_byte::binary-size(1), access_no, status_byte::binary-size(1), rest::binary>>
+          device_byte::binary-size(1), access_no, status_byte::binary-size(1),
+          cf_bytes::binary-size(2), rest::binary>>
       ) do
-    # the ident_bytes is 32 bits of BCD (Type A):
-    {:ok, identification_no, <<>>} = DataType.decode_type_a(ident_bytes, 32)
-    status = Status.decode(status_byte)
-    {:ok, device} = Device.decode(device_byte)
-    {:ok, manufacturer} = Manufacturer.decode(man_bytes)
-    {:ok, configuration_field, rest} = ConfigurationField.decode(rest)
+    with {:ok, identification_no} <- IdentificationNo.decode(ident_bytes),
+         {:ok, device} <- Device.decode(device_byte),
+         {:ok, manufacturer} <- Manufacturer.decode(man_bytes),
+         {:ok, configuration_field} <- ConfigurationField.decode(cf_bytes) do
+      header = %Long{
+        identification_no: identification_no,
+        manufacturer: manufacturer,
+        version: version,
+        device: device,
+        access_no: access_no,
+        status: Status.decode(status_byte),
+        configuration_field: configuration_field
+      }
 
-    header = %Long{
-      identification_no: identification_no,
-      manufacturer: manufacturer,
-      version: version,
-      device: device,
-      access_no: access_no,
-      status: status,
-      configuration_field: configuration_field
-    }
-
-    {:ok, header, rest}
+      {:ok, header, rest}
+    else
+      {:error, reason} ->
+        {:error, reason, rest}
+    end
   end
 end

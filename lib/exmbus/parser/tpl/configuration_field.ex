@@ -9,10 +9,10 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
             blocks: nil
 
   @spec decode(binary()) :: {:ok, %__MODULE__{}, rest :: binary()}
-  def decode(<<a, b, rest::binary>>) do
+  def decode(<<a, b>>) do
     # we flip the bits so they are MSB,LSB. Easier to read.
     # we could collapse this but performance benefit is effectively 0.
-    be_decode(<<b, a>>, rest)
+    be_decode(<<b, a>>)
   end
 
   # common bit names:
@@ -48,7 +48,7 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
   #                                 DD=01 Key Derivation Function A (see 9.6.1)
   #                                 DD=10 and DD=11 are reserved
   # security Mode 0
-  defp be_decode(<<b::1, a::1, s::1, 0::5, _res::4, cc::2, r::1, h::1>>, rest) do
+  defp be_decode(<<b::1, a::1, s::1, 0::5, _res::4, cc::2, r::1, h::1>>) do
     cf = %__MODULE__{
       hop_count: h,
       repeater_access: r,
@@ -60,11 +60,11 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
       blocks: nil
     }
 
-    {:ok, cf, rest}
+    {:ok, cf}
   end
 
   # Security Mode 5. AES-128 CBC (9.4.4 for details)
-  defp be_decode(<<b::1, a::1, s::1, 5::5, blocks::4, cc::2, r::1, h::1>>, rest) do
+  defp be_decode(<<b::1, a::1, s::1, 5::5, blocks::4, cc::2, r::1, h::1>>) do
     cf = %__MODULE__{
       hop_count: h,
       repeater_access: r,
@@ -76,11 +76,11 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
       blocks: blocks
     }
 
-    {:ok, cf, rest}
+    {:ok, cf}
   end
 
   # raise if unknown encryption mode
-  defp be_decode(<<_::3, mode::5, _::8>> = cfbin, _rest) do
+  defp be_decode(<<_::3, mode::5, _::8>> = cfbin) do
     raise "Encryption mode #{mode} not implemented. configuration field bits were #{Exmbus.Debug.to_bits(cfbin)}"
   end
 end

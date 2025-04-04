@@ -54,7 +54,7 @@ defmodule Regressions.GAVTest do
                      temporary_error: false
                    },
                    device: :electricity,
-                   identification_no: 722,
+                   identification_no: "00000722",
                    manufacturer: "GAV",
                    version: 222
                  }

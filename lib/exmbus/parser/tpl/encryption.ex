@@ -1,10 +1,10 @@
 defmodule Exmbus.Parser.Tpl.Encryption do
+  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Context
   alias Exmbus.Key
   alias Exmbus.Parser.Dll.Wmbus
   alias Exmbus.Parser.Tpl
   alias Exmbus.Parser.Tpl.Device
-  alias Exmbus.Parser.DataType
   alias Exmbus.Parser.Manufacturer
 
   @doc """
@@ -129,7 +129,7 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
   defp mode_5_iv(manufacturer, identification_no, version, device, access_no) do
     {:ok, man_bytes} = Manufacturer.encode(manufacturer)
-    {:ok, id_bytes} = DataType.encode_type_a(identification_no, 32)
+    {:ok, id_bytes} = IdentificationNo.encode(identification_no)
     {:ok, device_byte} = Device.encode(device)
 
     {:ok,

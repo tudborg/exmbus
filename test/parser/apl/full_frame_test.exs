@@ -113,7 +113,7 @@ defmodule Parser.Apl.FullFrameTest do
              },
              dll: %Wmbus{
                manufacturer: "ELS",
-               identification_no: 12_345_678,
+               identification_no: "12345678",
                device: :gas,
                version: 51,
                control: :snd_nr
