@@ -53,7 +53,7 @@ defmodule Regressions.GAVTest do
                      permanent_error: false,
                      temporary_error: false
                    },
-                   device: :electricity,
+                   device: %Tpl.Device{id: 0x02},
                    identification_no: "00000722",
                    manufacturer: "GAV",
                    version: 222

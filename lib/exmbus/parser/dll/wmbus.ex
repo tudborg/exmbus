@@ -76,7 +76,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   def parse(
         %{
           bin:
-            <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), v,
+            <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), version,
               d::binary-size(1), rest::binary>>,
           opts: %{length: false, crc: false}
         } = ctx
@@ -89,7 +89,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
         control: control,
         manufacturer: manufacturer,
         identification_no: identification_no,
-        version: v,
+        version: version,
         device: device
       }
 

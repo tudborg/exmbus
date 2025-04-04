@@ -67,7 +67,7 @@ defmodule Spec.OMSVol2AnnexNTest do
                dll: %Wmbus{
                  manufacturer: "ELS",
                  identification_no: "12345678",
-                 device: :gas,
+                 device: %Tpl.Device{id: 0x3},
                  version: 51,
                  control: :snd_nr
                }
@@ -226,7 +226,7 @@ defmodule Spec.OMSVol2AnnexNTest do
                      repeater_access: 0,
                      syncrony: false
                    },
-                   device: :gas,
+                   device: %Tpl.Device{id: 0x3},
                    identification_no: "12345678",
                    manufacturer: "ELS",
                    status: %Tpl.Status{
@@ -382,7 +382,7 @@ defmodule Spec.OMSVol2AnnexNTest do
                      repeater_access: 0,
                      syncrony: false
                    },
-                   device: :heat_cost_allocator,
+                   device: %Tpl.Device{id: 0x08},
                    identification_no: "55667788",
                    manufacturer: "QDS",
                    status: %Tpl.Status{
@@ -409,7 +409,7 @@ defmodule Spec.OMSVol2AnnexNTest do
                },
                dll: %Dll.Wmbus{
                  control: :snd_nr,
-                 device: :radio_converter_meter_side,
+                 device: %Tpl.Device{id: 55},
                  identification_no: "11223344",
                  manufacturer: "QDS",
                  version: 85

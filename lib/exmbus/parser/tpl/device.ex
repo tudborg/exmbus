@@ -1,74 +1,63 @@
 defmodule Exmbus.Parser.Tpl.Device do
-  @table Exmbus.Parser.TableLoader.from_file!(Application.app_dir(:exmbus, "priv/device.csv"))
+  @moduledoc """
+  A device type for the TPL header (also used in Wmbus DLL)
 
-  def encode!(value) do
-    case encode(value) do
-      {:ok, value} -> value
-      {:error, reason} -> raise "encode/1 failed with reason=#{inspect(reason)}"
-    end
+  ## Examples
+
+      iex> decode(<<0x03>>)
+      {:ok, %Exmbus.Parser.Tpl.Device{id: 3}}
+
+      iex> encode(%Exmbus.Parser.Tpl.Device{id: 3})
+      {:ok, <<3>>}
+
+      iex> format(%Exmbus.Parser.Tpl.Device{id: 3})
+      "gas"
+
+      iex> format(0x03)
+      "gas"
+  """
+
+  @device_csv_path Application.app_dir(:exmbus, "priv/device.csv")
+  @external_resource @device_csv_path
+  @table Exmbus.Parser.TableLoader.from_file!(@device_csv_path)
+
+  @type t :: %__MODULE__{id: 0..255}
+
+  defstruct id: nil
+
+  @doc """
+  decode a device byte into a Device struct
+  """
+  @spec decode(binary()) :: {:ok, atom()}
+  def decode(<<id>>), do: {:ok, %__MODULE__{id: id}}
+
+  @doc """
+  encode a Device struct into a byte
+  """
+  @spec encode(atom) :: {:ok, binary()}
+  def encode(%__MODULE__{id: id}), do: {:ok, <<id>>}
+
+  @doc """
+  return a string describing the Device
+  """
+  @spec format(0..255 | t()) :: String.t()
+  def format(%__MODULE__{id: id}) do
+    format(id)
   end
 
-  def decode!(byte) do
-    case decode(byte) do
-      {:ok, value} -> value
-      {:error, reason} -> raise "decode/1 failed with reason=#{inspect(reason)}"
+  Enum.each(@table, fn {byte, description} ->
+    case byte do
+      {:range, <<id_low>>, <<id_high>>} ->
+        def format(id)
+            when is_integer(id) and id >= unquote(id_low) and id <= unquote(id_high),
+            do: unquote(description)
+
+      <<id>> ->
+        def format(unquote(id)), do: unquote(description)
     end
+  end)
+
+  def format(id) when is_integer(id) and id >= 0 and id <= 255 do
+    "unimplemented device #{id}"
   end
-
-  @doc """
-  decode a device byte into internal atom
-  """
-  @spec decode(binary()) :: {:ok, atom()} | {:error, reason :: any()}
-  Enum.each(@table, fn {byte, atom, _} ->
-    case byte do
-      {:range, <<n_low>>, <<n_high>>} ->
-        def decode(<<n>>) when n >= unquote(n_low) and n <= unquote(n_high),
-          do: {:ok, {unquote(atom), n}}
-
-      byte ->
-        def decode(unquote(byte)), do: {:ok, unquote(atom)}
-    end
-  end)
-
-  def decode(byte) when is_binary(byte) and byte_size(byte) == 1,
-    do: {:error, {:unknown_device_type_byte, byte}}
-
-  @doc """
-  encode an internal device atom into it's mbus byte
-  """
-  @spec encode(atom) :: {:ok, binary()} | {:error, reason :: any()}
-  Enum.each(@table, fn {byte, atom, _} ->
-    case byte do
-      {:range, <<n_low>>, <<n_high>>} ->
-        for i <- n_low..n_high do
-          def encode({unquote(atom), unquote(i)}), do: {:ok, unquote(<<i>>)}
-        end
-
-      byte ->
-        def encode(unquote(atom)), do: {:ok, unquote(byte)}
-    end
-  end)
-
-  def encode(unknown), do: {:error, {:unknown_value, unknown}}
-
-  @doc """
-  return a string describing the device (either byte or atom)
-  """
-  @spec format(atom | binary) :: String.t()
-  Enum.each(@table, fn {byte, atom, description} ->
-    range =
-      case byte do
-        {:range, <<byte_low>>, <<byte_high>>} ->
-          byte_low..byte_high
-
-        <<byte>> ->
-          byte..byte
-      end
-
-    for i <- range do
-      def format(unquote(<<i>>)), do: unquote(description)
-    end
-
-    def format(unquote(atom)), do: unquote(description)
-  end)
 end

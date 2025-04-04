@@ -164,7 +164,7 @@ defmodule Exmbus.Parser.Tpl do
       identification_no: "12345678",
       manufacturer: "ELS",
       version: 51,
-      device: :gas,
+      device: %Exmbus.Parser.Tpl.Device{id: 0x03},
       access_no: 42,
       status: %Exmbus.Parser.Tpl.Status{},
       configuration_field: %Exmbus.Parser.Tpl.ConfigurationField{},

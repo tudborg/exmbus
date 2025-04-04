@@ -517,7 +517,7 @@ defmodule Regressions.MillerAlexTest do
              },
              dll: %Exmbus.Parser.Dll.Wmbus{
                control: :snd_nr,
-               device: :radio_converter_meter_side,
+               device: %Exmbus.Parser.Tpl.Device{id: 0x37},
                identification_no: "55010031",
                manufacturer: "ZRI",
                version: 20
@@ -536,7 +536,7 @@ defmodule Regressions.MillerAlexTest do
                    repeater_access: 0,
                    syncrony: false
                  },
-                 device: :water,
+                 device: %Exmbus.Parser.Tpl.Device{id: 7},
                  identification_no: "14639203",
                  manufacturer: "ZRI",
                  status: %Exmbus.Parser.Tpl.Status{
