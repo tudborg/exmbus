@@ -6,13 +6,24 @@ defmodule Exmbus.Parser.Tpl.Status do
   application protocol of the meter response (refer to EN 13757-3:2018, Annex E).
   """
 
+  @type application_status ::
+          :no_error | :application_busy | :any_application_error | :abnormal_condition_or_alarm
+
+  @type t :: %__MODULE__{
+          manufacturer_status: 0..7,
+          temporary_error: boolean(),
+          permanent_error: boolean(),
+          low_power: boolean(),
+          application_status: application_status()
+        }
+
   defstruct manufacturer_status: 0,
             temporary_error: false,
             permanent_error: false,
             low_power: false,
             application_status: :no_error
 
-  def decode(<<mfrs::size(3), t::size(1), p::size(1), l::size(1), app::size(2)>>) do
+  def decode(<<man_status::size(3), t::size(1), p::size(1), l::size(1), app::size(2)>>) do
     application_status =
       case app do
         0b00 -> :no_error
@@ -22,7 +33,7 @@ defmodule Exmbus.Parser.Tpl.Status do
       end
 
     %__MODULE__{
-      manufacturer_status: mfrs,
+      manufacturer_status: man_status,
       temporary_error: int_to_bool(t),
       permanent_error: int_to_bool(p),
       low_power: int_to_bool(l),
@@ -31,7 +42,7 @@ defmodule Exmbus.Parser.Tpl.Status do
   end
 
   def encode(%__MODULE__{
-        manufacturer_status: mfrs,
+        manufacturer_status: man_status,
         temporary_error: t,
         permanent_error: p,
         low_power: l,
@@ -45,8 +56,8 @@ defmodule Exmbus.Parser.Tpl.Status do
         :abnormal_condition_or_alarm -> 0b11
       end
 
-    <<mfrs::size(3), bool_to_int(t)::size(1), bool_to_int(p)::size(1), bool_to_int(l)::size(1),
-      abin::size(2)>>
+    <<man_status::size(3), bool_to_int(t)::size(1), bool_to_int(p)::size(1),
+      bool_to_int(l)::size(1), abin::size(2)>>
   end
 
   defp bool_to_int(true), do: 1

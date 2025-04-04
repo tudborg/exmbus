@@ -12,7 +12,8 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock do
           unit: nil | binary(),
           extensions: [any],
           coding:
-            :type_a
+            nil
+            | :type_a
             | :type_b
             | :type_c
             | :type_d

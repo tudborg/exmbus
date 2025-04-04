@@ -13,18 +13,6 @@ defmodule Exmbus.Parser.Dll.Wmbus do
             version: nil,
             device: nil
 
-  defp validate_frame_format_a(<<_len, _rest::binary>>) do
-    {:error, :frame_format_a_not_implemented}
-  end
-
-  defp validate_frame_format_b(<<len, rest::binary>>) when byte_size(rest) == len do
-    {:error, :frame_format_b_not_implemented}
-  end
-
-  defp validate_frame_format_b(bin) do
-    {:error, {:not_valid_frame_format_b, bin}}
-  end
-
   @doc """
   Parse a wmbus message
   """
@@ -34,23 +22,7 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   # We generally receive frames with the CRC stripped,
   # so I've not yet needed to _actually_ implement this function head.
   def parse(%{bin: <<_len, _rest::binary>>, opts: %{length: true, crc: true}} = ctx) do
-    case validate_frame_format_b(ctx.bin) do
-      {:ok, valid_bin} ->
-        %{ctx | bin: valid_bin}
-        |> Context.merge_opts(%{length: false, crc: false})
-        |> parse()
-
-      {:error, {:not_valid_frame_format_b, _}} ->
-        case validate_frame_format_a(ctx.bin) do
-          {:ok, valid_bin} ->
-            %{ctx | bin: valid_bin}
-            |> Context.merge_opts(%{length: false, crc: false})
-            |> parse()
-
-          {:error, {:not_valid_frame_format_a, _}} ->
-            {:halt, Context.add_error(ctx, {:bad_length_or_crc, ctx.bin})}
-        end
-    end
+    {:halt, Context.add_error(ctx, {:not_implemented, :crc})}
   end
 
   # length is set, but CRC isn't. Assume a pre-process step has checked and removed CRC.

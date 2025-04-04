@@ -11,6 +11,11 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   defdelegate expand_compact_profile(data_record, ctx), to: CompactProfile
   defdelegate compact_profile_records(data_record, all_records), to: CompactProfile
 
+  @type t :: %__MODULE__{
+          header: Header.t(),
+          data: term()
+        }
+
   defstruct [
     # header is the Header struct
     header: nil,

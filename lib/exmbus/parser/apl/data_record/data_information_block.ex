@@ -1,6 +1,19 @@
 defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
   import Bitwise
 
+  @type function_field :: :instantaneous | :maximum | :minimum | :value_during_error_state
+  @type data_type ::
+          :no_data | :int_or_bin | :real | :bcd | :variable_length | :selection_for_readout
+
+  @type t :: %__MODULE__{
+          device: integer(),
+          tariff: integer(),
+          storage: integer(),
+          function_field: function_field(),
+          data_type: atom(),
+          size: integer() | :variable_length
+        }
+
   defstruct [
     # DIB fields:
     # device is what is also called "subunit"

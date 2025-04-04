@@ -23,7 +23,8 @@ defmodule Exmbus.MixProject do
       docs: &docs/0,
 
       # Tests
-      test_coverage: test_coverage()
+      test_coverage: test_coverage(),
+      dialyzer: dialyzer()
     ]
   end
 
@@ -31,6 +32,10 @@ defmodule Exmbus.MixProject do
     [
       extra_applications: [:logger, :crypto]
     ]
+  end
+
+  defp dialyzer do
+    [plt_add_apps: [:nimble_csv, :crypto]]
   end
 
   defp package do
@@ -82,8 +87,10 @@ defmodule Exmbus.MixProject do
       {:benchee, "~> 1.0", only: :dev},
       {:benchee_html, "~> 1.0", only: :dev},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
-      # dependencies
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      # compile dependencies
       {:nimble_csv, "~> 1.1", runtime: false},
+      # dependencies
       {:crc, "~> 0.10.1"}
     ]
   end

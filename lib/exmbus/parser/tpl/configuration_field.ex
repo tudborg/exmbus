@@ -8,7 +8,18 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
             bidirectional: false,
             blocks: nil
 
-  @spec decode(binary()) :: {:ok, %__MODULE__{}, rest :: binary()}
+  @type t :: %__MODULE__{
+          hop_count: 0..1,
+          repeater_access: 0..1,
+          content_of_message: 0..3,
+          mode: 0..31,
+          syncrony: boolean(),
+          accessibility: boolean(),
+          bidirectional: boolean(),
+          blocks: nil | 0..15
+        }
+
+  @spec decode(binary()) :: {:ok, t()}
   def decode(<<a, b>>) do
     # we flip the bits so they are MSB,LSB. Easier to read.
     # we could collapse this but performance benefit is effectively 0.

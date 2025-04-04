@@ -5,7 +5,7 @@ defmodule Exmbus do
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.ParseError
 
-  @spec parse(binary, options_or_context :: Keyword.t() | Context.t()) ::
+  @spec parse(binary, options_or_context :: Keyword.t() | Context.t() | nil) ::
           {:ok, Context.t()} | {:error, Context.t()}
   def parse(bin, options_or_context \\ nil) do
     # normalize input to a Context struct

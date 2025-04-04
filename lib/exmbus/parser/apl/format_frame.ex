@@ -81,7 +81,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
 
       # otherwise we need to try and unparse the headers
       %DataRecord.Header{dib_bytes: d, vib_bytes: v} = header when is_nil(d) or is_nil(v) ->
-        {:ok, header_bin, []} = DataRecord.Header.unparse(%{}, [header])
+        {:ok, header_bin} = DataRecord.Header.unparse(%{}, header)
         header_bin
     end)
     |> Enum.into("")

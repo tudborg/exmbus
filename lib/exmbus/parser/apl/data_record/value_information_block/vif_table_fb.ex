@@ -49,13 +49,13 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFB do
   # Maybe what it SHOULD have set is that if the coding is int/binary then do type C, if it's BCD then do type A.
   # Or maybe it says that the binary (as in the raw) data should be decoded as either BCD or UINT, and
   # anything else is an error, but that also seems weird for something like manufacturer, customer, etc.
-  defp fb_remark_d([%DIB{data_type: :int_or_bin} | _]) do
+  defp fb_remark_d(%{dib: %DIB{data_type: :int_or_bin}}) do
     :type_c
   end
-  defp fb_remark_d([%DIB{data_type: :variable_length} | _]) do
+  defp fb_remark_d(%{dib: %DIB{data_type: :variable_length}}) do
     nil # lvar coding is determined by the lvar
   end
-  defp fb_remark_d([%DIB{data_type: :bcd} | _]) do
+  defp fb_remark_d(%{dib: %DIB{data_type: :bcd}}) do
     :type_a
   end
 

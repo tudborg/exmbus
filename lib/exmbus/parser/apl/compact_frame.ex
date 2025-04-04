@@ -92,7 +92,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
             :ok
 
           {:ok, differing_ffc} ->
-            {:error, {:full_frame_crc_mismatch, %{expected: ffc, got: differing_ffc}}, ctx}
+            {:error, {:full_frame_crc_mismatch, %{expected: ffc, got: differing_ffc}}}
         end
       else
         :ok

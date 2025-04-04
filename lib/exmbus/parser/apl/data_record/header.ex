@@ -3,6 +3,14 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
 
+  @type t :: %__MODULE__{
+          dib_bytes: binary(),
+          vib_bytes: binary(),
+          dib: DIB.t(),
+          vib: VIB.t(),
+          coding: atom()
+        }
+
   # The header struct
   defstruct dib_bytes: nil,
             vib_bytes: nil,

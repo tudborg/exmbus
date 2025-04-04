@@ -28,13 +28,13 @@ defmodule Exmbus.Parser.Tpl.Device do
   @doc """
   decode a device byte into a Device struct
   """
-  @spec decode(binary()) :: {:ok, atom()}
+  @spec decode(binary()) :: {:ok, t()}
   def decode(<<id>>), do: {:ok, %__MODULE__{id: id}}
 
   @doc """
   encode a Device struct into a byte
   """
-  @spec encode(atom) :: {:ok, binary()}
+  @spec encode(t()) :: {:ok, binary()}
   def encode(%__MODULE__{id: id}), do: {:ok, <<id>>}
 
   @doc """

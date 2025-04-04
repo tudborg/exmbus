@@ -3,9 +3,9 @@ defmodule Exmbus.Parser.Dll do
   Routes the parsing to the correct Dll parser,
   either Mbus or Wmbus.
   """
+  alias Exmbus.Parser.Context
 
-  @spec parse(ctx :: Exmbus.Parser.Context.t()) ::
-          {:next, Context.t()} | {:halt, Context.t()}
+  @spec parse(ctx :: Context.t()) :: {:next, Context.t()} | {:halt, Context.t()}
   def parse(%{bin: <<0x68, len, len, 0x68, _::binary>>} = ctx) do
     # mbus with length
     Exmbus.Parser.Dll.Mbus.parse(ctx)

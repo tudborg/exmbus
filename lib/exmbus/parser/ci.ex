@@ -6,7 +6,9 @@ defmodule Exmbus.Parser.CI do
       The Transport Layer and the Application Layer uses a shared CI-field.
       For that reason, a Transport Layer shall be present whenever the Application Layer is used in a message.
   """
-  @table Exmbus.Parser.TableLoader.from_file!(Application.app_dir(:exmbus, "priv/ci.csv"))
+  @ci_csv_path Application.app_dir(:exmbus, "priv/ci.csv")
+  @external_resource @ci_csv_path
+  @table Exmbus.Parser.TableLoader.from_file!(@ci_csv_path)
 
   # define lookup function based on above table.
   # CI low;CI high;Answer ;Layer ;TPL header type ;Direction ;higher layer protocol note
@@ -16,8 +18,8 @@ defmodule Exmbus.Parser.CI do
   returns corresponding layer and layer extension, or an error.
   """
   @spec lookup(non_neg_integer() | binary()) ::
-          {:ok, {atom, binary}}
-          | {:error, {:ci, {atom, {non_neg_integer(), non_neg_integer()}}}}
+          {:ok, {atom(), atom()}}
+          | {:error, {:ci, {atom(), {non_neg_integer(), non_neg_integer()}}}}
           | {:error, {:ci, {:unknown, non_neg_integer()}}}
   def lookup(<<ci, _::binary>>) do
     lookup(ci)

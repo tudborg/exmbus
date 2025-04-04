@@ -38,7 +38,7 @@ defmodule Exmbus.Key do
     {:ok, key}
   end
 
-  def from_options(%{key: fun}) when is_function(fun, 2) do
+  def from_options(%{key: fun}) when is_function(fun, 1) do
     {:ok, by_fn!(fun)}
   end
 
