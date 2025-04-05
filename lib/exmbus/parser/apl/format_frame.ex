@@ -1,4 +1,11 @@
 defmodule Exmbus.Parser.Apl.FormatFrame do
+  @moduledoc """
+  Parser for a format frame.
+
+  A FormatFrame contains headers. It can be used on combination with
+  a CompactFrame to create a full frame.
+  """
+
   defstruct headers: nil
 
   alias Exmbus.Parser.Apl.FullFrame
@@ -30,7 +37,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
     end
   end
 
-  # TODO: should we check length?
+  # NOTE: should we check length?
   defp finalize_format_frame({_len, format_signature}, <<>>, ctx, acc) do
     full_frame = %__MODULE__{
       headers: Enum.reverse(acc)

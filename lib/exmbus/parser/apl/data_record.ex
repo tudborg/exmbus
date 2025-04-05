@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Apl.DataRecord do
+  @moduledoc """
+  Parser for a DataRecord.
+  """
+
   alias Exmbus.Parser.Apl.DataRecord.CompactProfile
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Apl.DataRecord.Header
@@ -7,7 +11,7 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   # alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.DataType
 
-  defdelegate is_compact_profile?(data_record), to: CompactProfile
+  defdelegate compact_profile?(data_record), to: CompactProfile
   defdelegate expand_compact_profile(data_record, ctx), to: CompactProfile
   defdelegate compact_profile_records(data_record, all_records), to: CompactProfile
 
@@ -24,6 +28,9 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   ]
 
   defmodule InvalidDataRecord do
+    @moduledoc """
+    This module represents an invalid DataRecord.
+    """
     defstruct header: nil,
               data: nil
   end
@@ -69,7 +76,7 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   The value is calculated from the decoded data, modified with added extensions
   found in the header.
   """
-  @spec value(%DataRecord{}) :: {:ok, value :: term()} | {:error, reason :: term()}
+  @spec value(DataRecord.t()) :: {:ok, value :: term()} | {:error, reason :: term()}
   def value(%DataRecord{header: _, data: {:invalid, _}}) do
     {:ok, :invalid}
   end

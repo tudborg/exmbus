@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Ell.Encrypted do
+  @moduledoc """
+  Represents an encrypted ELL layer.
+  """
+
   alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Manufacturer

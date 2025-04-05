@@ -1,6 +1,14 @@
 defmodule Exmbus.Key do
+  @moduledoc """
+  This module provides a way to define and retrieve keys for the Exmbus parser.
+  """
+
   alias Exmbus.Parser.Context
   defstruct keyfn: nil
+
+  @type t :: %__MODULE__{
+          keyfn: (Context.t() -> {:ok, [binary()]} | {:error, any()})
+        }
 
   def by_fn!(fun) when is_function(fun, 1) do
     %__MODULE__{keyfn: fun}
@@ -13,7 +21,7 @@ defmodule Exmbus.Key do
     iex> key = Key.by_fn!(fn(_ctx) -> {:ok, [<<1>>, <<2>>]} end)
     iex> {:ok, [<<1>>, <<2>>]} = Key.get(key, Exmbus.Parser.Context.new())
   """
-  @spec get(%Exmbus.Key{}, ctx :: Context.t()) ::
+  @spec get(t(), ctx :: Context.t()) ::
           {:ok, [binary()]} | {:error, reason :: any()}
   def get(%__MODULE__{keyfn: keyfn}, ctx) do
     case keyfn.(ctx) do

@@ -4,8 +4,6 @@ defmodule Parser.DataTypeTest do
 
   doctest Exmbus.Parser.DataType, import: true
 
-  # TODO probably property based testing on this module
-
   # lvar
   # type_a
   # type_b

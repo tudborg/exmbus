@@ -58,7 +58,6 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
         {:error, {:reserved_special_function, r <<< 4 ||| 0xF}, rest}
 
       # Global readout request (all storage numbers, units, tariffs, function fields)
-      # TODO what does this mean exactly?
       0x7 ->
         {:special_function, :global_readout_request, rest}
     end

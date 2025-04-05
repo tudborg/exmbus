@@ -1,4 +1,7 @@
 defmodule Exmbus.Parser.Ell.SessionNumber do
+  @moduledoc """
+  This module represents the Session Number in the ELL layer.
+  """
   defstruct encryption: nil,
             minutes: nil,
             session: nil

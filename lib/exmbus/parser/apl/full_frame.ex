@@ -1,4 +1,10 @@
 defmodule Exmbus.Parser.Apl.FullFrame do
+  @moduledoc """
+  Parser for a full frame.
+
+  A FullFrame contains a list of data records.
+  """
+
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.DataRecord.InvalidDataRecord
   alias Exmbus.Parser.Apl.DataRecord
@@ -84,7 +90,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
 
   def expand_compact_profiles(%{apl: %__MODULE__{records: records}} = ctx) do
     records
-    |> Enum.filter(&DataRecord.is_compact_profile?/1)
+    |> Enum.filter(&DataRecord.compact_profile?/1)
     |> Enum.reduce({:next, ctx}, fn
       compact_profile_record, {:next, ctx} ->
         case DataRecord.expand_compact_profile(compact_profile_record, ctx) do

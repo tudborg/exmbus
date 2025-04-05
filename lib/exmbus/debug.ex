@@ -31,8 +31,7 @@ defmodule Exmbus.Debug do
     "" <>
       (bin
        |> :binary.bin_to_list()
-       |> Enum.map(&to_hex/1)
-       |> Enum.join(""))
+       |> Enum.map_join(&to_hex/1))
   end
 
   @doc """

@@ -1,4 +1,11 @@
 defmodule Exmbus.Parser.Apl.CompactFrame do
+  @moduledoc """
+  Parser for a CompactFrame.
+
+  A CompactFrame contains only the data bytes of a full frame.
+  It must be used in conbination with a FormatFrame to create a full frame.
+  """
+
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FormatFrame
   alias Exmbus.Parser.Apl.FullFrame

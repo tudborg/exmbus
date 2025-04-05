@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Tpl.Header.Long do
+  @moduledoc """
+  This module represents the Long header in the TPL layer.
+  """
+
   @type t :: %__MODULE__{
           identification_no: String.t(),
           manufacturer: String.t(),

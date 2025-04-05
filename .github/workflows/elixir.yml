@@ -23,7 +23,13 @@ jobs:
         uses: actions/cache@v3
         with:
           path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-mix-deps-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+      - name: Restore build cache
+        uses: actions/cache@v3
+        with:
+          path: _build
+          key: ${{ runner.os }}-mix-build-${{ hashFiles('**/mix.lock') }}
           restore-keys: ${{ runner.os }}-mix-
       - name: Install and compile dependencies
         run: mix deps.get && mix deps.compile
@@ -31,3 +37,7 @@ jobs:
         run: mix compile --all-warnings --warnings-as-errors
       - name: Run tests
         run: mix test --cover
+      - name: Credo
+        run: mix credo || [[ $? -lt 8 ]]
+      - name: Dialyzer
+        run: mix dialyzer --format github

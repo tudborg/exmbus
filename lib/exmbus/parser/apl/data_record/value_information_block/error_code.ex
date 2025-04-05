@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.ErrorCode do
+  @moduledoc """
+  Decode/Encode error codes for the value information block (VIB) of a data record.
+  """
+
   # Section 6.4.8 - Table 18 - Codes for record errors
   # DIF errors:
   def decode(0b0_0000), do: {:ok, :none}

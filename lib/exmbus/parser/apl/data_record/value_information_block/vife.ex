@@ -37,7 +37,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   we know that `rest` isn't part of the VIFE and we can return the accumulated VIB and rest of data.
   """
   # VIFE 0bE000XXXX reserved for object actions (master to slave) (6.4.7) or for error codes (slave to master) (6.4.8)
-  # todo move down into exts function
+  # TODO move down into exts function
   def parse(
         1,
         <<e::1, 0b000::3, xxxx::4, rest::binary>>,
@@ -51,7 +51,6 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
             vib = %VIB{vib | extensions: [{:record_error, record_error} | exts]}
             parse(e, rest, opts, %{ctx | vib: vib})
 
-          # TODO:
           # for now we just pass the reserved numbers through.
           # if they are being used it is most likely because we have not implemented them.
           # I've already seen 0b0_1000 in use in the real world.
@@ -196,10 +195,8 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b0111100::7, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [{:accumulation_only, :backward_flow} | acc])
 
-  # defp exts(1, <<_::1, 0b0111101::7, _rest::binary>>, _opts, _acc), do: raise "E011 1101 non-metric unit system not supported"
-  # TODO, fix support for this:
   defp exts(1, <<e::1, 0b0111101::7, rest::binary>>, opts, acc),
-    do: exts(e, rest, opts, [{:todo, :alternate_non_metric_unit_system} | acc])
+    do: exts(e, rest, opts, [:non_metric | acc])
 
   defp exts(1, <<e::1, 0b0111110::7, rest::binary>>, opts, acc),
     do: exts(e, rest, opts, [:value_at_base_condition | acc])

@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Binary do
+  @moduledoc """
+  Utility to find and collect bytes in a binary.
+  """
+
   @doc """
   Collect a sequence of bytes where the first bit in each byte
   represents if the next byte is part of the sequence.

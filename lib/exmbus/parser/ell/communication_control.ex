@@ -1,4 +1,7 @@
 defmodule Exmbus.Parser.Ell.CommunicationControl do
+  @moduledoc """
+  This module represents the Communication Control (CC) field in the ELL layer.
+  """
   defstruct bidirectional: nil,
             response_delay: nil,
             synchronized: nil,

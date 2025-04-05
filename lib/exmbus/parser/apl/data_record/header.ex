@@ -1,4 +1,7 @@
 defmodule Exmbus.Parser.Apl.DataRecord.Header do
+  @moduledoc """
+  This module represents the header of a DataRecord.
+  """
   alias Exmbus.Parser.Binary
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
@@ -22,6 +25,9 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
             coding: nil
 
   defmodule InvalidHeader do
+    @moduledoc """
+    This module represents an invalid header.
+    """
     defstruct dib: nil,
               vib: nil,
               # human friendly reason why this header was invalid

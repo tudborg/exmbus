@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Manufacturer do
+  @moduledoc """
+  Implements encode/decode for the 2-byte manufacturer flag ID
+  """
+
   @doc """
   Decode from binary to string representation of manufacturer
 
@@ -19,7 +23,7 @@ defmodule Exmbus.Parser.Manufacturer do
     {:ok, <<i::little-size(16)>>}
   end
 
-  # TODO handle wildcard manufacturer 0x7FFF ? EN 13757-7:2018 section 7.5.2 Manufacturer identification
+  # NOTE: special handling of wildcard manufacturer 0x7FFF ? EN 13757-7:2018 section 7.5.2 Manufacturer identification?
   defp int_to_manufacturer(n) when is_integer(n) do
     <<a::size(5), b::size(5), c::size(5)>> = <<n::15>>
     <<a + 64, b + 64, c + 64>>

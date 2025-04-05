@@ -1,4 +1,8 @@
 defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD do
+  @moduledoc """
+  This module implements the VIF extension table FD (0xFD)
+  """
+
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife
@@ -66,7 +70,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   end
 
 
-  # TODO: Try to undertand this remark k of table 12 (page 19), section is 6.4.4.1
+  # TODO: Try to understand this remark k of table 12 (page 19), section is 6.4.4.1
   # NOTE: This is also remark d in table 14 (VIF table 0xFB)
   # This function implements remark K in table 12 which says:
   # "Binary data (see Table 4) shall be interpreted as data type A (unsigned BCD) or data type C (unsigned integer) according to Annex A."

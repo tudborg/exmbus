@@ -1,4 +1,9 @@
 defmodule Exmbus.Parser.TableLoader do
+  @moduledoc """
+  Load a CSV file into a table.
+  Used to load CSVs at compile time for meta programming.
+  """
+
   require Logger
 
   NimbleCSV.define(Exmbus.Parser.TableLoader.TableCSV, separator: ";", escape: "\"")

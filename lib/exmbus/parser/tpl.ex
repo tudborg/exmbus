@@ -63,10 +63,12 @@ defmodule Exmbus.Parser.Tpl do
 
   # short
   def _parse(%{bin: <<0x6A, rest::binary>>} = ctx) do
-    with {:ok, header, rest} <- parse_tpl_header_short(rest) do
-      finalize_tpl(:format_frame, header, rest, ctx)
-    else
-      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    case parse_tpl_header_short(rest) do
+      {:ok, header, rest} ->
+        finalize_tpl(:format_frame, header, rest, ctx)
+        # NOTE: short header cannot currently return error,
+        # so dialyzer will complain if we try to handle an error from it:
+        # {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -86,10 +88,12 @@ defmodule Exmbus.Parser.Tpl do
 
   # MBus full frame short
   def _parse(%{bin: <<0x7A, rest::binary>>} = ctx) do
-    with {:ok, header, rest} <- parse_tpl_header_short(rest) do
-      finalize_tpl(:full_frame, header, rest, ctx)
-    else
-      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    case parse_tpl_header_short(rest) do
+      {:ok, header, rest} ->
+        finalize_tpl(:full_frame, header, rest, ctx)
+        # NOTE: short header cannot currently return error,
+        # so dialyzer will complain if we try to handle an error from it:
+        # {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -116,10 +120,12 @@ defmodule Exmbus.Parser.Tpl do
 
   # MBus compact short
   def _parse(%{bin: <<0x7B, rest::binary>>} = ctx) do
-    with {:ok, header, rest} <- parse_tpl_header_short(rest) do
-      finalize_tpl(:compact_frame, header, rest, ctx)
-    else
-      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    case parse_tpl_header_short(rest) do
+      {:ok, header, rest} ->
+        finalize_tpl(:compact_frame, header, rest, ctx)
+        # NOTE: short header cannot currently return error,
+        # so dialyzer will complain if we try to handle an error from it:
+        # {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -143,16 +149,16 @@ defmodule Exmbus.Parser.Tpl do
   defp parse_tpl_header_short(
          <<access_no, status_byte::binary-size(1), cf_bytes::binary-size(2), rest::binary>>
        ) do
-    with {:ok, configuration_field} <- ConfigurationField.decode(cf_bytes) do
-      header = %Short{
-        access_no: access_no,
-        status: Status.decode(status_byte),
-        configuration_field: configuration_field
-      }
+    # NOTE: this decode currently does not return {:error, _}
+    case ConfigurationField.decode(cf_bytes) do
+      {:ok, configuration_field} ->
+        header = %Short{
+          access_no: access_no,
+          status: Status.decode(status_byte),
+          configuration_field: configuration_field
+        }
 
-      {:ok, header, rest}
-    else
-      {:error, _} = e -> e
+        {:ok, header, rest}
     end
   end
 

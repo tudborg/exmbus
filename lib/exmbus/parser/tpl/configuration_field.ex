@@ -1,4 +1,10 @@
 defmodule Exmbus.Parser.Tpl.ConfigurationField do
+  @moduledoc """
+  This module represents the configuration field in the TPL layer.
+
+  it contains metadata about the wmbus message.
+  """
+
   defstruct hop_count: 0,
             repeater_access: 0,
             content_of_message: 0,

@@ -1,11 +1,15 @@
 defmodule Exmbus.Parser.Tpl.Encryption do
-  alias Exmbus.Parser.IdentificationNo
-  alias Exmbus.Parser.Context
+  @moduledoc """
+  This module handles the encryption of the TPL layer.
+  """
+
   alias Exmbus.Key
+  alias Exmbus.Parser.Context
   alias Exmbus.Parser.Dll.Wmbus
+  alias Exmbus.Parser.IdentificationNo
+  alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Tpl
   alias Exmbus.Parser.Tpl.Device
-  alias Exmbus.Parser.Manufacturer
 
   @doc """
   decrypts the context data according to the TPL layer.
@@ -61,17 +65,12 @@ defmodule Exmbus.Parser.Tpl.Encryption do
 
     {:ok, iv} = ctx_to_mode_5_iv(ctx)
 
-    with {:ok, byte_keys} <- Key.get(ctx) do
-      case decrypt_mode_5(encrypted, byte_keys, iv) do
-        {:ok, decrypted} ->
-          {:next, %{ctx | bin: <<decrypted::binary, plain::binary>>}}
-
-        {:error, reason} ->
-          {:halt, Context.add_error(ctx, reason)}
-      end
+    with {:ok, byte_keys} <- Key.get(ctx),
+         {:ok, decrypted} <- decrypt_mode_5(encrypted, byte_keys, iv) do
+      {:next, %{ctx | bin: <<decrypted::binary, plain::binary>>}}
     else
-      {:error, e} ->
-        {:halt, Context.add_error(ctx, e)}
+      {:error, reason} ->
+        {:halt, Context.add_error(ctx, reason)}
     end
   end
 

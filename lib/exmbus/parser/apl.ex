@@ -1,4 +1,9 @@
 defmodule Exmbus.Parser.Apl do
+  @moduledoc """
+  Parser for the APL layer. Dispatches to the correct parser based on the frame type of the TPL layer.
+
+  If you don't have a TPL layer, you most likely want call the `FullFrame.parse/1` instead.
+  """
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.FormatFrame

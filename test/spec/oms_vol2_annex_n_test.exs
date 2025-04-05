@@ -252,13 +252,13 @@ defmodule Spec.OMSVol2AnnexNTest do
     # ACC-NR is not yet implemented
     @tag :skip
     test "N.5.2 wM-Bus Example with ACC-NR" do
-      # TODO include CRC in this frame, it seems like we've skipped typing it
+      # NOTE CRC has been stripped from this example
       frame = "194793444433221155378C20758B8877665593445508FF040000" |> Base.decode16!()
       assert {:ok, %{bin: <<>>}} = Exmbus.parse(frame, length: true, crc: false)
     end
 
     test "N.5.3 wM-Bus Example with partial encryption" do
-      # TODO include CRC in this frame, it seems like we've skipped typing it
+      # NOTE CRC has been stripped from this example
       frame =
         "304493444433221155378C00757288776655934455080004100500DFE2A782146D1513581CD2F83F39040CFD1078563412"
         |> Base.decode16!()
@@ -418,7 +418,7 @@ defmodule Spec.OMSVol2AnnexNTest do
     end
 
     test "N.5.4 M-Bus Example with partial encryption" do
-      # TODO: fill in this frame from the example (page 46)
+      # NOTE: this example is not 1:1 with the spec (page 46)
       frame =
         [
           # mbus DLL

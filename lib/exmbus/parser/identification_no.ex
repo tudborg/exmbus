@@ -32,9 +32,8 @@ defmodule Exmbus.Parser.IdentificationNo do
   Encode the identification number to binary representation (BCD)
   """
   def encode(identification_no) when is_binary(identification_no) do
-    with {:ok, <<d, c, b, a>>} <- Base.decode16(identification_no) do
-      {:ok, <<a, b, c, d>>}
-    else
+    case Base.decode16(identification_no) do
+      {:ok, <<d, c, b, a>>} -> {:ok, <<a, b, c, d>>}
       :error -> {:error, :invalid_identification_no, identification_no}
     end
   end

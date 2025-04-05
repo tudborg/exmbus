@@ -34,7 +34,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
   @doc """
   Return true if the record is a compact profile record. false otherwise.
   """
-  def is_compact_profile?(%DataRecord{header: %{vib: %{extensions: extensions}}}) do
+  def compact_profile?(%DataRecord{header: %{vib: %{extensions: extensions}}}) do
     Keyword.has_key?(extensions, :compact_profile)
   end
 

@@ -1,4 +1,13 @@
 defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile.CompactProfileHeader do
+  @moduledoc """
+  This module represents the Compact Profile header.
+
+  The Compact Profile allows you to cram a lot of values with same data type and time spacing
+  to be crammed into a very small payload.
+
+  It is generally used to send values at the end of each window e.g. month 12 months back,
+  in each telegram.
+  """
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock
 
   defstruct increment_mode: nil,
