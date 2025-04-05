@@ -570,6 +570,6 @@ defmodule Regressions.MillerAlexTest do
         "684D4D680801720100000096150100180000000C785600000001FD1B0002FC0348522574440D22FC0348522574F10C12FC034852257463110265B409226586091265B70901720072650000B2016500001FB316"
       )
 
-    assert {:ok, _ctx, <<>>} = Exmbus.parse(datagram, length: true, crc: false)
+    assert {:error, _ctx} = Exmbus.parse(datagram, length: true, crc: false)
   end
 end
