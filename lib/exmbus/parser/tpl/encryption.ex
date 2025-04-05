@@ -82,27 +82,25 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   # Decrypt the encrypted_bytes according to mode 5 encryption.
   # The context is required to get the keys, and build the IV.
   defp decrypt_mode_5(encrypted_bytes, byte_keys, iv) do
-    answer =
-      Enum.find_value(byte_keys, fn
-        byte_key when byte_size(byte_key) == 16 ->
-          case Exmbus.Crypto.crypto_one_time(:aes_cbc, byte_key, iv, encrypted_bytes, false) do
-            # Valid key, decrypts with marker 0x2F2F:
-            {:ok, <<0x2F, 0x2F, rest::binary>>} -> {:ok, rest}
-            # Not valid key, marker not found as prefix:
-            {:ok, _other} -> nil
-            # decryption error:
-            {:error, e} -> {:error, {:mode_5_decryption, {:decrypt_failed, e}}}
-          end
+    default = {:error, {:mode_5_decryption, {:no_valid_key, {:tried, length(byte_keys)}}}}
+    # attempt all byte_keys until we find a result.
+    # if no result, return the default error.
+    Enum.find_value(byte_keys, default, &try_decrypt_mode_5(&1, encrypted_bytes, iv))
+  end
 
-        byte_key ->
-          {:error, {:invalid_key, {:not_16_bytes, byte_key}}}
-      end)
-
-    case answer do
-      {:ok, _bin} = ok -> ok
-      {:error, _reason, _ctx} = e -> e
-      nil -> {:error, {:mode_5_decryption, {:no_valid_key, {:tried, length(byte_keys)}}}}
+  defp try_decrypt_mode_5(key, bytes, iv) when byte_size(key) == 16 do
+    case Exmbus.Crypto.crypto_one_time(:aes_cbc, key, iv, bytes, false) do
+      # Valid key, decrypts with marker 0x2F2F:
+      {:ok, <<0x2F, 0x2F, rest::binary>>} -> {:ok, rest}
+      # Not valid key, marker not found as prefix:
+      {:ok, _other} -> nil
+      # decryption error:
+      {:error, e} -> {:error, {:mode_5_decryption, {:decrypt_failed, e}}}
     end
+  end
+
+  defp try_decrypt_mode_5(key, _bytes, _iv) when byte_size(key) != 16 do
+    {:error, {:invalid_key, {:not_16_bytes, key}}}
   end
 
   # Generate the IV for mode 5 encryption
