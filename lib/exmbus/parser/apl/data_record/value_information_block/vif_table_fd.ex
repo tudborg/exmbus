@@ -49,6 +49,11 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   def parse(<<e::1, 0b010_11::5, 0b01::2, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :minute}}})
   def parse(<<e::1, 0b010_11::5, 0b10::2, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :hour}}})
   def parse(<<e::1, 0b010_11::5, 0b11::2, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_size_last_readout, :day}}})
+  # Tariff related VIFs
+  def parse(<<e::1, 0b0110000::7, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: :start_of_tariff}})
+  def parse(<<e::1, 0b01100::5, 0b01::2, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_of_tariff, :minute}}})
+  def parse(<<e::1, 0b01100::5, 0b10::2, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_of_tariff, :hour}}})
+  def parse(<<e::1, 0b01100::5, 0b11::2, rest::binary>>, ctx), do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: {:duration_of_tariff, :day}}})
   # ... skipped some vifs ...
   def parse(<<e::1, 0b011_1010::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: :dimensionless}})
   def parse(<<e::1, 0b011_1011::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: {:container, :wmbus}}})
@@ -59,14 +64,16 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD do
   def parse(<<e::1, 0b110_0000::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: :reset_counter}})
   def parse(<<e::1, 0b110_0001::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: :cumulation_counter}})
   # ... skipped some vifs ...
+  def parse(<<e::1, 0b110_0110::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: :state_of_parameter_activation}})
+  # ... skipped some vifs ...
   def parse(<<e::1, 0b111_0001::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: :rf_level_units_dbm}})
   # ... skipped some vifs ...
   def parse(<<e::1, 0b111_0100::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: :remaining_battery_life_time_days}})
   def parse(<<e::1, 0b111_0101::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, coding: fd_remark_k(ctx), description: :number_of_times_meter_was_stopped}})
   def parse(<<e::1, 0b111_0110::7, rest::binary>>, ctx),      do: Vife.parse(e, rest, %{ctx | vib: %VIB{table: :fd, description: {:container, :manufacturer}}})
   # ... skipped some vifs ...
-  def parse(<<_::1, vif::7, rest::binary>>, ctx) do
-    raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.to_hex(vif)} (#{Exmbus.Debug.to_bits(vif)}), ctx was: #{inspect ctx}, rest was: #{inspect rest}"
+  def parse(<<e::1, vif::7, rest::binary>>, ctx) do
+    raise "decoding from VIF linear extension table 0xFD not implemented. VIFE was: #{Exmbus.Debug.to_hex(vif)} (E#{Exmbus.Debug.to_bits(<<vif::7>>)}) (E=#{e}), ctx was: #{inspect ctx}, rest was: #{inspect rest}"
   end
 
 
