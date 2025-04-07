@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.3.0]
+
 ### Changed
 
 - BREAKING: Making identification numbers **strings instead of integers**.
@@ -13,8 +15,10 @@
 
 ### Added
 
-- Support for VIFE `E001 1101` (Standard conform data content)
-- Test for LAN-WMBUS-G2-LDS/LDP
+- Support for tariff related VIFE in 0xFD table `E011 00NN`.
+- Support for VIFE in 0xFD: `E110 0110` State of parameter activation.
+- Support for VIF `E001 1101` (Standard conform data content)
+- Test for LAN-WMBUS-G2-LDS/LDP.
 - Support for expansion of Compact Profile with Register Numbers (Orthogonal VIFE 0x1E)
 
 ## v0.2.0
