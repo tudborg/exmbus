@@ -14,42 +14,42 @@ defmodule Exmbus.Parser.Apl.FullFrame do
             manufacturer_bytes: nil
 
   def parse(%Context{} = ctx) do
-    parse_full_frame(ctx, [])
+    parse_full_frame(ctx.bin, ctx, [])
   end
 
-  defp parse_full_frame(%{bin: <<>>} = ctx, acc) do
-    finalize_full_frame(ctx, acc)
+  defp parse_full_frame(<<>>, ctx, acc) do
+    finalize_full_frame(<<>>, ctx, acc)
   end
 
-  defp parse_full_frame(ctx, acc) do
-    case DataRecord.parse(ctx.bin, ctx.opts, ctx) do
+  defp parse_full_frame(bin, ctx, acc) do
+    case DataRecord.parse(bin, ctx) do
       {:ok, %DataRecord{} = data_record, rest} ->
-        parse_full_frame(%{ctx | bin: rest}, [data_record | acc])
+        parse_full_frame(rest, ctx, [data_record | acc])
 
       {:ok, %InvalidDataRecord{} = data_record, rest} ->
-        parse_full_frame(%{ctx | bin: rest}, [data_record | acc])
+        parse_full_frame(rest, ctx, [data_record | acc])
 
       # just skip the idle filler
       {:special_function, :idle_filler, rest} ->
-        parse_full_frame(%{ctx | bin: rest}, acc)
+        parse_full_frame(rest, ctx, acc)
 
       # manufacturer specific data is the rest of the APL data
       {:special_function, {:manufacturer_specific, :to_end}, rest} ->
-        finalize_full_frame(%{ctx | bin: rest}, acc)
+        finalize_full_frame(rest, ctx, acc)
 
       {:special_function, {:manufacturer_specific, :more_records_follow}, rest} ->
-        finalize_full_frame(%{ctx | bin: rest}, acc)
+        finalize_full_frame(rest, ctx, acc)
 
       {:error, _reason, _rest} = e ->
         e
     end
   end
 
-  defp finalize_full_frame(%{} = ctx, acc) do
+  defp finalize_full_frame(rest, %{} = ctx, acc) do
     full_frame = %__MODULE__{
       records: Enum.reverse(acc),
       # all remaining bytes are manufacturer specific:
-      manufacturer_bytes: ctx.bin
+      manufacturer_bytes: rest
     }
 
     {:next, %{ctx | bin: <<>>, apl: full_frame}}
@@ -65,7 +65,7 @@ defmodule Exmbus.Parser.Apl.FullFrame do
     record_bytes =
       records
       |> Enum.map(fn record ->
-        {:ok, bytes} = DataRecord.unparse(%{}, record)
+        {:ok, bytes} = DataRecord.unparse(record)
         bytes
       end)
       |> Enum.into("")

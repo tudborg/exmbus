@@ -38,8 +38,8 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   @doc """
   Decodes a single DataRecord from a binary.
   """
-  def parse(bin, opts, ctx) do
-    case Header.parse(bin, opts, ctx) do
+  def parse(bin, ctx) do
+    case Header.parse(bin, ctx) do
       {:ok, %Header{} = header, rest} ->
         case parse_data(header, rest) do
           {:ok, data, rest} ->
@@ -64,8 +64,8 @@ defmodule Exmbus.Parser.Apl.DataRecord do
     end
   end
 
-  def unparse(opts, %__MODULE__{header: h, data: d}) do
-    with {:ok, h_bytes} <- Header.unparse(opts, h),
+  def unparse(%__MODULE__{header: h, data: d}) do
+    with {:ok, h_bytes} <- Header.unparse(h),
          {:ok, d_bytes} <- unparse_data(h, d) do
       {:ok, <<h_bytes::binary, d_bytes::binary>>}
     end

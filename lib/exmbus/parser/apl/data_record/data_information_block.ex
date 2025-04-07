@@ -29,13 +29,13 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
     size: nil
   ]
 
-  def unparse(_opts, %__MODULE__{device: 0, tariff: 0, storage: s} = dib) when s <= 1 do
+  def unparse(%__MODULE__{device: 0, tariff: 0, storage: s} = dib) when s <= 1 do
     ff_int = encode_function_field(dib.function_field)
     df_int = encode_data_field(dib.data_type, dib.size)
     {:ok, <<0::1, s::1, ff_int::2, df_int::4>>}
   end
 
-  def parse(<<special::4, 0b1111::4, rest::binary>>, _opts, _ctx) do
+  def parse(<<special::4, 0b1111::4, rest::binary>>, _ctx) do
     # note that we are effectively stripping the least-significant bits of the dif which is
     # always 0b1111 (i.e. 0xF) for special functions, so the following case only checks for the top
     # 4 bits. In the manual these are written together (i.e. 0x0F), here we only write the MSB (0x0 instead of 0x0F)
@@ -64,7 +64,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.DataInformationBlock do
   end
 
   # regular DIF parsing:
-  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _opts, _ctx) do
+  def parse(<<e::1, lsb_storage::1, ff::2, df::4, rest::binary>>, _ctx) do
     {:ok, device, tariff, msb_storage, rest} =
       case e do
         # if extensions, decode dife:
