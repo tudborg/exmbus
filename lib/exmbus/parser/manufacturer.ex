@@ -6,8 +6,8 @@ defmodule Exmbus.Parser.Manufacturer do
   @doc """
   Decode from binary to string representation of manufacturer
 
-    iex> decode(<<0x93, 0x44>>)
-    {:ok, "QDS"}
+      iex> decode(<<0x93, 0x44>>)
+      {:ok, "QDS"}
   """
   def decode(<<man::little-size(16)>>) do
     {:ok, int_to_manufacturer(man)}
@@ -16,7 +16,7 @@ defmodule Exmbus.Parser.Manufacturer do
   @doc """
   Encode 3-letter manufacturer
 
-    iex> {:ok, <<0x93, 0x44>>} = encode("QDS")
+      iex> {:ok, <<0x93, 0x44>>} = encode("QDS")
   """
   def encode(<<_, _, _>> = m) do
     i = manufacturer_to_int(m)

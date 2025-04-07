@@ -29,44 +29,44 @@ defmodule Exmbus.Parser.DataType do
   to ASCII, so by coincedence, if you send ASCII-only characters it will be the same in both UTF-8 and Latin-1,
   and elixir binary data and elixir strings are the same, so we don't need to do any conversion.)
 
-    # raw bytes container
-    iex> decode_lvar(<<5, "hello", 0xFF>>, :container)
-    {:ok, <<"hello">>, <<0xFF>>}
+      # raw bytes container
+      iex> decode_lvar(<<5, "hello", 0xFF>>, :container)
+      {:ok, <<"hello">>, <<0xFF>>}
 
-    # empty container
-    iex> decode_lvar(<<0, 0xFF>>, :container)
-    {:ok, <<>>, <<0xFF>>}
+      # empty container
+      iex> decode_lvar(<<0, 0xFF>>, :container)
+      {:ok, <<>>, <<0xFF>>}
 
-    # empty positive BCD number
-    iex> decode_lvar(<<0xC0, 0xFF>>)
-    {:ok, 0, <<0xFF>>}
+      # empty positive BCD number
+      iex> decode_lvar(<<0xC0, 0xFF>>)
+      {:ok, 0, <<0xFF>>}
 
-    # positive BCD number
-    iex> decode_lvar(<<0xC1, 0x10, 0xFF>>)
-    {:ok, 10, <<0xFF>>}
+      # positive BCD number
+      iex> decode_lvar(<<0xC1, 0x10, 0xFF>>)
+      {:ok, 10, <<0xFF>>}
 
-    # empty negative BCD number
-    iex> decode_lvar(<<0xD0, 0xFF>>)
-    {:ok, 0, <<0xFF>>}
+      # empty negative BCD number
+      iex> decode_lvar(<<0xD0, 0xFF>>)
+      {:ok, 0, <<0xFF>>}
 
-    # negative BCD number
-    iex> decode_lvar(<<0xD1, 0x10, 0xFF>>)
-    {:ok, -10, <<0xFF>>}
+      # negative BCD number
+      iex> decode_lvar(<<0xD1, 0x10, 0xFF>>)
+      {:ok, -10, <<0xFF>>}
 
-    # negative multi-byte BCD number
-    iex> decode_lvar(<<0xD2, 0x34, 0x12, 0xFF>>)
-    {:ok, -1234, <<0xFF>>}
+      # negative multi-byte BCD number
+      iex> decode_lvar(<<0xD2, 0x34, 0x12, 0xFF>>)
+      {:ok, -1234, <<0xFF>>}
 
-    # LVAR binary number
-    iex> decode_lvar(<<0xE1, 123::signed-little-size(8), 0xFF>>)
-    {:ok, 123, <<0xFF>>}
+      # LVAR binary number
+      iex> decode_lvar(<<0xE1, 123::signed-little-size(8), 0xFF>>)
+      {:ok, 123, <<0xFF>>}
 
-    # LVAR binary number
-    iex> decode_lvar(<<0xE4, -123456789::signed-little-size(32), 0xFF>>)
-    {:ok, -123456789, <<0xFF>>}
+      # LVAR binary number
+      iex> decode_lvar(<<0xE4, -123456789::signed-little-size(32), 0xFF>>)
+      {:ok, -123456789, <<0xFF>>}
 
-    iex> decode_lvar(<<5, "hel">>, :container)
-    {:error, {:not_enough_bytes_for_lvar, 5, "hel"}, <<>>}
+      iex> decode_lvar(<<5, "hel">>, :container)
+      {:error, {:not_enough_bytes_for_lvar, 5, "hel"}, <<>>}
 
   """
   # LVAR 0x00–0xBF: (0 to 191) characters 8-bit text string according to ISO/IEC 8859-1 (latin-1)
@@ -140,14 +140,14 @@ defmodule Exmbus.Parser.DataType do
   BCD integer.
   if MSB 0xF then the remanining digits are interpreted as a negative number
 
-    iex> decode_type_a(<<0x34, 0x12, 0xFF>>, 16)
-    {:ok, 1234, <<0xFF>>}
+      iex> decode_type_a(<<0x34, 0x12, 0xFF>>, 16)
+      {:ok, 1234, <<0xFF>>}
 
-    iex> decode_type_a(<<0x23, 0xF1, 0xFF>>, 16)
-    {:ok, -123, <<0xFF>>}
+      iex> decode_type_a(<<0x23, 0xF1, 0xFF>>, 16)
+      {:ok, -123, <<0xFF>>}
 
-    iex> decode_type_a(<<0x23, 0xC1, 0xFF>>, 16)
-    {:ok, {:invalid, {:type_a, 0xC123}}, <<0xFF>>}
+      iex> decode_type_a(<<0x23, 0xC1, 0xFF>>, 16)
+      {:ok, {:invalid, {:type_a, 0xC123}}, <<0xFF>>}
   """
   def decode_type_a(bin, bitsize) do
     # TODO: performance of using digits/undigits.
@@ -180,8 +180,8 @@ defmodule Exmbus.Parser.DataType do
   Type B
   Signed little-endian integer
 
-    iex> decode_type_b(<<-1234::signed-little-size(16), 0xFF>>, 16)
-    {:ok, -1234, <<0xFF>>}
+      iex> decode_type_b(<<-1234::signed-little-size(16), 0xFF>>, 16)
+      {:ok, -1234, <<0xFF>>}
   """
   def decode_type_b(bin, bitsize) do
     <<value::signed-little-size(bitsize), rest::binary>> = bin
@@ -196,8 +196,8 @@ defmodule Exmbus.Parser.DataType do
   Type C
   Unsigned little-endian integer
 
-    iex> decode_type_c(<<1234::unsigned-little-size(16), 0xFF>>, 16)
-    {:ok, 1234, <<0xFF>>}
+      iex> decode_type_c(<<1234::unsigned-little-size(16), 0xFF>>, 16)
+      {:ok, 1234, <<0xFF>>}
   """
   def decode_type_c(bin, bitsize) do
     <<value::unsigned-little-size(bitsize), rest::binary>> = bin
@@ -212,8 +212,8 @@ defmodule Exmbus.Parser.DataType do
   Type D
   Bool list from bits.
 
-    iex> decode_type_d(<<0b0000111111110000::unsigned-little-size(16), 0xFF>>, 16)
-    {:ok, [false, false, false, false, true, true, true, true, true, true, true, true, false, false, false, false], <<0xFF>>}
+      iex> decode_type_d(<<0b0000111111110000::unsigned-little-size(16), 0xFF>>, 16)
+      {:ok, [false, false, false, false, true, true, true, true, true, true, true, true, false, false, false, false], <<0xFF>>}
   """
   def decode_type_d(bin, bitsize) do
     <<i::unsigned-little-size(bitsize), rest::binary>> = bin
@@ -231,8 +231,8 @@ defmodule Exmbus.Parser.DataType do
   Convert 32 bits to a NaiveDateTime with seconds truncated to 0.
   (Type F is a date+time without seconds specified, but we just truncate. Good Enough :tm:)
 
-    iex> decode_type_f(<<0b00::2, 10::6, 0::1, 0::2, 20::5, 0b101::3, 1::5, 0b0010::4, 2::4, 0xFF>>)
-    {:ok, ~N[2021-02-01 20:10:00], <<0xFF>>}
+      iex> decode_type_f(<<0b00::2, 10::6, 0::1, 0::2, 20::5, 0b101::3, 1::5, 0b0010::4, 2::4, 0xFF>>)
+      {:ok, ~N[2021-02-01 20:10:00], <<0xFF>>}
   """
   # TYPE F, Date+Time (no seconds) (32 bit)
   def decode_type_f(
@@ -304,11 +304,11 @@ defmodule Exmbus.Parser.DataType do
   Type G
   Convert 16 bits to a Date
 
-    iex> decode_type_g(<<0b101::3, 1::5, 0b0010::4, 2::4, 0xFF>>)
-    {:ok, ~D[2021-02-01], <<0xFF>>}
+      iex> decode_type_g(<<0b101::3, 1::5, 0b0010::4, 2::4, 0xFF>>)
+      {:ok, ~D[2021-02-01], <<0xFF>>}
 
-    iex> decode_type_g(<<0xFF, 0xFF, 0xFF>>)
-    {:ok, :invalid, <<0xFF>>}
+      iex> decode_type_g(<<0xFF, 0xFF, 0xFF>>)
+      {:ok, :invalid, <<0xFF>>}
 
   """
   # TYPE G, date (16 bit)
@@ -475,8 +475,8 @@ defmodule Exmbus.Parser.DataType do
   Type J
   Convert 24 bits to a Time
 
-    iex> decode_type_j(<<59, 48, 11, 0xFF>>)
-    {:ok, ~T[11:48:59], <<0xFF>>}
+      iex> decode_type_j(<<59, 48, 11, 0xFF>>)
+      {:ok, ~T[11:48:59], <<0xFF>>}
   """
   # TYPE J, Time of day (local time) (24 bit)
   def decode_type_j(<<second, minute, hour, rest::binary>>) do
