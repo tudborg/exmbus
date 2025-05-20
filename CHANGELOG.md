@@ -1,6 +1,16 @@
 # Changelog for v0.x
 
-## [Unreleased]
+## [development]
+
+## [v0.3.1]
+
+### Added
+
+- Authentication and Fragmentation layer (AFL) support added
+  - fragmented messages not supported
+  - Currently no MAC verification is done
+- Security Profile 7 support added (ephemeral keys KDF)
+- ELL CI `0x8E` support added
 
 ## [v0.3.0]
 
