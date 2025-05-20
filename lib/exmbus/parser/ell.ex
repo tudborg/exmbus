@@ -6,6 +6,7 @@ defmodule Exmbus.Parser.Ell do
   See also the Exmbus.Parser.CI module.
   """
 
+  alias Exmbus.Parser.Ell.UnencryptedWithReceiver
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Ell.CommunicationControl
   alias Exmbus.Parser.Ell.SessionNumber
@@ -73,12 +74,13 @@ defmodule Exmbus.Parser.Ell do
   # > This extended link layer specifies the receiver address.
   # > Table 46 below shows the complete extension block in this case.
   # Fields: CC, ACC, M2, A2
-  def parse(%{
-        bin:
-          <<0x8E, _cc::binary-size(1), _acc, _m2::binary-size(2), _a2::binary-size(6),
-            _rest::binary>>
-      }) do
-    raise "TODO: ELL III"
+  def parse(%{bin: <<0x8E, ell::binary-size(10), rest::binary>>} = ctx) do
+    with {:ok, ell} <- UnencryptedWithReceiver.decode(ell) do
+      {:next, %{ctx | ell: ell, bin: rest}}
+    else
+      {:error, reason} ->
+        {:halt, Context.add_error(ctx, {:ell_parse_error, reason, ci: 0x8E})}
+    end
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.

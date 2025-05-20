@@ -12,7 +12,14 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
             syncrony: false,
             accessibility: false,
             bidirectional: false,
-            blocks: nil
+            blocks: nil,
+            # present in mode 7:
+            padding: nil,
+            content_index: nil,
+            counter: nil,
+            key_version: nil,
+            key_id: nil,
+            kdf: nil
 
   @type t :: %__MODULE__{
           hop_count: 0..1,
@@ -24,13 +31,6 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
           bidirectional: boolean(),
           blocks: nil | 0..15
         }
-
-  @spec decode(binary()) :: {:ok, t()}
-  def decode(<<a, b>>) do
-    # we flip the bits so they are MSB,LSB. Easier to read.
-    # we could collapse this but performance benefit is effectively 0.
-    be_decode(<<b, a>>)
-  end
 
   # common bit names:
   # - H     :: Hop Count            Used in repeated messages.
@@ -64,8 +64,23 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
   #                                 DD=00 Persistent Key, no key derivation
   #                                 DD=01 Key Derivation Function A (see 9.6.1)
   #                                 DD=10 and DD=11 are reserved
+
+  @doc """
+  Return a symbolic name for the KDF used in the configuration field.
+  """
+  def kdf_selection(%__MODULE__{kdf: kdf}) do
+    case kdf do
+      0 -> :persistent_key
+      1 -> :kdf_a
+      _ -> :reserved
+    end
+  end
+
+  # NOTE: binary comes in as little endian, so the order of the below
+  # parse is byte-wise reversed from the order in the spec.
+
   # security Mode 0
-  defp be_decode(<<b::1, a::1, s::1, 0::5, _res::4, cc::2, r::1, h::1>>) do
+  def parse(<<_res::4, cc::2, r::1, h::1, b::1, a::1, s::1, 0::5, rest::binary>>) do
     cf = %__MODULE__{
       hop_count: h,
       repeater_access: r,
@@ -77,11 +92,11 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
       blocks: nil
     }
 
-    {:ok, cf}
+    {:ok, cf, rest}
   end
 
   # Security Mode 5. AES-128 CBC (9.4.4 for details)
-  defp be_decode(<<b::1, a::1, s::1, 5::5, blocks::4, cc::2, r::1, h::1>>) do
+  def parse(<<blocks::4, cc::2, r::1, h::1, b::1, a::1, s::1, 5::5, rest::binary>>) do
     cf = %__MODULE__{
       hop_count: h,
       repeater_access: r,
@@ -93,11 +108,48 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
       blocks: blocks
     }
 
-    {:ok, cf}
+    {:ok, cf, rest}
+  end
+
+  # Security mode 7 Configuration field (from 7.7.5)
+  # NOTE: mode 7 has an additional 8 bits extension of configuration field data, and optionally
+  # even more depending on the data in the extension
+  def parse(
+        <<blocks::4, p::1, iiii::3, cc::2, z::1, 7::5, 0::1, v::1, dd::2, kkkk::4, rest::binary>>
+      ) do
+    counter_bits = if(z == 1, do: 32, else: 0)
+    key_version_bits = if(v == 1, do: 8, else: 0)
+
+    <<
+      counter::little-size(counter_bits),
+      key_version::little-size(key_version_bits),
+      rest::binary
+    >> = rest
+
+    cf = %__MODULE__{
+      hop_count: 0,
+      repeater_access: 0,
+      content_of_message: cc,
+      syncrony: false,
+      accessibility: false,
+      bidirectional: false,
+      mode: 7,
+      blocks: blocks,
+      padding: p == 1,
+      content_index: iiii,
+      counter: if(z == 1, do: counter),
+      key_version: if(v == 1, do: key_version),
+      key_id: kkkk,
+      kdf: dd
+    }
+
+    {:ok, cf, rest}
   end
 
   # raise if unknown encryption mode
-  defp be_decode(<<_::3, mode::5, _::8>> = cfbin) do
+  def parse(<<_::8, _::3, mode::5, _rest::binary>> = bin) do
+    <<cfbin::binary-size(2), _::binary>> = bin
+
     raise "Encryption mode #{mode} not implemented. configuration field bits were #{Exmbus.Debug.to_bits(cfbin)}"
   end
 end

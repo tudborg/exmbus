@@ -6,6 +6,7 @@ defmodule Exmbus.Parser.Tpl do
   See also the Exmbus.Parser.CI module.
   """
 
+  alias Exmbus.Parser.Afl
   alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.CI
   alias Exmbus.Parser.Context
@@ -32,6 +33,11 @@ defmodule Exmbus.Parser.Tpl do
   is not a CI field describing a transport layer.
   """
   def parse(ctx) do
+    # guard against fragmented messages, which we don't currently have a good solution for.
+    if is_struct(ctx.afl, Afl) and Afl.fragmented?(ctx.afl) do
+      raise "AFL is fragmented, cannot parse TPL"
+    end
+
     # Allow only TPL and APL CI codes.
     # If if hit an ELL, AFL or similar, we error out.
     case CI.lookup(ctx.bin) do
@@ -146,19 +152,16 @@ defmodule Exmbus.Parser.Tpl do
   end
 
   # TPL header decoders
-  defp parse_tpl_header_short(
-         <<access_no, status_byte::binary-size(1), cf_bytes::binary-size(2), rest::binary>>
-       ) do
-    # NOTE: this decode currently does not return {:error, _}
-    case ConfigurationField.decode(cf_bytes) do
-      {:ok, configuration_field} ->
-        header = %Short{
-          access_no: access_no,
-          status: Status.decode(status_byte),
-          configuration_field: configuration_field
-        }
+  defp parse_tpl_header_short(<<access_no, status_byte::binary-size(1), rest::binary>>) do
+    # parse the configuration field (which is variable width depending on security mode)
+    with {:ok, configuration_field, rest} <- ConfigurationField.parse(rest) do
+      header = %Short{
+        access_no: access_no,
+        status: Status.decode(status_byte),
+        configuration_field: configuration_field
+      }
 
-        {:ok, header, rest}
+      {:ok, header, rest}
     end
   end
 
@@ -178,13 +181,12 @@ defmodule Exmbus.Parser.Tpl do
   """
   def parse_tpl_header_long(
         <<ident_bytes::binary-size(4), man_bytes::binary-size(2), version,
-          device_byte::binary-size(1), access_no, status_byte::binary-size(1),
-          cf_bytes::binary-size(2), rest::binary>>
+          device_byte::binary-size(1), access_no, status_byte::binary-size(1), rest::binary>>
       ) do
     with {:ok, identification_no} <- IdentificationNo.decode(ident_bytes),
          {:ok, device} <- Device.decode(device_byte),
          {:ok, manufacturer} <- Manufacturer.decode(man_bytes),
-         {:ok, configuration_field} <- ConfigurationField.decode(cf_bytes) do
+         {:ok, configuration_field, rest} <- ConfigurationField.parse(rest) do
       header = %Long{
         identification_no: identification_no,
         manufacturer: manufacturer,
