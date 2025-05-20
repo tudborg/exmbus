@@ -10,8 +10,10 @@ defmodule Exmbus.Parser.Context do
           bin: binary | nil,
           #
           dll: any,
-          tpl: any,
           ell: any,
+          #
+          afl: any,
+          tpl: any,
           apl: any,
           #
           dib: any,
@@ -27,6 +29,8 @@ defmodule Exmbus.Parser.Context do
     &Exmbus.Parser.Ell.maybe_parse/1,
     # apply decryption from the ELL to remaining data
     &Exmbus.Parser.Ell.maybe_decrypt_bin/1,
+    # Parse the AFL
+    &Exmbus.Parser.Afl.maybe_parse/1,
     # parse the TPL
     &Exmbus.Parser.Tpl.parse/1,
     # apply decryption from the TPL to remaining data
@@ -51,6 +55,7 @@ defmodule Exmbus.Parser.Context do
     # lower layers:
     dll: nil,
     ell: nil,
+    afl: nil,
     tpl: nil,
     apl: nil,
     # state for when parsing data record:

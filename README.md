@@ -28,11 +28,12 @@ end
 
 - M-bus
 - wM-bus
-- TPL Encryption modes: 0, 5
-- (partly) supports ELL (supports encryption modes: 0 (none), 1 (aes_128_ctr)
+- TPL - supports security profiles `0`, `5`, `7` (ephemeral keys for enc and mac via KDF)
+- ELL - supports encryption modes: `0` (none), `1` (aes_128_ctr)
+- AFL - only unfragmented messages, No MAC check
 - Compact Frames and Format Frames
 - Compact Profiles
-- VIF extension tables 0xFD and 0xFB (with a few exceptions)
+- VIF extension tables `0xFD` and `0xFB` (with a few exceptions)
 
 ### Feature Requests
 
@@ -44,19 +45,6 @@ No effort will be made towards supporting a device without an example of a paylo
 > [!IMPORTANT]  
 > Under no circumstances should you publish data to the issue tracker or repository from a device that is actually deployed, as those might contain PII or other sensitive information.
 > The same is true encryption keys where the key might potentially be used in more than once device.
-
-
-### Planned
-
-- [ ] Better API for encryption key storage.
-- [ ] Transition the parser fully to handler + context based, and avoid raising on error but instead attach an error to the context. The APL layer in particular needs a lot of work here.
-- [ ] DLL CRC support.
-- [ ] Split parsing and decoding into two steps. Currently the code parses the binary and decodes it in the same walk, but this causes errors when we can't decode an unsupported feature.
-
-### Not Planned
-
-- [ ] Authentication and Fragmentation layer CI=90
-
 
 ## Performance
 
@@ -107,6 +95,7 @@ iex> "2E4493157856341233037A2A0020255923C95AAA26D1B2E7493B013EC4A6F6D3529B520EDF
     version: 51,
     device: %Exmbus.Parser.Tpl.Device{id: 3}
   },
+  afl: %Exmbus.Parser.Afl.None{},
   ell: %Exmbus.Parser.Ell.None{},
   tpl: %Exmbus.Parser.Tpl{
     frame_type: :full_frame,
