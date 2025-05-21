@@ -42,6 +42,8 @@ defmodule Parser.Afl.AflExampleTest do
 
     {:ok, ctx} = Exmbus.parse(frame, key: key)
 
+    # IO.inspect(ctx)
+
     # we expect to be able to find the values in the description of the example
     assert is_list(ctx.apl.records)
 

@@ -68,7 +68,7 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
   @doc """
   Return a symbolic name for the KDF used in the configuration field.
   """
-  def kdf_selection(%__MODULE__{kdf: kdf}) do
+  def kdf(%__MODULE__{kdf: kdf}) do
     case kdf do
       0 -> :persistent_key
       1 -> :kdf_a

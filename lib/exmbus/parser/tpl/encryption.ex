@@ -3,7 +3,6 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   This module handles the encryption of the TPL layer.
   """
 
-  alias Exmbus.Parser.Tpl.ConfigurationField
   alias Exmbus.Crypto
   alias Exmbus.Parser.Afl
   alias Exmbus.Key
@@ -81,24 +80,11 @@ defmodule Exmbus.Parser.Tpl.Encryption do
     {:ok, encrypted_byte_count} = encrypted_byte_count(ctx.tpl)
     <<encrypted::binary-size(encrypted_byte_count), plain::binary>> = ctx.bin
 
-    key_result =
-      case ConfigurationField.kdf_selection(ctx.tpl.header.configuration_field) do
-        :persistent_key ->
-          Key.get(ctx)
-
-        # An ephemeral key shall be used which is generated with the
-        # Key Derivation Function (KDF) and which is described in 9.6
-        :kdf_a ->
-          with {:ok, keys} <- Key.get(ctx) do
-            kdf_a(keys, :enc, ctx)
-          end
-      end
-
     # Security mode 7 uses AES-128-CBC with an ephemeral key of 128 bits
     # and a static Initialization Vector IV = 0 (16 bytes of 0x00).
     iv = <<0::128>>
 
-    with {:ok, keys} <- key_result,
+    with {:ok, keys} <- keys(ctx, :enc),
          {:ok, decrypted} <- decrypt_mode_5(encrypted, keys, iv) do
       {:next, %{ctx | bin: <<decrypted::binary, plain::binary>>}}
     else
@@ -159,6 +145,51 @@ defmodule Exmbus.Parser.Tpl.Encryption do
     <<man_bytes::binary, id_bytes::binary, v, device_byte::binary>>
   end
 
+  @doc """
+  Retrieve keys to use in `mode` (either `:enc` or `:mac`).
+
+  This applies the selected KDF to the master key(s) and returns the derived keys.
+  """
+  def keys(ctx, mode \\ :enc) do
+    case key_selection(ctx) do
+      # we use the master key directly, no KDF
+      :persistent_key ->
+        Key.get(ctx)
+
+      # An ephemeral key shall be used which is generated with the
+      # Key Derivation Function (KDF) and which is described in 9.6
+      :kdf_a ->
+        with {:ok, master_keys} <- Key.get(ctx) do
+          # The Key Derivation Function shall apply the CMAC-Function according to NIST/SP 800-38B.
+          # This Key Derivation Function bases on key expansion procedure of NIST/SP 800–56C.
+          # The calculation of key K shall be as follows: K=CMAC(MK,DC||C||ID||07h ||07h ||07h ||07h ||07h ||07h ||07h)
+          # where
+          #  MK is Message key;
+          #  DC is Derivation constant;
+          #  C is Message counter;
+          #  ID is Meter ID.
+          # depending on direction and mode, we pick DC
+          {:ok, direction} = Wmbus.direction(ctx.dll)
+
+          # > The KDF requires a Message counter. The KDF shall use the Message counter provided by the TPL.
+          counter = find_message_counter(ctx)
+
+          # For messages from the meter to the communication partner which use a short TPL-header, (like CI = 7Ah; see 7.3)
+          # the ID corresponds to the Identification Number in the Link Layer Address (see 8.3) of the meter.
+          # For messages with long header (like CI = 72h; see 7.4) the ID corresponds to the
+          # Application Layer Identification Number (see 7.5.1) of the meter.
+          # For messages from the communication partner to the meter the Long Header is always used.
+          # The ID corresponds to the Identification Number in the
+          # Application Layer Address (see 7.5.1) of the meter (not the communication partner).
+          {:ok, meter_id} = IdentificationNo.encode(find_meter_id(ctx).identification_no)
+          # derrive the keys
+          keys = Enum.map(master_keys, &Crypto.kdf_a!(direction, mode, counter, meter_id, &1))
+
+          {:ok, keys}
+        end
+    end
+  end
+
   defp find_meter_id(%{tpl: %Tpl{header: %Tpl.Header.Long{} = header}}) do
     header
   end
@@ -167,33 +198,26 @@ defmodule Exmbus.Parser.Tpl.Encryption do
     wmbus
   end
 
-  # The Key Derivation Function shall apply the CMAC-Function according to NIST/SP 800-38B.
-  # This Key Derivation Function bases on key expansion procedure of NIST/SP 800–56C.
-  # The calculation of key K shall be as follows: K=CMAC(MK,DC||C||ID||07h ||07h ||07h ||07h ||07h ||07h ||07h)
-  # where
-  #  MK is Message key;
-  #  DC is Derivation constant;
-  #  C is Message counter;
-  #  ID is Meter ID.
-  defp kdf_a(master_keys, mode, ctx) when mode in [:mac, :enc] do
-    # depending on direction and mode, we pick DC
-    {:ok, direction} = Wmbus.direction(ctx.dll)
+  defp key_selection(%{afl: afl, tpl: tpl}) do
+    cond do
+      is_struct(afl.ki, KeyInformationField) ->
+        Afl.KeyInformationField.kdf(afl.ki)
 
-    # > The KDF requires a Message counter. The KDF shall use the Message counter provided by the TPL.
-    counter = find_message_counter(ctx)
+      is_struct(tpl, Tpl) ->
+        case tpl.header do
+          %Tpl.Header.Short{configuration_field: cf} ->
+            Tpl.ConfigurationField.kdf(cf)
 
-    # For messages from the meter to the communication partner which use a short TPL-header, (like CI = 7Ah; see 7.3)
-    # the ID corresponds to the Identification Number in the Link Layer Address (see 8.3) of the meter.
-    # For messages with long header (like CI = 72h; see 7.4) the ID corresponds to the
-    # Application Layer Identification Number (see 7.5.1) of the meter.
-    # For messages from the communication partner to the meter the Long Header is always used.
-    # The ID corresponds to the Identification Number in the
-    # Application Layer Address (see 7.5.1) of the meter (not the communication partner).
-    {:ok, meter_id} = IdentificationNo.encode(find_meter_id(ctx).identification_no)
-    # derrive the keys
-    keys = Enum.map(master_keys, &Crypto.kdf_a!(direction, mode, counter, meter_id, &1))
+          %Tpl.Header.Long{configuration_field: cf} ->
+            Tpl.ConfigurationField.kdf(cf)
 
-    {:ok, keys}
+          %Tpl.Header.None{} ->
+            :persistent_key
+        end
+
+      true ->
+        :persistent_key
+    end
   end
 
   defp find_message_counter(ctx) do

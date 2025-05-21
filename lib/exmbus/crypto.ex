@@ -82,13 +82,23 @@ defmodule Exmbus.Crypto do
     data =
       <<dc, counter::little-size(32), meter_id::binary, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07>>
 
-    case :crypto.mac(:cmac, :aes_128_cbc, message_key, data) do
-      binary when is_binary(binary) -> {:ok, binary}
-    end
+    cmac(message_key, data)
   end
 
   def kdf_a!(direction, mode, counter, meter_id, message_key) do
     case kdf_a(direction, mode, counter, meter_id, message_key) do
+      {:ok, key} -> key
+    end
+  end
+
+  def cmac(key, data) do
+    case :crypto.mac(:cmac, :aes_128_cbc, key, data) do
+      binary when is_binary(binary) -> {:ok, binary}
+    end
+  end
+
+  def cmac!(key, data) do
+    case cmac(key, data) do
       {:ok, key} -> key
     end
   end

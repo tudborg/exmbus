@@ -2,6 +2,10 @@
 
 ## [development]
 
+### Added
+
+- AFL MAC verification. Works for unfragmented AFLs.
+
 ## [v0.3.1]
 
 ### Added

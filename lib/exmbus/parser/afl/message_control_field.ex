@@ -102,6 +102,9 @@ defmodule Exmbus.Parser.Afl.MessageControlField do
       ...>   authentication_type: 0b0011
       ...> })
       <<0b01110011>>
+
+      iex> encode(nil)
+      <<>>
   """
   def encode(%__MODULE__{
         message_length_present?: mlmp,
@@ -111,6 +114,8 @@ defmodule Exmbus.Parser.Afl.MessageControlField do
       }) do
     <<0::1, bool_to_int(mlmp)::1, bool_to_int(mcmp)::1, bool_to_int(kimp)::1, at::4>>
   end
+
+  def encode(nil), do: <<>>
 
   defp bool_to_int(true), do: 1
   defp bool_to_int(false), do: 0

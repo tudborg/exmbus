@@ -18,6 +18,9 @@ defmodule Exmbus.Parser.Context do
           #
           dib: any,
           vib: any,
+          # private storage map for passing data between handlers,
+          # user should not interact with this map directly.
+          private: %{},
           #
           errors: [any]
         }
@@ -33,6 +36,8 @@ defmodule Exmbus.Parser.Context do
     &Exmbus.Parser.Afl.maybe_parse/1,
     # parse the TPL
     &Exmbus.Parser.Tpl.parse/1,
+    # verify the AFL MAC
+    &Exmbus.Parser.Afl.maybe_verify_mac/1,
     # apply decryption from the TPL to remaining data
     &Exmbus.Parser.Tpl.decrypt_bin/1,
     # parse the APL based on the frame type specified in the TPL
@@ -67,6 +72,9 @@ defmodule Exmbus.Parser.Context do
     # that other layers can use?
     dib: nil,
     vib: nil,
+    # private storage for passing data between handlers
+    # user should not interact with this map directly.
+    private: %{},
     # error and warning accumulator
     errors: [],
     warnings: []

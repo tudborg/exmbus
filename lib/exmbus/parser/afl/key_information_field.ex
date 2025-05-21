@@ -66,6 +66,9 @@ defmodule Exmbus.Parser.Afl.KeyInformationField do
       ...>   key_id: 0
       ...> })
       <<0x00, 0x00>>
+
+      iex> encode(nil)
+      <<>>
   """
   def encode(%__MODULE__{
         key_version: key_version,
@@ -74,4 +77,6 @@ defmodule Exmbus.Parser.Afl.KeyInformationField do
       }) do
     <<key_version::8, 0::2, kdf_selection::2, key_id::4>>
   end
+
+  def encode(nil), do: <<>>
 end

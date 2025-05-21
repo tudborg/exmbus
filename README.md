@@ -30,7 +30,7 @@ end
 - wM-bus
 - TPL - supports security profiles `0`, `5`, `7` (ephemeral keys for enc and mac via KDF)
 - ELL - supports encryption modes: `0` (none), `1` (aes_128_ctr)
-- AFL - only unfragmented messages, No MAC check
+- AFL - only unfragmented messages
 - Compact Frames and Format Frames
 - Compact Profiles
 - VIF extension tables `0xFD` and `0xFB` (with a few exceptions)

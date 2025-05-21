@@ -17,4 +17,6 @@ defmodule Exmbus.Parser.Afl.MessageLengthField do
   def encode(mcr) when is_integer(mcr) do
     <<mcr::little-size(16)>>
   end
+
+  def encode(nil), do: <<>>
 end

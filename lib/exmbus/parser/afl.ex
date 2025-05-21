@@ -30,6 +30,11 @@ defmodule Exmbus.Parser.Afl do
   > All multi byte fields of AFL except the AFL.MAC shall be transmitted with least significant byte first (little endian).
   """
 
+  alias Exmbus.Crypto
+  alias Exmbus.Parser.Afl.MessageLengthField
+  alias Exmbus.Parser.Afl.MessageCounterField
+  alias Exmbus.Parser.Afl.KeyInformationField
+  alias Exmbus.Parser.Tpl.Encryption
   alias Exmbus.Parser.Afl.MessageControlField
   alias Exmbus.Parser.Afl.FragmentationControlField
   alias Exmbus.Parser.Context
@@ -47,7 +52,9 @@ defmodule Exmbus.Parser.Afl do
     # Message Authentication Code (MAC)
     mac: nil,
     # Message Length
-    ml: nil
+    ml: nil,
+    # optimization used to verify the MAC
+    _tpdu_bytes: nil
   ]
 
   @doc """
@@ -93,7 +100,19 @@ defmodule Exmbus.Parser.Afl do
       %__MODULE__{} = afl
       # there should be no remaining AFL bytes
       <<>> = bytes
+
       # we have a complete AFL layer
+      # NOTE: verification of the MAC is not done here, because we potentially need
+      # the TPL CF field to decide what key to use.
+      # so we "remember" the TPDU bytes for later.
+      # I don't like this solution, but anything else requires a change in architecture
+      # or re-encoding the TPDU bytes after we've parsed the TPL.
+      afl =
+        case fcl.mac_present? do
+          true -> %{afl | _tpdu_bytes: rest}
+          false -> afl
+        end
+
       {:next, %{ctx | afl: afl, bin: rest}}
     else
       {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
@@ -103,6 +122,73 @@ defmodule Exmbus.Parser.Afl do
   def parse(%{bin: <<ci, _rest::binary>>} = ctx) do
     {:halt, Context.add_error(ctx, {:ci_not_afl, ci})}
   end
+
+  @doc """
+  Verifies the MAC of the AFL.
+  NOTE: This handler should be attached _after_ the TPL has been parsed,
+  so that we can use the TPL CF field to determine the key to use.
+  """
+  def maybe_verify_mac(%{afl: %{mac: nil}} = ctx) do
+    # No MAC, just continue:
+    {:next, ctx}
+  end
+
+  def maybe_verify_mac(%{afl: %{mac: mac} = afl} = ctx) when is_binary(mac) do
+    case MessageControlField.authentication_type(afl.mcl) do
+      # No MAC, just continue:
+      {:none, _} -> {:next, ctx}
+      # delegate to the correct MAC verification:
+      {:aes_cmac_128, size} -> verify_aes_cmac_128(size, ctx)
+      {:aes_gmac_128, size} -> verify_aes_gmac_128(size, ctx)
+    end
+  end
+
+  def maybe_verify_mac(%{afl: nil} = ctx) do
+    {:next, ctx}
+  end
+
+  def maybe_verify_mac(%{afl: %None{}} = ctx) do
+    {:next, ctx}
+  end
+
+  defp verify_aes_cmac_128(size, ctx) do
+    with {:ok, keys} <- Encryption.keys(ctx, :mac) do
+      mcl_bytes = MessageControlField.encode(ctx.afl.mcl)
+      ki_bytes = KeyInformationField.encode(ctx.afl.ki)
+      mcr_bytes = MessageCounterField.encode(ctx.afl.mcr)
+      ml_bytes = MessageLengthField.encode(ctx.afl.ml)
+
+      # AFL.MAC = CMAC (Kmac/Lmac, AFL.MCL || {AFL.KI} || {AFL.MCR} || {AFL.ML} || First byte of TPDU (CI-field) || ... || Last byte of TPDU)
+      data = <<
+        mcl_bytes::binary,
+        ki_bytes::binary,
+        mcr_bytes::binary,
+        ml_bytes::binary,
+        ctx.afl._tpdu_bytes::binary
+      >>
+
+      calculated_macs =
+        keys
+        |> Enum.map(&Crypto.cmac!(&1, data))
+        |> Enum.map(&:binary.part(&1, 0, size))
+
+      if ctx.afl.mac in calculated_macs do
+        # MAC is valid, continue
+        {:next, ctx}
+      else
+        # MAC is invalid, add error to context
+        {:halt, Context.add_error(ctx, {:invalid_mac, ctx.afl.mac, calculated_macs})}
+      end
+    end
+  end
+
+  defp verify_aes_gmac_128(_size, ctx) do
+    {:halt, Context.add_error(ctx, {:not_implemeneted, :aes_gmac_128})}
+  end
+
+  ##
+  ## Consumer functions to parse AFL fields
+  ##
 
   defp consume_mcl(
          <<bytes::binary-size(1), rest::binary>>,
