@@ -102,7 +102,7 @@ defmodule Exmbus.Parser.Context do
   @doc """
   Merge options with the existing options in the context.
   """
-  def merge_opts(ctx, opts) do
+  def merge_opts(%__MODULE__{} = ctx, opts) do
     %{ctx | opts: Map.merge(ctx.opts, Enum.into(opts || [], %{}))}
   end
 
@@ -110,7 +110,7 @@ defmodule Exmbus.Parser.Context do
   Append additional handlers to the context.
   """
   def append_handlers(%__MODULE__{} = ctx, handlers) when is_list(handlers) do
-    %__MODULE__{ctx | handlers: (ctx.handlers || []) ++ handlers}
+    %{ctx | handlers: (ctx.handlers || []) ++ handlers}
   end
 
   @doc """
@@ -119,7 +119,7 @@ defmodule Exmbus.Parser.Context do
   Prepending handlers will make the given handlers run before the existing handlers.
   """
   def prepend_handlers(%__MODULE__{} = ctx, handlers) when is_list(handlers) do
-    %__MODULE__{ctx | handlers: handlers ++ (ctx.handlers || [])}
+    %{ctx | handlers: handlers ++ (ctx.handlers || [])}
   end
 
   @doc """
@@ -139,14 +139,14 @@ defmodule Exmbus.Parser.Context do
   @doc """
   Add an error to the context and return the updated context.
   """
-  def add_error(ctx, error) do
-    %__MODULE__{ctx | errors: [{ctx.handler, error} | ctx.errors]}
+  def add_error(%__MODULE__{} = ctx, error) do
+    %{ctx | errors: [{ctx.handler, error} | ctx.errors]}
   end
 
   @doc """
   Add a warning to the context and return the updated context.
   """
-  def add_warning(ctx, warning) do
-    %__MODULE__{ctx | warnings: [{ctx.handler, warning} | ctx.warnings]}
+  def add_warning(%__MODULE__{} = ctx, warning) do
+    %{ctx | warnings: [{ctx.handler, warning} | ctx.warnings]}
   end
 end

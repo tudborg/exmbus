@@ -47,14 +47,14 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
       {:ok, :from_meter} ->
         case ErrorCode.decode(xxxx) do
           {:ok, record_error} ->
-            vib = %VIB{vib | extensions: [{:record_error, record_error} | exts]}
+            vib = %{vib | extensions: [{:record_error, record_error} | exts]}
             parse(e, rest, %{ctx | vib: vib})
 
           # for now we just pass the reserved numbers through.
           # if they are being used it is most likely because we have not implemented them.
           # I've already seen 0b0_1000 in use in the real world.
           {:error, {:reserved, _} = r} ->
-            vib = %VIB{vib | extensions: [{:record_error, r} | exts]}
+            vib = %{vib | extensions: [{:record_error, r} | exts]}
             parse(e, rest, %{ctx | vib: vib})
         end
     end
@@ -62,7 +62,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
 
   def parse(1, rest, %{vib: %VIB{extensions: exts} = vib} = ctx) do
     case exts(1, rest, exts) do
-      {:ok, rest, exts} -> parse(0, rest, %{ctx | vib: %VIB{vib | extensions: exts}})
+      {:ok, rest, exts} -> parse(0, rest, %{ctx | vib: %{vib | extensions: exts}})
     end
   end
 

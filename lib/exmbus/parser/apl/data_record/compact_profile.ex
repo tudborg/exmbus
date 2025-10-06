@@ -99,7 +99,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
           | extensions: Keyword.delete(record.header.vib.extensions, :compact_profile)
         }
 
-        %DataRecord{record | data: nil, header: %{record.header | vib: vib}}
+        %{record | data: nil, header: %{record.header | vib: vib}}
       end
 
     # unfold the values into a list of time and value records.

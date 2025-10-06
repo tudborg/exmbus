@@ -89,7 +89,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
           |> String.to_charlist()
           |> Enum.reverse()
           |> List.to_string()
-        {:ok, %VIB{vib | unit: ascii_vif}, rest}
+        {:ok, %{vib | unit: ascii_vif}, rest}
     end
   end
 
