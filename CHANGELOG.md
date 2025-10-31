@@ -2,6 +2,14 @@
 
 ## [development]
 
+## [v0.3.3]
+
+### Fixed
+
+- Fixed bug in type A decoding that caused `0xF` digits to crash the parser in some cases.
+
+## [v0.3.2]
+
 ### Added
 
 - AFL MAC verification. Works for unfragmented AFLs.

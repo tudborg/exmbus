@@ -152,18 +152,20 @@ defmodule Exmbus.Parser.DataType do
   def decode_type_a(bin, bitsize) do
     # TODO: performance of using digits/undigits.
     <<bcd::little-size(bitsize), rest::binary>> = bin
-    digits = Integer.digits(bcd, 16)
 
-    if not Enum.any?(digits, &(&1 > 0x9 and &1 < 0xF)) do
-      value =
-        case Integer.digits(bcd, 16) do
-          [0xF | digits] -> -Integer.undigits(digits)
-          digits -> Integer.undigits(digits)
-        end
+    {sign, digits} =
+      case Integer.digits(bcd, 16) do
+        [0xF | digits] -> {-1, digits}
+        digits -> {1, digits}
+      end
 
-      {:ok, value, rest}
-    else
+    if Enum.any?(digits, &(&1 > 0x9 and &1 <= 0xF)) do
       {:ok, {:invalid, {:type_a, bcd}}, rest}
+    else
+      case {sign, Integer.undigits(digits)} do
+        {1, value} -> {:ok, value, rest}
+        {-1, value} -> {:ok, -value, rest}
+      end
     end
   end
 

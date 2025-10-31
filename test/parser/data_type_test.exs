@@ -133,5 +133,10 @@ defmodule Parser.DataTypeTest do
       bytes = <<0x00, 0x00>>
       {:ok, {:periodic, :every_day}, <<>>} = DataType.decode_type_g(bytes)
     end
+
+    test "Typa A with invalid value" do
+      {:ok, {:invalid, {:type_a, _}}, <<0x00>>} = DataType.decode_type_a(<<0x00, 0x0A, 0x00>>, 16)
+      {:ok, {:invalid, {:type_a, _}}, <<0xFF>>} = DataType.decode_type_a(<<0xFF, 0xFF, 0xFF>>, 16)
+    end
   end
 end
