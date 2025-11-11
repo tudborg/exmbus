@@ -70,6 +70,9 @@ defmodule Exmbus.Parser.DataType do
       {:error, {:not_enough_bytes_for_lvar, 5, "hel"}, <<>>}
 
   """
+  @spec decode_lvar(binary(), :container | :latin1) ::
+          {:ok, binary() | integer(), binary()}
+          | {:error, {:not_enough_bytes_for_lvar, non_neg_integer(), binary()}, binary()}
   # LVAR 0x00–0xBF: (0 to 191) characters 8-bit text string according to ISO/IEC 8859-1 (latin-1)
   # (If a wireless M-Bus data container is used it counts the number of bytes inside the container)
   def decode_lvar(bin, mode \\ :container)
@@ -150,6 +153,7 @@ defmodule Exmbus.Parser.DataType do
       iex> decode_type_a(<<0x23, 0xC1, 0xFF>>, 16)
       {:ok, {:invalid, {:type_a, 0xC123}}, <<0xFF>>}
   """
+  @spec decode_type_a(binary(), integer()) :: {:ok, integer() | {:invalid, any()}, binary()}
   def decode_type_a(bin, bitsize) do
     # TODO: performance of using digits/undigits.
     <<bcd::little-size(bitsize), rest::binary>> = bin
@@ -183,9 +187,10 @@ defmodule Exmbus.Parser.DataType do
   Type B
   Signed little-endian integer
 
-      iex> decode_type_b(<<-1234::signed-little-size(16), 0xFF>>, 16)
+      iex> decode_type_b(<< -1234::signed-little-size(16), 0xFF>>, 16)
       {:ok, -1234, <<0xFF>>}
   """
+  @spec decode_type_b(binary(), integer()) :: {:ok, integer(), binary()}
   def decode_type_b(bin, bitsize) do
     <<value::signed-little-size(bitsize), rest::binary>> = bin
     {:ok, value, rest}
@@ -202,6 +207,7 @@ defmodule Exmbus.Parser.DataType do
       iex> decode_type_c(<<1234::unsigned-little-size(16), 0xFF>>, 16)
       {:ok, 1234, <<0xFF>>}
   """
+  @spec decode_type_c(binary(), integer()) :: {:ok, non_neg_integer(), binary()}
   def decode_type_c(bin, bitsize) do
     <<value::unsigned-little-size(bitsize), rest::binary>> = bin
     {:ok, value, rest}
@@ -218,6 +224,7 @@ defmodule Exmbus.Parser.DataType do
       iex> decode_type_d(<<0b0000111111110000::unsigned-little-size(16), 0xFF>>, 16)
       {:ok, [false, false, false, false, true, true, true, true, true, true, true, true, false, false, false, false], <<0xFF>>}
   """
+  @spec decode_type_d(binary(), integer()) :: {:ok, [boolean()], binary()}
   def decode_type_d(bin, bitsize) do
     <<i::unsigned-little-size(bitsize), rest::binary>> = bin
     # re-encode to bitstring now that we have the "right" order
@@ -237,6 +244,10 @@ defmodule Exmbus.Parser.DataType do
       iex> decode_type_f(<<0b00::2, 10::6, 0::1, 0::2, 20::5, 0b101::3, 1::5, 0b0010::4, 2::4, 0xFF>>)
       {:ok, ~N[2021-02-01 20:10:00], <<0xFF>>}
   """
+  @spec decode_type_f(binary()) ::
+          {:ok, NaiveDateTime.t() | :invalid, rest :: binary()}
+          | {:error, {:unsupported_feature, :data_type_f_with_periodicity}, rest :: binary()}
+          | {:error, naive_datetime_new_error_reason :: atom(), rest :: binary()}
   # TYPE F, Date+Time (no seconds) (32 bit)
   def decode_type_f(
         # invalid, reserved, minute
@@ -313,7 +324,11 @@ defmodule Exmbus.Parser.DataType do
       iex> decode_type_g(<<0xFF, 0xFF, 0xFF>>)
       {:ok, :invalid, <<0xFF>>}
 
+      iex> decode_type_g(<<0b111_00001, 0b1111_0001, 0xFF>>)
+      {:ok, %PeriodicDate{year: nil, month: 1, day: 1}, <<0xFF>>}
+
   """
+  @spec decode_type_g(binary()) :: {:ok, Date.t() | PeriodicDate.t() | :invalid, rest :: binary()}
   # TYPE G, date (16 bit)
   def decode_type_g(<<0xFF, 0xFF, rest::binary>>) do
     # manual Table A.6 — Type G: Date (CP16) "A value of FFh in both bytes (that means FFFFh) shall be interpreted as invalid."
@@ -383,6 +398,8 @@ defmodule Exmbus.Parser.DataType do
     {:ok, <<year_lsb::3, day::5, year_msb::4, month::4>>}
   end
 
+  @spec decode_type_h(binary()) ::
+          {:ok, float() | :nan | :positive_infinity | :negative_infinity, rest :: binary()}
   # TYPE H IEEE Float.
   # NOTE: erlang doesn't do IEEE floats, so we don't have NaN and Infinity in our floats.
   # we do the next best thing and return atoms instead.
@@ -415,6 +432,9 @@ defmodule Exmbus.Parser.DataType do
   Convert 48 bits to a NaiveDateTime
   (This isn't 1:1 with spec but without creating a new type for DateTime this is the closest we get)
   """
+  @spec decode_type_i(binary()) ::
+          {:ok, NaiveDateTime.t(), rest :: binary()}
+          | {:error, naive_datetime_new_error_reason :: atom(), rest :: binary()}
   # TYPE I, date+time, year down to second (local time) (48 bit)
   def decode_type_i(
         # leap year, time during daylight savings, second
@@ -492,6 +512,9 @@ defmodule Exmbus.Parser.DataType do
       iex> decode_type_j(<<59, 48, 11, 0xFF>>)
       {:ok, ~T[11:48:59], <<0xFF>>}
   """
+  @spec decode_type_j(binary()) ::
+          {:ok, Time.t(), rest :: binary()}
+          | {:error, time_new_error_reason :: atom(), rest :: binary()}
   # TYPE J, Time of day (local time) (24 bit)
   def decode_type_j(<<second, minute, hour, rest::binary>>) do
     case Time.new(hour, minute, second) do

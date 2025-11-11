@@ -7,6 +7,12 @@ defmodule Exmbus.Parser.DataType.PeriodicDate do
   When a component (year, month, or day) is periodic (wildcard), it is represented as `nil`.
   """
 
+  @type t :: %__MODULE__{
+          year: integer() | nil,
+          month: integer() | nil,
+          day: integer() | nil
+        }
+
   defstruct [:year, :month, :day]
 
   @doc """
@@ -19,6 +25,7 @@ defmodule Exmbus.Parser.DataType.PeriodicDate do
     {:ok, %__MODULE__{year: year, month: month, day: day}}
   end
 
+  @spec new!(integer() | nil, integer() | nil, integer() | nil) :: %__MODULE__{}
   def new(year, month, day) do
     {:error, {:badarg, [year, month, day]}}
   end
@@ -26,11 +33,10 @@ defmodule Exmbus.Parser.DataType.PeriodicDate do
   @doc """
   Creates a new PeriodicDate struct, raising an error on invalid input.
   """
-  @spec new!(integer() | nil, integer() | nil, integer() | nil) :: %__MODULE__{}
+  @spec new!(any(), any(), any()) :: %__MODULE__{}
   def new!(year, month, day) do
     case new(year, month, day) do
       {:ok, periodic_date} -> periodic_date
-      {:error, reason} -> raise ArgumentError, "Invalid PeriodicDate: #{inspect(reason)}"
     end
   end
 
