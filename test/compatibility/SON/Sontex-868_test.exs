@@ -7,6 +7,7 @@ defmodule Compatibility.SON.Sontex868Test do
   """
   use ExUnit.Case, async: true
 
+  alias Exmbus.Parser.DataType.PeriodicDate
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Context
 
@@ -93,7 +94,7 @@ defmodule Compatibility.SON.Sontex868Test do
                  },
                  coding: :type_g
                },
-               data: {:periodic, :every_year}
+               data: %PeriodicDate{year: nil, month: 1, day: 1}
              },
              %DataRecord{
                header: %DataRecord.Header{

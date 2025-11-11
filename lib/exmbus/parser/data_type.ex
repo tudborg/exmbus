@@ -5,6 +5,7 @@ defmodule Exmbus.Parser.DataType do
 
   It also implements working with variable-length data (LVAR) according to same document same section (Table 5)
   """
+  alias Exmbus.Parser.DataType.PeriodicDate
 
   import Bitwise
 
@@ -322,32 +323,43 @@ defmodule Exmbus.Parser.DataType do
   def decode_type_g(<<year_lsb::3, day::5, year_msb::4, month::4, rest::binary>>) do
     year = year_msb <<< 3 ||| year_lsb
 
-    # the standard supports indicating periodicity in this type but that's really annoying
-    # to do since it doesn't fit in our normal type for time.
-    # for now we just return a tuple with some atoms to indicate this
     cond do
-      day == 0 ->
-        {:ok, {:periodic, :every_day}, rest}
+      # The spec isn't clear about what happens outside of the allowed ranges,
+      # so we just treat them as invalid values just as with 0xFFFF above.
+      year > 99 and year < 127 ->
+        {:ok, :invalid, rest}
 
-      month == 15 ->
-        {:ok, {:periodic, :every_month}, rest}
+      month < 1 or (month > 12 and month != 15) ->
+        {:ok, :invalid, rest}
 
-      year == 127 ->
-        {:ok, {:periodic, :every_year}, rest}
+      day > 31 and day != 0 ->
+        {:ok, :invalid, rest}
 
-      # otherwise, not periodic, normal date:
+      # the standard supports indicating periodicity in this type but that's really annoying
+      # to do since it doesn't fit in our normal type for time.
+      # We return a special struct for it, so that the user can handle it properly.
+      day == 0 or month == 15 or year == 127 ->
+        day = if day == 0, do: nil, else: day
+        month = if month == 15, do: nil, else: month
+        year = if year == 127, do: nil, else: interpret_type_g_year(year)
+
+        case PeriodicDate.new(year, month, day) do
+          {:ok, periodic_date} -> {:ok, periodic_date, rest}
+        end
+
       true ->
-        year =
-          case year do
-            year when year > 80 -> 1900 + year
-            # Compatibility hack as recommended in the manual in Table A.5 — Type F: Date and time (CP32)
-            year -> 2000 + year
-          end
-
-        case Date.new(year, month, day) do
+        case Date.new(interpret_type_g_year(year), month, day) do
           {:ok, date} -> {:ok, date, rest}
           {:error, reason} -> {:error, reason, rest}
         end
+    end
+  end
+
+  defp interpret_type_g_year(year) do
+    case year do
+      year when year > 80 -> 1900 + year
+      # Compatibility hack as recommended in the manual in Table A.5 — Type F: Date and time (CP32)
+      year -> 2000 + year
     end
   end
 

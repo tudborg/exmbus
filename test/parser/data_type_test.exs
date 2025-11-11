@@ -1,5 +1,7 @@
 defmodule Parser.DataTypeTest do
   use ExUnit.Case, async: true
+
+  alias Exmbus.Parser.DataType.PeriodicDate
   alias Exmbus.Parser.DataType
 
   doctest Exmbus.Parser.DataType, import: true
@@ -125,18 +127,33 @@ defmodule Parser.DataTypeTest do
   # Type M
 
   #
+  # PeriodicDate
+  #
+  test "PeriodicDate implements String.Chars" do
+    assert "2021-12-31" == PeriodicDate.new!(2021, 12, 31) |> to_string()
+    assert "YYYY-12-31" == PeriodicDate.new!(nil, 12, 31) |> to_string()
+    assert "2021-MM-31" == PeriodicDate.new!(2021, nil, 31) |> to_string()
+    assert "2021-12-DD" == PeriodicDate.new!(2021, 12, nil) |> to_string()
+  end
+
+  #
   # Regressions and similar, related to DataType
   #
 
   describe "Regressions" do
     test "Type G from a DME telegram" do
-      bytes = <<0x00, 0x00>>
-      {:ok, {:periodic, :every_day}, <<>>} = DataType.decode_type_g(bytes)
+      bytes = <<0b111_00001, 0b1111_0001>>
+
+      assert {:ok, %PeriodicDate{year: nil, month: 1, day: 1}, <<>>} =
+               DataType.decode_type_g(bytes)
     end
 
     test "Typa A with invalid value" do
-      {:ok, {:invalid, {:type_a, _}}, <<0x00>>} = DataType.decode_type_a(<<0x00, 0x0A, 0x00>>, 16)
-      {:ok, {:invalid, {:type_a, _}}, <<0xFF>>} = DataType.decode_type_a(<<0xFF, 0xFF, 0xFF>>, 16)
+      assert {:ok, {:invalid, {:type_a, _}}, <<0x00>>} =
+               DataType.decode_type_a(<<0x00, 0x0A, 0x00>>, 16)
+
+      assert {:ok, {:invalid, {:type_a, _}}, <<0xFF>>} =
+               DataType.decode_type_a(<<0xFF, 0xFF, 0xFF>>, 16)
     end
   end
 end

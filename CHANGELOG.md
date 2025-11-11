@@ -2,6 +2,10 @@
 
 ## [development]
 
+### Changed
+
+- BREAKING CHANGE: Type G's periodic values now return `Exmbus.Parser.DataType.PeriodicDate` struct instead of `{:periodic, _}` 
+
 ## [v0.3.3]
 
 ### Fixed
