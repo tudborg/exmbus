@@ -19,7 +19,7 @@ The package can be installed by adding `exmbus` to your list of dependencies in 
 ```elixir
 def deps do
   [
-    {:exmbus, "~> 0.3.0"}
+    {:exmbus, "~> 0.4.0"}
   ]
 end
 ```
