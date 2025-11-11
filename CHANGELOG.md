@@ -1,6 +1,6 @@
 # Changelog for v0.x
 
-## [development]
+## [v0.4.0]
 
 ### Changed
 
