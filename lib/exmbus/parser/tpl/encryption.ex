@@ -4,8 +4,8 @@ defmodule Exmbus.Parser.Tpl.Encryption do
   """
 
   alias Exmbus.Crypto
-  alias Exmbus.Parser.Afl
   alias Exmbus.Key
+  alias Exmbus.Parser.Afl
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Dll.Wmbus
   alias Exmbus.Parser.IdentificationNo
