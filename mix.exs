@@ -59,7 +59,7 @@ defmodule Exmbus.MixProject do
 
   defp description() do
     """
-    M-Bus & Wireless M-Bus (wM-bus) parser library
+    M-Bus (mbus) & Wireless M-Bus (wMbus) parser library
     """
   end
 
