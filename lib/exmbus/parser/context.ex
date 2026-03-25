@@ -130,9 +130,12 @@ defmodule Exmbus.Parser.Context do
   end
 
   def handle(%__MODULE__{handlers: [handler | handlers]} = ctx) do
-    case handler.(%{ctx | handlers: handlers, handler: handler}) do
+    ctx = %{ctx | handlers: handlers, handler: handler}
+
+    case handler.(ctx) do
       {:next, ctx} -> {:next, ctx}
       {:halt, ctx} -> {:halt, ctx}
+      other -> {:halt, add_error(ctx, {:unexpected_return, other})}
     end
   end
 

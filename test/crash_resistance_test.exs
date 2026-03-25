@@ -2,6 +2,7 @@ defmodule CrashResistanceTest do
   @moduledoc """
   Test that the parser can handle unexpected frames without crashing.
   """
+  alias Exmbus.Parser.Context
 
   use ExUnit.Case, async: true
 
@@ -32,5 +33,12 @@ defmodule CrashResistanceTest do
 
       assert {:ok, %{}} = Exmbus.parse(@example_frame, key: [bad_key, aes_key])
     end
+  end
+
+  test "Unexpected return from handler" do
+    # ensure that a handler misbehaving doesn't crash the parser, instead it adds an error to the context and halts
+    handler = fn _ctx -> {:error, :reason} end
+    assert {:error, ctx} = Exmbus.parse(<<>>, Context.new(handlers: [handler]))
+    assert ctx.errors == [{handler, {:unexpected_return, {:error, :reason}}}]
   end
 end

@@ -3,12 +3,12 @@ defmodule Exmbus.Parser.Ell.Encrypted do
   Represents an encrypted ELL layer.
   """
 
-  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Context
+  alias Exmbus.Parser.Ell.CommunicationControl
+  alias Exmbus.Parser.Ell.SessionNumber
+  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Tpl.Device
-  alias Exmbus.Parser.Ell.SessionNumber
-  alias Exmbus.Parser.Ell.CommunicationControl
 
   defstruct communication_control: nil,
             access_no: nil,
@@ -44,11 +44,11 @@ defmodule Exmbus.Parser.Ell.Encrypted do
 
   def decrypt_bin(%{ell: %__MODULE__{session_number: %{encryption: :aes_128_ctr}}} = ctx) do
     with {:ok, icb} <- icb(ctx),
-         {:ok, keys} <- Exmbus.Key.get(ctx) do
-      case try_decrypt_and_verify(ctx.bin, icb, keys, []) do
-        {:ok, rest} -> {:next, %{ctx | bin: rest}}
-        {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
-      end
+         {:ok, keys} <- Exmbus.Key.get(ctx),
+         {:ok, rest} <- try_decrypt_and_verify(ctx.bin, icb, keys, []) do
+      {:next, %{ctx | bin: rest}}
+    else
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
