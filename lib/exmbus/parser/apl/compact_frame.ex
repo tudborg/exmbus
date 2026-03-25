@@ -6,11 +6,11 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
   It must be used in conbination with a FormatFrame to create a full frame.
   """
 
-  alias Exmbus.Parser.Context
-  alias Exmbus.Parser.Apl.FormatFrame
-  alias Exmbus.Parser.Apl.FullFrame
   alias Exmbus.Parser.Apl.DataRecord
   alias Exmbus.Parser.Apl.DataRecord.Header
+  alias Exmbus.Parser.Apl.FormatFrame
+  alias Exmbus.Parser.Apl.FullFrame
+  alias Exmbus.Parser.Context
 
   defstruct format_signature: nil,
             full_frame_crc: nil,
@@ -59,12 +59,12 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
         {:halt, Context.add_error(ctx, {:format_frame_lookup_failed, reason})}
 
       bad_return ->
-        raise "Unexpected return from the format_frame_fn function, expected {:ok, %FormatFrame{}}, got: #{inspect(bad_return)}"
+        {:halt, Context.add_error(ctx, {:unexpected_format_frame_fn_return, bad_return})}
     end
   end
 
   def expand(%{} = ctx) do
-    raise "No format_frame_fn function given as option for context: #{inspect(ctx)}"
+    {:halt, Context.add_error(ctx, {:required, :format_frame_fn})}
   end
 
   @doc """
