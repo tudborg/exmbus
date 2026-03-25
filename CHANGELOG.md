@@ -1,4 +1,19 @@
-# Changelog for v0.x
+# Changelog
+
+## [v0.5.0] - 2026-03-25
+
+### Changed
+
+- BREAKING CHANGE: VIFEs tagged with `:limit_exceeded` is now tagged with `:limit_exceed` instead.
+
+### Added
+
+- Support for "Limit Exceed" VIFEs.
+
+### Fixed
+
+- Crash when a compact frame was given, but no `format_frame_fn` was provided in options.
+- Crash when handler returned unexpected value (e.g. not `next` or `halt`) Now adds an error and halts.
 
 ## [v0.4.0]
 
@@ -47,6 +62,6 @@
 - Test for LAN-WMBUS-G2-LDS/LDP.
 - Support for expansion of Compact Profile with Register Numbers (Orthogonal VIFE 0x1E)
 
-## v0.2.0
+## [v0.2.0]
 
 Open-sourced
