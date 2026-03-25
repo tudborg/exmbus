@@ -182,8 +182,8 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b0111000::7, rest::binary>>, acc),
     do: exts(e, rest, [{:multiplied_by, "(s/A)"} | acc])
 
-  defp exts(1, <<_::1, 0b0111001::7, _rest::binary>>, _acc),
-    do: raise("E011 1001 'Start date(/time) of' not supported")
+  defp exts(1, <<e::1, 0b0111001::7, rest::binary>>, acc),
+    do: exts(e, rest, [:start_date_slash_time_of | acc])
 
   defp exts(1, <<e::1, 0b0111010::7, rest::binary>>, acc),
     do: exts(e, rest, [:vif_contains_uncorrected_unit_or_value | acc])
@@ -200,8 +200,8 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b0111110::7, rest::binary>>, acc),
     do: exts(e, rest, [:value_at_base_condition | acc])
 
-  defp exts(1, <<_::1, 0b0111111::7, _rest::binary>>, _acc),
-    do: raise("E011 1111 OBIS-declaration not supported")
+  defp exts(1, <<e::1, 0b0111111::7, rest::binary>>, acc),
+    do: exts(e, rest, [:obis_declaration | acc])
 
   defp exts(1, <<e::1, 0b100::3, 0::1, 000::3, rest::binary>>, acc),
     do: exts(e, rest, [{:limit_value, :lower} | acc])
@@ -215,20 +215,52 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b100::3, 1::1, 001::3, rest::binary>>, acc),
     do: exts(e, rest, [{:number_of_exceeds_of_limit_value, :upper} | acc])
 
+  # E100 uf1b
+  # Date (/time) of: b=0:begin, b=1:end, f=0:first, f=1:last, u=0:lower, u=1:upper limit exceed
   defp exts(1, <<e::1, 0b100::3, u::1, f::1, 1::1, b::1, rest::binary>>, acc) do
-    # Date (/time) of: b = 0: begin, b = 1: end of, f = 0: first, f= 1: last, u = 0: lower, u = 1: upper limit exceeded
     begin_end = if b == 0, do: :begin, else: :end
     first_last = if f == 0, do: :first, else: :last
     upper_lower = if u == 0, do: :lower, else: :upper
-    extension = {:limit_exceeded, upper_lower, first_last, begin_end}
+    extension = {:limit_exceed, upper_lower, first_last, begin_end}
     exts(e, rest, [extension | acc])
   end
 
-  defp exts(1, <<_::1, 0b101::3, _u::1, _f::1, _nn::2, _rest::binary>>, _acc),
-    do: raise("E101 ufnn Duration of limit exceed not supported")
+  # E101 ufnn
+  # Duration of limit exceed: f=0:first, f=1:last, u=0:lower, u=1:upper limit exceed,
+  # nn=00:second, nn=01:minute, nn=10:hour, nn=11:day
+  defp exts(1, <<e::1, 0b101::3, u::1, f::1, nn::2, rest::binary>>, acc) do
+    first_last = if f == 0, do: :first, else: :last
+    upper_lower = if u == 0, do: :lower, else: :upper
 
-  defp exts(1, <<_::1, 0b1100::4, _f::1, _nn::2, _rest::binary>>, _acc),
-    do: raise("E110 0fnn Duration of d not supported")
+    duration_type =
+      case nn do
+        0b00 -> :second
+        0b01 -> :minute
+        0b10 -> :hour
+        0b11 -> :day
+      end
+
+    extension = {:duration_of_limit_exceed, upper_lower, first_last, duration_type}
+    exts(e, rest, [extension | acc])
+  end
+
+  # E110 0fnn
+  # Duration of d
+  # f=0:first, f=1:last, nn=00:second, nn=01:minute, nn=10:hour, nn=11:day
+  defp exts(1, <<e::1, 0b1100::4, f::1, nn::2, rest::binary>>, acc) do
+    first_last = if f == 0, do: :first, else: :last
+
+    date_type =
+      case nn do
+        0b00 -> :second
+        0b01 -> :minute
+        0b10 -> :hour
+        0b11 -> :day
+      end
+
+    extension = {:duration_of_d, first_last, date_type}
+    exts(e, rest, [extension | acc])
+  end
 
   defp exts(1, <<_::1, 0b1101::4, _u::1, 00::2, _rest::binary>>, _acc),
     do: raise("E110 1u00 Value during lower (u = 0), upper (u = 1) limit exceed not supported")
