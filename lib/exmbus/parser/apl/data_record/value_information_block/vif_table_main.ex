@@ -7,13 +7,13 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
 
   alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
+  alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFB, as: FB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableFD, as: FD
-  alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife
 
 
   # helper to transition the parser into VIFE parsing.
-  defp more(e, rest, ctx, description, keywords \\ []) do
+  defp more(e, rest, dib, ctx, description, keywords \\ []) do
     vib = %VIB{
       table: :main,
       description: description,
@@ -23,59 +23,59 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
       coding: Keyword.get(keywords, :coding, nil)
     }
 
-    Vife.parse(e, rest, %{ctx | vib: vib})
+    Vife.parse(e, rest, dib, vib, ctx)
   end
 
   ###
   # primary VIF table decoding
   ###
-  def parse(<<e::1, 0b0000::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :energy,                 multiplier: pow10to(n-3), unit: "Wh")
-  def parse(<<e::1, 0b0001::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :energy,                 multiplier: pow10to(n),   unit: "J")
-  def parse(<<e::1, 0b0010::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :volume,                 multiplier: pow10to(n-6), unit: "m^3")
-  def parse(<<e::1, 0b0011::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :mass,                   multiplier: pow10to(n-6), unit: "kg")
-  def parse(<<e::1, 0b01000::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :on_time,                unit:  decode_time_unit(n))
-  def parse(<<e::1, 0b01001::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :operating_time,         unit:  decode_time_unit(n))
-  def parse(<<e::1, 0b0101::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :power,                  multiplier: pow10to(n-3), unit: "W")
-  def parse(<<e::1, 0b0110::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :power,                  multiplier: pow10to(n),   unit: "J/h")
-  def parse(<<e::1, 0b0111::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :volume_flow,            multiplier: pow10to(n-6), unit: "m^3/h")
-  def parse(<<e::1, 0b1000::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :volume_flow_ext,        multiplier: pow10to(n-7), unit: "m^3/min")
-  def parse(<<e::1, 0b1001::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :volume_flow_ext,        multiplier: pow10to(n-9), unit: "m^3/s")
-  def parse(<<e::1, 0b1010::4,  n::3, rest::binary>>, ctx),  do: more(e, rest, ctx, :mass_flow,              multiplier: pow10to(n-3), unit: "kg/h")
-  def parse(<<e::1, 0b10110::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :flow_temperature,       multiplier: pow10to(n-3), unit: "°C")
-  def parse(<<e::1, 0b10111::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :return_temperature,     multiplier: pow10to(n-3), unit: "°C")
-  def parse(<<e::1, 0b11000::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :temperature_difference, multiplier: pow10to(n-3), unit: "K")
-  def parse(<<e::1, 0b11001::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :external_temperature,   multiplier: pow10to(n-3), unit: "°C")
-  def parse(<<e::1, 0b11010::5, n::2, rest::binary>>, ctx),  do: more(e, rest, ctx, :pressure,               multiplier: pow10to(n-3), unit: "bar")
+  def parse(<<e::1, 0b0000::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :energy,                 multiplier: pow10to(n-3), unit: "Wh")
+  def parse(<<e::1, 0b0001::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :energy,                 multiplier: pow10to(n),   unit: "J")
+  def parse(<<e::1, 0b0010::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :volume,                 multiplier: pow10to(n-6), unit: "m^3")
+  def parse(<<e::1, 0b0011::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :mass,                   multiplier: pow10to(n-6), unit: "kg")
+  def parse(<<e::1, 0b01000::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :on_time,                unit:  decode_time_unit(n))
+  def parse(<<e::1, 0b01001::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :operating_time,         unit:  decode_time_unit(n))
+  def parse(<<e::1, 0b0101::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :power,                  multiplier: pow10to(n-3), unit: "W")
+  def parse(<<e::1, 0b0110::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :power,                  multiplier: pow10to(n),   unit: "J/h")
+  def parse(<<e::1, 0b0111::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :volume_flow,            multiplier: pow10to(n-6), unit: "m^3/h")
+  def parse(<<e::1, 0b1000::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :volume_flow_ext,        multiplier: pow10to(n-7), unit: "m^3/min")
+  def parse(<<e::1, 0b1001::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :volume_flow_ext,        multiplier: pow10to(n-9), unit: "m^3/s")
+  def parse(<<e::1, 0b1010::4,  n::3, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :mass_flow,              multiplier: pow10to(n-3), unit: "kg/h")
+  def parse(<<e::1, 0b10110::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :flow_temperature,       multiplier: pow10to(n-3), unit: "°C")
+  def parse(<<e::1, 0b10111::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :return_temperature,     multiplier: pow10to(n-3), unit: "°C")
+  def parse(<<e::1, 0b11000::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :temperature_difference, multiplier: pow10to(n-3), unit: "K")
+  def parse(<<e::1, 0b11001::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :external_temperature,   multiplier: pow10to(n-3), unit: "°C")
+  def parse(<<e::1, 0b11010::5, n::2, rest::binary>>, dib, ctx),  do: more(e, rest, dib, ctx, :pressure,               multiplier: pow10to(n-3), unit: "bar")
   # TYPE: Date and Time
   # - Data field 0b0010, type G
   # - Data field 0b0011, type J
   # - Data field 0b0100, type F
   # - Data field 0b0110, type I
   # - Data field 0b1101, type M (LVAR)
-  def parse(<<e::1, 0b1101100::7, rest::binary>>, %{dib: %DIB{data_type: :int_or_bin, size: 16}}=ctx), do: more(e, rest, ctx, :date, coding: :type_g)
-  def parse(<<e::1, 0b1101100::7, rest::binary>>, %{dib: %DIB{data_type: _, size: _}           }=ctx), do: Vife.error(e, rest, {:invalid, "data field must be 0b0010 from Table 10 in EN 13757-3:2018 \"Meaning depends on data field. Other data fields shall be handled as invalid\""}, ctx)
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, %{dib: %DIB{data_type: :int_or_bin, size: 24}}=ctx), do: more(e, rest, ctx, :time, coding: :type_j)
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, %{dib: %DIB{data_type: :int_or_bin, size: 32}}=ctx), do: more(e, rest, ctx, :naive_datetime, coding: :type_f)
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, %{dib: %DIB{data_type: :int_or_bin, size: 48}}=ctx), do: more(e, rest, ctx, :naive_datetime, coding: :type_i)
-  def parse(<<e::1, 0b1101101::7, rest::binary>>, %{dib: %DIB{data_type: :variable_length     }}=ctx), do: more(e, rest, ctx, :datetime, coding: :type_m)
+  def parse(<<e::1, 0b1101100::7, rest::binary>>, %DIB{data_type: :int_or_bin, size: 16}=dib, ctx), do: more(e, rest, dib, ctx, :date, coding: :type_g)
+  def parse(<<e::1, 0b1101100::7, rest::binary>>, %DIB{data_type: _, size: _}           =dib, ctx), do: Vife.error(e, rest, dib, ctx, {:invalid, "data field must be 0b0010 from Table 10 in EN 13757-3:2018 \"Meaning depends on data field. Other data fields shall be handled as invalid\""})
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, %DIB{data_type: :int_or_bin, size: 24}=dib, ctx), do: more(e, rest, dib, ctx, :time, coding: :type_j)
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, %DIB{data_type: :int_or_bin, size: 32}=dib, ctx), do: more(e, rest, dib, ctx, :naive_datetime, coding: :type_f)
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, %DIB{data_type: :int_or_bin, size: 48}=dib, ctx), do: more(e, rest, dib, ctx, :naive_datetime, coding: :type_i)
+  def parse(<<e::1, 0b1101101::7, rest::binary>>, %DIB{data_type: :variable_length     }=dib, ctx), do: more(e, rest, dib, ctx, :datetime, coding: :type_m)
 
   # Rest after date and time
-  def parse(<<e::1, 0b1101110::7, rest::binary>>, ctx),      do: more(e, rest, ctx, :units_for_hca)
-  def parse(<<e::1, 0b1101111::7, rest::binary>>, ctx),      do: Vife.error(e, rest, {:reserved, "VIF 0b1101111 reserved for future use"}, ctx)
-  def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, ctx), do: more(e, rest, ctx, :averaging_duration, unit: decode_time_unit(nn))
-  def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, ctx), do: more(e, rest, ctx, :actuality_duration, unit: decode_time_unit(nn))
-  def parse(<<e::1, 0b1111000::7, rest::binary>>, ctx),      do: more(e, rest, ctx, :fabrication_no)
-  def parse(<<e::1, 0b1111001::7, rest::binary>>, ctx),      do: more(e, rest, ctx, :enhanced_identification)
-  def parse(<<e::1, 0b1111010::7, rest::binary>>, ctx),      do: more(e, rest, ctx, :address)
+  def parse(<<e::1, 0b1101110::7, rest::binary>>, dib, ctx),      do: more(e, rest, dib, ctx, :units_for_hca)
+  def parse(<<e::1, 0b1101111::7, rest::binary>>, dib, ctx),      do: Vife.error(e, rest, dib, ctx, {:reserved, "VIF 0b1101111 reserved for future use"})
+  def parse(<<e::1, 0b11100::5, nn::2, rest::binary>>, dib, ctx), do: more(e, rest, dib, ctx, :averaging_duration, unit: decode_time_unit(nn))
+  def parse(<<e::1, 0b11101::5, nn::2, rest::binary>>, dib, ctx), do: more(e, rest, dib, ctx, :actuality_duration, unit: decode_time_unit(nn))
+  def parse(<<e::1, 0b1111000::7, rest::binary>>, dib, ctx),      do: more(e, rest, dib, ctx, :fabrication_no)
+  def parse(<<e::1, 0b1111001::7, rest::binary>>, dib, ctx),      do: more(e, rest, dib, ctx, :enhanced_identification)
+  def parse(<<e::1, 0b1111010::7, rest::binary>>, dib, ctx),      do: more(e, rest, dib, ctx, :address)
 
   # plain-text VIF:
   # See EN 13757-3:2018(EN) - C.2
   #
-  def parse(<<e::1, 0b1111100::7, rest::binary>>, ctx) do
+  def parse(<<e::1, 0b1111100::7, rest::binary>>, dib, ctx) do
     # first we need to parse all of the extensions as well.
     # we pass in a description set to a marker we can match on it's way out of the vifes/4 again
     # to make sure it hasn't changed.
-    case more(e, rest, ctx, :plain_text_unit) do
+    case more(e, rest, dib, ctx, :plain_text_unit) do
       # the length in bytes and the ascii unit itself is found after the VIB
       # so we now need to read the unit out from the rest of the data.
       # First we get the length in the first byte:
@@ -93,9 +93,9 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
     end
   end
 
-  def parse(<<e::1, 0b111_1110::7, rest::binary>>, ctx), do: Vife.error(e, rest, "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d.", ctx)
+  def parse(<<e::1, 0b111_1110::7, rest::binary>>, dib, ctx), do: Vife.error(e, rest, dib, ctx, {:reserved, "Any VIF 0x7E / 0xFE not implemented. See 6.4.1 list item d."})
 
-  def parse(<<e::1, 0b111_1111::7, rest::binary>>, _ctx) do
+  def parse(<<e::1, 0b111_1111::7, rest::binary>>, _dib, _ctx) do
   # Manufacturer specific encoding, 7F / FF.
   # Rest of data-record (including VIFEs) are manufacturer specific.
   {:ok, vifes, rest} =
@@ -112,9 +112,9 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain do
     }, rest}
   end
 
-  def parse(<<0b1111_1011, rest::binary>>, ctx), do: FB.parse(rest, ctx)
-  def parse(<<0b1111_1101, rest::binary>>, ctx), do: FD.parse(rest, ctx)
-  def parse(<<0b1110_1111, _rest::binary>>, _ctx), do: raise "VIF 0xEF reserved for future use."
+  def parse(<<0b1111_1011, rest::binary>>, dib, ctx), do: FB.parse(rest, dib, ctx)
+  def parse(<<0b1111_1101, rest::binary>>, dib, ctx), do: FD.parse(rest, dib, ctx)
+  def parse(<<0b1110_1111, _rest::binary>>, _dib, _ctx), do: raise "VIF 0xEF reserved for future use."
 
 
 

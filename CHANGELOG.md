@@ -1,5 +1,21 @@
 # Changelog
 
+## [v0.6.0-rc.0] - 2026-06-02
+
+### Fixed
+
+- Crashes when unsupported VIFEs were used.
+- Crash when "record error" VIFE was not the first VIFE of a record.
+
+### Added
+
+- Support for more orthogonal VIFEs ("value during limit exceed", "date(/time) of")
+- Better handling of (still unsupported) orthogonal extension table (`0xFC`) to avoid crashing.
+
+### Changed
+
+- Rewrite internals around data record parsing to allow access to a (read-only) parser context.
+
 ## [v0.5.0] - 2026-03-25
 
 ### Changed

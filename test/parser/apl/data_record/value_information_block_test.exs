@@ -12,7 +12,9 @@ defmodule Parser.Apl.DataRecord.ValueInformationBlockTest do
       <<0::1, 0b1101111::7>> = vib_bytes ->
         test "reserved: #{i}" do
           bin = unquote(vib_bytes)
-          assert {:error, {:reserved, _}, <<>>} = VIB.parse(bin, [])
+
+          assert {:error, {:reserved, _}, <<>>} =
+                   VIB.parse(bin, %DIB{data_type: :int_or_bin, size: 16}, Context.new())
         end
 
       <<_::8>> = vib_bytes ->
@@ -28,7 +30,7 @@ defmodule Parser.Apl.DataRecord.ValueInformationBlockTest do
                 %DIB{data_type: :int_or_bin, size: 32}
             end
 
-          assert {:ok, vib, <<>>} = VIB.parse(bin, Context.new(dib: dib))
+          assert {:ok, vib, <<>>} = VIB.parse(bin, dib, Context.new())
           assert {:ok, ^bin} = VIB.unparse(vib)
         end
     end

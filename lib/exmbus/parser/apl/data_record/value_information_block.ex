@@ -3,6 +3,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock do
   The Value Information Block utilities
   """
   alias __MODULE__, as: VIB
+  alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.VifTableMain
   alias Exmbus.Parser.Context
 
@@ -52,11 +53,11 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock do
     table: nil
   ]
 
-  @spec parse(binary, Context.t()) ::
+  @spec parse(binary(), DIB.t(), Context.t()) ::
           {:ok, VIB.t(), rest :: binary} | {:error, any, binary}
-  def parse(bin, ctx) do
+  def parse(bin, %DIB{} = dib, %Context{} = read_only_ctx) do
     # delegate the parsing to the primary table
-    VifTableMain.parse(bin, ctx)
+    VifTableMain.parse(bin, dib, read_only_ctx)
   end
 
   # Basic unparse, main table, no extensions
