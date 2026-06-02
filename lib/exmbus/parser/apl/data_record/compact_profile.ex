@@ -27,9 +27,9 @@ defmodule Exmbus.Parser.Apl.DataRecord.CompactProfile do
   Compact Profiles are automatically expanded by default.
   This can be disabled with the option `expand_compact_profiles: false` in the options map.
   """
-  alias Exmbus.Parser.Context
-  alias Exmbus.Parser.Apl.DataRecord.CompactProfile.CompactProfileHeader
   alias Exmbus.Parser.Apl.DataRecord
+  alias Exmbus.Parser.Apl.DataRecord.CompactProfile.CompactProfileHeader
+  alias Exmbus.Parser.Context
 
   @doc """
   Return true if the record is a compact profile record. false otherwise.

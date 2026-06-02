@@ -3,12 +3,11 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   Parser for a DataRecord.
   """
 
-  alias Exmbus.Parser.Apl.DataRecord.CompactProfile
   alias Exmbus.Parser.Apl.DataRecord
+  alias Exmbus.Parser.Apl.DataRecord.CompactProfile
   alias Exmbus.Parser.Apl.DataRecord.Header
   alias Exmbus.Parser.Apl.DataRecord.Header.InvalidHeader
   alias Exmbus.Parser.Apl.DataRecord.ValueInformationBlock, as: VIB
-  # alias Exmbus.Parser.Apl.DataRecord.DataInformationBlock, as: DIB
   alias Exmbus.Parser.DataType
 
   defdelegate compact_profile?(data_record), to: CompactProfile
@@ -38,8 +37,8 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   @doc """
   Decodes a single DataRecord from a binary.
   """
-  def parse(bin, ctx) do
-    case Header.parse(bin, ctx) do
+  def parse(bin, read_only_ctx) do
+    case Header.parse(bin, read_only_ctx) do
       {:ok, %Header{} = header, rest} ->
         case parse_data(header, rest) do
           {:ok, data, rest} ->
@@ -310,15 +309,25 @@ defmodule Exmbus.Parser.Apl.DataRecord do
     do: DataType.encode_type_d(data, size)
 
   # Datetime 32bit (Type F)
-  def unparse_data(%{coding: :type_f, dib: %{size: 32}}, data), do: DataType.encode_type_f(data)
+  def unparse_data(%{coding: :type_f, dib: %{size: 32}}, data),
+    do: DataType.encode_type_f(data)
+
   # Date (Type G)
-  def unparse_data(%{coding: :type_g, dib: %{size: 16}}, data), do: DataType.encode_type_g(data)
+  def unparse_data(%{coding: :type_g, dib: %{size: 16}}, data),
+    do: DataType.encode_type_g(data)
+
   # Real 32 bit (Type H)
-  def unparse_data(%{coding: :type_h, dib: %{size: 32}}, data), do: DataType.encode_type_h(data)
+  def unparse_data(%{coding: :type_h, dib: %{size: 32}}, data),
+    do: DataType.encode_type_h(data)
+
   # Datetime 48 bit (Type I)
-  def unparse_data(%{coding: :type_i, dib: %{size: 48}}, data), do: DataType.encode_type_i(data)
+  def unparse_data(%{coding: :type_i, dib: %{size: 48}}, data),
+    do: DataType.encode_type_i(data)
+
   # Time 24 bit (Type J)
-  def unparse_data(%{coding: :type_j, dib: %{size: 24}}, data), do: DataType.encode_type_j(data)
+  def unparse_data(%{coding: :type_j, dib: %{size: 24}}, data),
+    do: DataType.encode_type_j(data)
+
   # Datetime in LVAR (Type M)
   def unparse_data(%{coding: :type_m, dib: %{size: :variable_length}}, data),
     do: DataType.encode_type_m(data)

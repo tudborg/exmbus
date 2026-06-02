@@ -16,12 +16,6 @@ defmodule Exmbus.Parser.Context do
           tpl: any,
           apl: any,
           #
-          dib: any,
-          vib: any,
-          # private storage map for passing data between handlers,
-          # user should not interact with this map directly.
-          private: %{},
-          #
           errors: [any]
         }
 
@@ -63,18 +57,6 @@ defmodule Exmbus.Parser.Context do
     afl: nil,
     tpl: nil,
     apl: nil,
-    # state for when parsing data record:
-    # TODO: move to it's own ACC so it doesnt polute the state?
-    # #reason for keeping it here is that it is useful
-    # for debugging when parsing fails, but maybe
-    # the errors should have more information?
-    # otherwise, maybe have a generic "current parse state" field
-    # that other layers can use?
-    dib: nil,
-    vib: nil,
-    # private storage for passing data between handlers
-    # user should not interact with this map directly.
-    private: %{},
     # error and warning accumulator
     errors: [],
     warnings: []

@@ -36,8 +36,8 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
   @doc """
   Parses the next DataRecord Header from a binary.
   """
-  def parse(bin, ctx) do
-    case DIB.parse(bin, ctx) do
+  def parse(bin, read_only_ctx) do
+    case DIB.parse(bin, read_only_ctx) do
       {:special_function, type, rest_after_dib} ->
         # we just return the special function. The parser upstream will have to decide what to do,
         # but there isn't a real header here. The APL layer knows what to do.
@@ -47,7 +47,7 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
         # We found a DataInformationBlock.
         # We now expect a VIB to follow, which needs the context from the DIB to be able to parse
         # correctly.
-        case VIB.parse(rest_after_dib, %{ctx | dib: dib}) do
+        case VIB.parse(rest_after_dib, dib, read_only_ctx) do
           {:ok, %VIB{} = vib, rest_after_vib} ->
             dib_size = byte_size(bin) - byte_size(rest_after_dib)
             vib_size = byte_size(rest_after_dib) - byte_size(rest_after_vib)
