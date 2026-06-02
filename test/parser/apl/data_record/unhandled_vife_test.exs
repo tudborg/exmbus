@@ -13,4 +13,17 @@ defmodule Parser.Apl.DataRecord.UnhandledVifeTest do
     assert [firmware_version_record] = ctx.apl.records
     assert length(firmware_version_record.header.vib.extensions) == 2
   end
+
+  test "VIFE record errors in the n >= 0b001_0101 and n <= 0b001_1100 range" do
+    assert {:ok, ctx} =
+             [
+               bin: Base.decode16!("0AA6180000"),
+               handlers: [&Exmbus.Parser.Apl.parse/1]
+             ]
+             |> Exmbus.Parser.Context.new()
+             |> Exmbus.Parser.parse()
+
+    assert [operating_time_record] = ctx.apl.records
+    assert [record_error: :data_error] = operating_time_record.header.vib.extensions
+  end
 end

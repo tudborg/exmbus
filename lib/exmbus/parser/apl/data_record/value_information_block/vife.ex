@@ -80,6 +80,20 @@ defmodule Exmbus.Parser.Apl.DataRecord.ValueInformationBlock.Vife do
   defp exts(1, <<e::1, 0b0010010::7, rest::binary>>, ctx, acc),
     do: exts(e, rest, ctx, [:average_value | acc])
 
+  # Record error codes (slave to master); (see 6.4.8)
+  defp exts(1, <<e::1, n::7, rest::binary>>, ctx, acc) when n >= 0b001_0101 and n <= 0b001_1100 do
+    case ErrorCode.decode(n) do
+      {:ok, record_error} ->
+        exts(e, rest, ctx, [{:record_error, record_error} | acc])
+
+      # for now we just pass the reserved numbers through.
+      # if they are being used it is most likely because we have not implemented them.
+      # I've already seen 0b0_1000 in use in the real world.
+      {:error, {:reserved, _} = r} ->
+        exts(e, rest, ctx, [{:record_error, r} | acc])
+    end
+  end
+
   # EN 13757-3:2018 table 15
   defp exts(1, <<e::1, 0b0010011::7, rest::binary>>, ctx, acc),
     do: exts(e, rest, ctx, [{:compact_profile, :inverse} | acc])
