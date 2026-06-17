@@ -2,6 +2,15 @@
 
 ## [v0.6.1-dev]
 
+### Fixed
+
+- `Exmbus.Dll.Wmbus` no longer changes options `length` and `crc` while parsing.
+
+### Added
+
+- `Exmbus.Util.rekey_ell` can now also change identification_no of the DLL.
+- `Exmbus.Parser.Apl.FormatFrame` now has a `to_header_bytes/1` `from_header_bytes/1`.
+
 
 ## [v0.6.0] - 2026-06-18
 

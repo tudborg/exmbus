@@ -34,7 +34,7 @@ defmodule Exmbus.Parser.IdentificationNo do
   def encode(identification_no) when is_binary(identification_no) do
     case Base.decode16(identification_no) do
       {:ok, <<d, c, b, a>>} -> {:ok, <<a, b, c, d>>}
-      :error -> {:error, :invalid_identification_no, identification_no}
+      :error -> {:error, {:invalid_identification_no, identification_no}}
     end
   end
 

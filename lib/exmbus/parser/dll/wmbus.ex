@@ -2,8 +2,8 @@ defmodule Exmbus.Parser.Dll.Wmbus do
   @moduledoc """
   Data Link Layer for WMbus
   """
-  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Context
+  alias Exmbus.Parser.IdentificationNo
   alias Exmbus.Parser.Manufacturer
   alias Exmbus.Parser.Tpl.Device
 
@@ -37,22 +37,39 @@ defmodule Exmbus.Parser.Dll.Wmbus do
         %{bin: <<len, rest::binary-size(len), tail::binary>>, opts: %{length: true, crc: false}} =
           ctx
       ) do
-    ctx = Context.merge_opts(%{ctx | bin: rest}, %{length: false})
+    ctx = %{ctx | bin: rest}
 
     case tail do
-      <<>> -> parse(ctx)
-      tail -> parse(Context.add_warning(ctx, {:trailing_data, tail}))
+      <<>> -> do_parse(ctx)
+      tail -> do_parse(Context.add_warning(ctx, {:trailing_data, tail}))
     end
   end
 
-  def parse(
-        %{
-          bin:
-            <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), version,
-              d::binary-size(1), rest::binary>>,
-          opts: %{length: false, crc: false}
-        } = ctx
-      ) do
+  # when length: true, crc: false, but the bin doesn't contain the expected length, we halt the parser
+  def parse(%{bin: <<len, _rest::binary>>, opts: %{length: true, crc: false}} = ctx) do
+    {:halt, Context.add_error(ctx, {:invalid_length, len})}
+  end
+
+  def parse(%{opts: %{length: false, crc: false}} = ctx) do
+    do_parse(ctx)
+  end
+
+  # set some defaults.
+  # maybe move this out of the core parsing logic.
+  def parse(%{opts: opts} = ctx) when not is_map_key(opts, :length),
+    do: parse(%{ctx | opts: Map.put(opts, :length, true)})
+
+  def parse(%{opts: opts} = ctx) when not is_map_key(opts, :crc),
+    do: parse(%{ctx | opts: Map.put(opts, :crc, false)})
+
+  # parse the ctx bin, assumes length and crc has been handled and is not part of the bin anymore.
+  defp do_parse(
+         %{
+           bin:
+             <<c::binary-size(1), man_bytes::binary-size(2), i_bytes::binary-size(4), version,
+               d::binary-size(1), rest::binary>>
+         } = ctx
+       ) do
     with {:ok, control} <- decode_c_field(c),
          {:ok, identification_no} <- IdentificationNo.decode(i_bytes),
          {:ok, manufacturer} <- Manufacturer.decode(man_bytes),
@@ -72,13 +89,33 @@ defmodule Exmbus.Parser.Dll.Wmbus do
     end
   end
 
-  # set some defaults.
-  # maybe move this out of the core parsing logic.
-  def parse(%{opts: opts} = ctx) when not is_map_key(opts, :length),
-    do: parse(%{ctx | opts: Map.put(opts, :length, true)})
+  def unparse(%{dll: nil} = ctx) do
+    {:next, ctx}
+  end
 
-  def parse(%{opts: opts} = ctx) when not is_map_key(opts, :crc),
-    do: parse(%{ctx | opts: Map.put(opts, :crc, false)})
+  def unparse(%{dll: %__MODULE__{} = dll, opts: %{length: should_have_length?}} = ctx) do
+    with {:ok, c} <- encode_c_field(dll.control),
+         {:ok, man_b} <- Manufacturer.encode(dll.manufacturer),
+         {:ok, id_b} <- IdentificationNo.encode(dll.identification_no),
+         {:ok, d_b} <- Device.encode(dll.device) do
+      bin =
+        <<c::binary-size(1), man_b::binary-size(2), id_b::binary-size(4), dll.version,
+          d_b::binary-size(1), ctx.bin::binary>>
+
+      # add length if the original options had length
+      bin =
+        if should_have_length? do
+          <<byte_size(bin), bin::binary>>
+        else
+          bin
+        end
+
+      {:next, %{ctx | bin: bin, dll: nil}}
+    else
+      {:error, reason} ->
+        {:halt, Context.add_error(ctx, reason)}
+    end
+  end
 
   @doc """
   Return the communication direction of a Wmbus struct.
@@ -120,4 +157,19 @@ defmodule Exmbus.Parser.Dll.Wmbus do
     do: raise("CNF-IR not implemented")
 
   defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x8::4>>), do: {:ok, :rsp_ud}
+
+  defp encode_c_field(:snd_nke), do: raise("SND-NKE not implemented")
+  defp encode_c_field(:snd_ud), do: raise("SND-UD/SND-UD2 not implemented")
+  defp encode_c_field(:snd_ud2), do: raise("SND-UD/SND-UD2 not implemented")
+  defp encode_c_field(:snd_nr), do: {:ok, <<0::1, 1::1, 0::1, 0::1, 0x4::4>>}
+  defp encode_c_field(:snd_ud3), do: raise("SND-UD3 not implemented")
+  defp encode_c_field(:snd_ir), do: {:ok, <<0::1, 1::1, 0::1, 0::1, 0x6::4>>}
+  defp encode_c_field(:acc_nr), do: raise("ACC-NR not implemented")
+  defp encode_c_field(:acc_dmd), do: raise("ACC-DMD not implemented")
+  defp encode_c_field(:req_ud1), do: raise("REQ-UD1 not implemented")
+  defp encode_c_field(:req_ud2), do: raise("REQ-UD2 not implemented")
+  defp encode_c_field(:ack), do: raise("ACK not implemented")
+  defp encode_c_field(:nack), do: raise("NACK not implemented")
+  defp encode_c_field(:cnf_ir), do: raise("CNF-IR not implemented")
+  defp encode_c_field(:rsp_ud), do: {:ok, <<0::1, 0::1, 0::1, 0::1, 0x8::4>>}
 end
