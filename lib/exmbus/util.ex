@@ -7,8 +7,9 @@ defmodule Exmbus.Util do
   @doc """
   Re-key the ELL payload, returning the original headers with the rekeyed payload.
   """
-  def rekey_ell(frame, opts, old_key, new_key) when is_binary(frame) do
-    # parse up to and incuding the ELL headers
+  def rekey_ell(frame, input_opts, output_opts)
+      when is_binary(frame) and is_list(input_opts) and is_list(output_opts) do
+    # parse up to and including the ELL headers
     handlers = [
       # parse the DLL
       &Exmbus.Parser.Dll.parse/1,
@@ -16,14 +17,24 @@ defmodule Exmbus.Util do
       &Exmbus.Parser.Ell.parse/1
     ]
 
-    ctx = Context.new(handlers: handlers, opts: opts)
+    ctx = Context.new(handlers: handlers, opts: input_opts)
     {:ok, ctx} = Exmbus.parse(frame, ctx)
-    encrypted = ctx.bin
-    {:next, ctx} = Exmbus.Parser.Ell.decrypt_bin(Context.merge_opts(ctx, key: old_key))
-    {:next, ctx} = Exmbus.Parser.Ell.encrypt_bin(Context.merge_opts(ctx, key: new_key))
-    reencrypted = ctx.bin
-    # now we graft the reencrypted payload onto the original headers
-    {:ok, :binary.part(frame, 0, byte_size(frame) - byte_size(encrypted)) <> reencrypted}
+    {:next, ctx} = Exmbus.Parser.Ell.decrypt_bin(ctx)
+
+    # now we need to reverse the flow, let's get the output options in
+    ctx = Context.merge_opts(ctx, output_opts)
+
+    # if ctx opts has identification_no, swap it out in the dll context before unparsing
+    ctx =
+      case ctx.opts[:identification_no] do
+        nil -> ctx
+        id -> put_in(ctx.dll.identification_no, id)
+      end
+
+    {:next, ctx} = Exmbus.Parser.Ell.encrypt_bin(ctx)
+    {:next, ctx} = Exmbus.Parser.Ell.unparse(ctx)
+    {:next, ctx} = Exmbus.Parser.Dll.unparse(ctx)
+    {:ok, ctx.bin}
   end
 
   @doc """

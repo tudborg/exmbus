@@ -3,8 +3,8 @@ defmodule Exmbus.Parser.Identity do
   Identity of a device (meter, gateway, partner, etc)
   """
   alias Exmbus.Parser.IdentificationNo
-  alias Exmbus.Parser.Tpl.Device
   alias Exmbus.Parser.Manufacturer
+  alias Exmbus.Parser.Tpl.Device
 
   defstruct identification_no: nil,
             manufacturer: nil,
@@ -29,6 +29,17 @@ defmodule Exmbus.Parser.Identity do
          version: v,
          device: device
        }}
+    end
+  end
+
+  def encode(%__MODULE__{identification_no: id, manufacturer: man, version: v, device: d}) do
+    with {:ok, man_b} <- Manufacturer.encode(man),
+         {:ok, id_b} <- IdentificationNo.encode(id),
+         {:ok, d_b} <- Device.encode(d) do
+      {:ok, <<man_b::binary-size(2), id_b::binary-size(4), v, d_b::binary-size(1)>>}
+    else
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end

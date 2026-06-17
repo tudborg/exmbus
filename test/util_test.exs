@@ -7,24 +7,56 @@ defmodule UtilTest do
 
   use ExUnit.Case, async: true
 
-  test "rekey_ell/4" do
-    old_key = "0102030405060708090A0B0C0D0E0F10" |> Base.decode16!()
-    new_key = "FFFEFDFCFBFAF9F8F7F6F5F4F3F2F1F0" |> Base.decode16!()
+  describe "rekey_ell/3" do
+    setup do
+      %{
+        old_key: "0102030405060708090A0B0C0D0E0F10",
+        new_key: "FFFEFDFCFBFAF9F8F7F6F5F4F3F2F1F0",
+        old_payload: "08C67C819AAE99B4DE753AA136EF64917ED9D8B2E2D35840BDEA173B8FE14CCE3F1406B7CF",
+        new_payload: "EACA1481EB0E11786A5103FE9244644833CB25A5F808E886925B1BA4F35F0A05277883718A",
+        prefix: "442D2C1131342733028D20E9603A1020"
+      }
+      |> Map.new(fn {key, value} -> {key, Base.decode16!(value)} end)
+    end
 
-    prefix = "442D2C1131342733028D20E9603A1020" |> Base.decode16!()
+    test "basic example", ctx do
+      assert {:ok, rekeyed_frame} =
+               Exmbus.Util.rekey_ell(
+                 ctx.prefix <> ctx.old_payload,
+                 [length: false, key: ctx.old_key],
+                 length: false,
+                 key: ctx.new_key
+               )
 
-    old_payload =
-      "08C67C819AAE99B4DE753AA136EF64917ED9D8B2E2D35840BDEA173B8FE14CCE3F1406B7CF"
-      |> Base.decode16!()
+      # assert that the rekeyed payload matches the expected
+      assert ctx.prefix <> ctx.new_payload == rekeyed_frame
+    end
 
-    new_payload =
-      "EACA1481EB0E11786A5103FE9244644833CB25A5F808E886925B1BA4F35F0A05277883718A"
-      |> Base.decode16!()
+    test "swaps out identification number", ctx do
+      assert {:ok, rekeyed_frame} =
+               Exmbus.Util.rekey_ell(
+                 ctx.prefix <> ctx.old_payload,
+                 [length: false, identification_no: "00000001", key: ctx.old_key],
+                 length: false,
+                 key: ctx.new_key
+               )
 
-    assert {:ok, rekeyed_frame} =
-             Exmbus.Util.rekey_ell(prefix <> old_payload, [length: false], old_key, new_key)
+      {:ok, ctx} = Exmbus.parse(rekeyed_frame, key: ctx.new_key, length: false)
+      assert ctx.dll.identification_no == "00000001"
+    end
 
-    # assert that the rekeyed payload matches the expected
-    assert prefix <> new_payload == rekeyed_frame
+    # can add length
+    test "Can add length", ctx do
+      assert {:ok, rekeyed_frame} =
+               Exmbus.Util.rekey_ell(
+                 ctx.prefix <> ctx.old_payload,
+                 [length: false, identification_no: "00000001", key: ctx.old_key],
+                 length: true,
+                 key: ctx.new_key
+               )
+
+      {:ok, ctx} = Exmbus.parse(rekeyed_frame, key: ctx.new_key, length: true)
+      assert ctx.dll.identification_no == "00000001"
+    end
   end
 end

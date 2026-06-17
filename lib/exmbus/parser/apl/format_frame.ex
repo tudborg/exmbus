@@ -6,13 +6,18 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
   a CompactFrame to create a full frame.
   """
 
+  alias Exmbus.Parser.Apl.DataRecord
+  alias Exmbus.Parser.Apl.FullFrame
+  alias Exmbus.Parser.Context
+
+  @type t :: %__MODULE__{
+          headers: list(DataRecord.Header.t())
+        }
+
   defstruct headers: nil
 
-  alias Exmbus.Parser.Apl.FullFrame
-  alias Exmbus.Parser.Apl.DataRecord
-
   def parse(%{bin: <<len, format_signature::little-size(16), rest::binary>>} = ctx) do
-    _parse_format_frame({len, format_signature}, rest, ctx, [])
+    _parse_format_frame({len, format_signature}, rest, %{ctx | bin: <<>>}, [])
   end
 
   defp _parse_format_frame(ff_header, <<>>, ctx, acc) do
@@ -39,25 +44,24 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
 
   # NOTE: should we check length?
   defp finalize_format_frame({_len, format_signature}, <<>>, ctx, acc) do
-    full_frame = %__MODULE__{
-      headers: Enum.reverse(acc)
-    }
+    format_frame = %__MODULE__{headers: Enum.reverse(acc)}
+    ctx = %{ctx | apl: format_frame}
 
-    check_result =
-      if Map.get(ctx.opts, :verify_format_signature, true) do
-        case format_signature(full_frame) do
-          {:ok, ^format_signature} ->
-            :ok
+    if Map.get(ctx.opts, :verify_format_signature, true) do
+      case format_signature(format_frame) do
+        {:ok, ^format_signature} ->
+          {:next, ctx}
 
-          {:ok, differing_format_signature} ->
-            {:error,
+        {:ok, differing_format_signature} ->
+          {:halt,
+           Context.add_error(
+             ctx,
              {:format_signature_mismatch,
-              %{expected: format_signature, got: differing_format_signature}}, ctx}
-        end
+              %{expected: format_signature, got: differing_format_signature}}
+           )}
       end
-
-    with :ok <- check_result do
-      {:next, %{ctx | apl: full_frame, bin: <<>>}}
+    else
+      {:next, ctx}
     end
   end
 
@@ -71,7 +75,7 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
 
   def format_signature(%__MODULE__{} = frame) do
     frame
-    |> header_bytes()
+    |> to_header_bytes()
     |> format_signature()
   end
 
@@ -79,7 +83,13 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
     {:ok, Exmbus.crc!(bytes)}
   end
 
-  defp header_bytes(%__MODULE__{headers: headers}) when is_list(headers) do
+  @doc """
+  Convert the format frame to bytes.
+
+  This is useful for persisting the format frames or for calculating the format signature.
+  """
+  @spec to_header_bytes(t()) :: binary()
+  def to_header_bytes(%__MODULE__{headers: headers}) when is_list(headers) do
     headers
     |> Enum.map(fn
       # if we have the header bytes collected already, we can use those
@@ -92,5 +102,21 @@ defmodule Exmbus.Parser.Apl.FormatFrame do
         header_bin
     end)
     |> Enum.into("")
+  end
+
+  @doc """
+  Parse a FormatFrame from header bytes (no length or format signature)
+
+  This is usually required to get a FormatFrame from stored header bytes.
+  """
+  @spec from_header_bytes(binary()) :: {:ok, t()} | {:error, [any()]}
+  def from_header_bytes(bytes) when is_binary(bytes) do
+    len = byte_size(bytes)
+    ctx = Context.new(opts: %{verify_format_signature: false})
+
+    case _parse_format_frame({len, 0}, bytes, ctx, []) do
+      {:next, %{apl: %__MODULE__{} = format_frame}} -> {:ok, format_frame}
+      {:halt, %{errors: reasons}} -> {:error, reasons}
+    end
   end
 end

@@ -25,7 +25,7 @@ defmodule Parser.Ell.DecryptEncryptTest do
   @rekey "FFFEFDFCFBFAF9F8F7F6F5F4F3F2F1F0" |> Base.decode16!()
 
   test "decrypt and encrypt" do
-    # parse up to and incuding the ELL headers
+    # parse up to and including the ELL headers
     handlers = [
       # parse the DLL
       &Exmbus.Parser.Dll.parse/1,

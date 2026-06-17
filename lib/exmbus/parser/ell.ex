@@ -6,13 +6,13 @@ defmodule Exmbus.Parser.Ell do
   See also the Exmbus.Parser.CI module.
   """
 
-  alias Exmbus.Parser.Ell.UnencryptedWithReceiver
   alias Exmbus.Parser.Context
   alias Exmbus.Parser.Ell.CommunicationControl
-  alias Exmbus.Parser.Ell.SessionNumber
-  alias Exmbus.Parser.Ell.None
   alias Exmbus.Parser.Ell.Encrypted
+  alias Exmbus.Parser.Ell.None
+  alias Exmbus.Parser.Ell.SessionNumber
   alias Exmbus.Parser.Ell.Unencrypted
+  alias Exmbus.Parser.Ell.UnencryptedWithReceiver
 
   @doc """
   Parses an extended link layer and adds it to the parse context.
@@ -109,6 +109,39 @@ defmodule Exmbus.Parser.Ell do
 
   defdelegate maybe_decrypt_bin(ctx), to: Encrypted
   defdelegate decrypt_bin(ctx), to: Encrypted
-
   defdelegate encrypt_bin(ctx), to: Encrypted
+
+  # Unparsing the ELL structure, sticking it at the start of bin, clearing ELL, and returning context.
+
+  def unparse(%{ell: %None{}} = ctx) do
+    {:next, %{ctx | ell: nil}}
+  end
+
+  def unparse(%{ell: %Unencrypted{} = ell} = ctx) do
+    {:ok, cc} = CommunicationControl.encode(ell.communication_control)
+    acc = ell.access_no
+    {:next, %{ctx | ell: nil, bin: <<0x8C, cc::binary-size(1), acc, ctx.bin::binary>>}}
+  end
+
+  def unparse(%{ell: %Encrypted{} = ell} = ctx) do
+    {:ok, cc} = CommunicationControl.encode(ell.communication_control)
+    {:ok, sn} = SessionNumber.encode(ell.session_number)
+    acc = ell.access_no
+
+    {:next,
+     %{
+       ctx
+       | ell: nil,
+         bin: <<0x8D, cc::binary-size(1), acc, sn::binary-size(4), ctx.bin::binary>>
+     }}
+  end
+
+  def unparse(%{ell: %UnencryptedWithReceiver{} = ell} = ctx) do
+    with {:ok, ell_bin} <- UnencryptedWithReceiver.encode(ell) do
+      {:next, %{ctx | ell: nil, bin: <<0x8E, ell_bin::binary-size(10), ctx.bin::binary>>}}
+    else
+      {:error, reason} ->
+        raise "Failed to unparse ELL: #{reason}"
+    end
+  end
 end

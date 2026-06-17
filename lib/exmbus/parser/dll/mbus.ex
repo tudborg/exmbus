@@ -41,6 +41,14 @@ defmodule Exmbus.Parser.Dll.Mbus do
     {:next, %{ctx | dll: dll, bin: rest}}
   end
 
+  def unparse(%{dll: nil} = ctx) do
+    {:next, ctx}
+  end
+
+  def unparse(%{dll: %__MODULE__{}} = ctx) do
+    {:halt, Context.add_error(ctx, :mbus_unparse_not_implemented)}
+  end
+
   @doc """
   Return the communication direction of a Wmbus struct.
   The possible values are: :to_meter, :from_meter, :both

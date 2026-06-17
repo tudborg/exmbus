@@ -133,6 +133,10 @@ defmodule Parser.Apl.CompactFrameTest do
       # and the requested format signature from the compact frame matches:
       assert FormatFrame.format_signature(format_frame) == {:ok, compact_frame.format_signature}
 
+      # while we are here, check that we can take the format frame to bytes and back:
+      header_bytes = FormatFrame.to_header_bytes(format_frame)
+      assert {:ok, ^format_frame} = FormatFrame.from_header_bytes(header_bytes)
+
       # the lookup function to fund the format frame is then just a function tht returns the format frame:
       format_frame_fn = fn _fs, _opts -> {:ok, format_frame} end
       # expand the compact frame which should succeed:
