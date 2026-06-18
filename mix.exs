@@ -1,7 +1,7 @@
 defmodule Exmbus.MixProject do
   use Mix.Project
 
-  @version "0.6.0-rc.1"
+  @version "0.6.0"
   @source_url "https://github.com/tudborg/exmbus"
 
   def project do
