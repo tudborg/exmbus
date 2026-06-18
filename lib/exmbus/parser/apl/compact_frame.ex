@@ -68,14 +68,20 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
   end
 
   @doc """
-  This function will expand the compact frame into a full frame.
-  If the APL in the context is not a CompactFrame, it will return {:next, ctx}
+  This function will expand the compact frame into a full frame
+
+  If the APL in the context is not a CompactFrame, it will return `{:next, ctx}`
+  If the `format_frame_fn` option is not set, it will return `{:halt, ctx}`
   """
-  def maybe_expand(ctx) do
-    case ctx.apl do
-      %__MODULE__{} -> expand(ctx)
-      _ -> {:next, ctx}
+  def maybe_expand(%{apl: %__MODULE__{}} = ctx) do
+    case ctx.opts[:format_frame_fn] do
+      f when is_function(f) -> expand(ctx)
+      nil -> {:halt, Context.add_warning(ctx, {:missing, :format_frame_fn})}
     end
+  end
+
+  def maybe_expand(ctx) do
+    {:next, ctx}
   end
 
   def _expand([], <<>> = _data_bytes, ctx, acc) do

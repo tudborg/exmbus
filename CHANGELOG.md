@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.6.2-dev]
+
+### Fixed
+
+- `CompactFrame` is now only attempted expanded if a `format_frame_fn` is available.
+- `DataRecord.Header` can now unparse with `vib_bytes` and `dib_bytes`.
+
+### Added
+
+- Regression testing related to expanding compact frames from header bytes.
+
 ## [v0.6.1] - 2026-06-18
 
 ### Fixed

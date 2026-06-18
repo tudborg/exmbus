@@ -37,7 +37,7 @@ defmodule Parser.Apl.DataRecord.HeaderTest do
              } = header
 
       # be sure we don't "cheat" :)
-      header = Map.drop(header, [:dib_bytes, :vib_bytes])
+      header = %{header | dib_bytes: nil, vib_bytes: nil}
       assert {:ok, <<0x01, 0xFF, 0x21>>} = Header.unparse(header)
     end
   end

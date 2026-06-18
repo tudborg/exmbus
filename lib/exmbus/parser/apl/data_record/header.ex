@@ -88,10 +88,15 @@ defmodule Exmbus.Parser.Apl.DataRecord.Header do
     end
   end
 
-  def unparse(%__MODULE__{vib: vib, dib: dib}) do
-    with {:ok, vib_bytes} <- VIB.unparse(vib),
-         {:ok, dib_bytes} <- DIB.unparse(dib) do
-      {:ok, <<dib_bytes::binary, vib_bytes::binary>>}
+  def unparse(%__MODULE__{vib: vib, dib: dib} = header) do
+    if is_binary(header.vib_bytes) and is_binary(header.dib_bytes) do
+      # if we have the original bytes, we can just return those
+      {:ok, <<header.dib_bytes::binary, header.vib_bytes::binary>>}
+    else
+      with {:ok, vib_bytes} <- VIB.unparse(vib),
+           {:ok, dib_bytes} <- DIB.unparse(dib) do
+        {:ok, <<dib_bytes::binary, vib_bytes::binary>>}
+      end
     end
   end
 

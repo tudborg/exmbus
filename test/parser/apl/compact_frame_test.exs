@@ -144,5 +144,41 @@ defmodule Parser.Apl.CompactFrameTest do
                Context.new(apl: compact_frame, opts: [format_frame_fn: format_frame_fn])
                |> CompactFrame.expand()
     end
+
+    test "without a format_frame_fn we leave the CompactFrame as the APL struct" do
+      compact =
+        "28442D2C7856341233028D207760772920CB5E3D5EF7BAEC24E0CDF4A4265428763B5766BC366FDED8"
+        |> Base.decode16!()
+
+      key = "0102030405060708090A0B0C0D0E0F10" |> Base.decode16!()
+
+      assert {:ok, %{apl: %CompactFrame{}}} =
+               Exmbus.parse(compact, key: key)
+    end
+
+    test "KAM 12345678 DataRecord unparse issue" do
+      # Problem:
+      # when expanding a compact frame from format frame,
+      # we need to unparse data records to calculate the full frame crc,
+      # but unparse isn't always implemented (extensions etc)
+      compact =
+        "28442D2C7856341233028D207760772920CB5E3D5EF7BAEC24E0CDF4A4265428763B5766BC366FDED8"
+        |> Base.decode16!()
+
+      key = "0102030405060708090A0B0C0D0E0F10" |> Base.decode16!()
+
+      header_bytes = "040504FB827504853C04FB82F53C01FD17" |> Base.decode16!()
+
+      {:ok, compact_ctx} =
+        Exmbus.parse(compact,
+          key: key,
+          format_frame_fn: fn _fs, _opts ->
+            FormatFrame.from_header_bytes(header_bytes)
+          end
+        )
+
+      # assert that we've expanded the compact frame to a full frame.
+      assert %FullFrame{} = compact_ctx.apl
+    end
   end
 end
