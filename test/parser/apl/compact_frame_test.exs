@@ -70,7 +70,7 @@ defmodule Parser.Apl.CompactFrameTest do
               } = compact_frame_ctx} =
                Exmbus.parse(bytes_compact, Context.new(handlers: handlers))
 
-      ffl = fn 15153, _opts ->
+      ffl = fn 15153, _ctx ->
         {:ok, format_frame}
       end
 
@@ -138,7 +138,7 @@ defmodule Parser.Apl.CompactFrameTest do
       assert {:ok, ^format_frame} = FormatFrame.from_header_bytes(header_bytes)
 
       # the lookup function to fund the format frame is then just a function tht returns the format frame:
-      format_frame_fn = fn _fs, _opts -> {:ok, format_frame} end
+      format_frame_fn = fn _fs, _ctx -> {:ok, format_frame} end
       # expand the compact frame which should succeed:
       assert {:next, _expanded_layers} =
                Context.new(apl: compact_frame, opts: [format_frame_fn: format_frame_fn])
@@ -172,7 +172,7 @@ defmodule Parser.Apl.CompactFrameTest do
       {:ok, compact_ctx} =
         Exmbus.parse(compact,
           key: key,
-          format_frame_fn: fn _fs, _opts ->
+          format_frame_fn: fn _fs, _ctx ->
             FormatFrame.from_header_bytes(header_bytes)
           end
         )

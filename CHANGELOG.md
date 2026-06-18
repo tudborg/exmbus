@@ -2,6 +2,12 @@
 
 ## [v0.6.2-dev]
 
+### Breaking Changes
+
+- `format_frame_fn` function now called with `(format_signature, ctx)` instead of 
+  `(format_signature, opts)`, this is a *breaking change*.
+  The fix is to access the options as `ctx.opts`
+
 ### Fixed
 
 - `CompactFrame` is now only attempted expanded if a `format_frame_fn` is available.

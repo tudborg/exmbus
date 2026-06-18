@@ -36,7 +36,7 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
   top CompactFrame struct into a FullFrame struct and return {:ok, [%FullFrame{} | rest]}
 
   The option :format_frame_fn must be set to a 2-arity function that receives a format signature and
-  the remaining options, and return {:ok, %FormatFrame{}}
+  the context, and return {:ok, %FormatFrame{}}
 
   The Full-Frame-CRC from the compact frame will be verified against the expanded FullFrame,
   and an error returned if they do not match. This behaviour can be disabled with the option :verify_full_frame_crc
@@ -44,11 +44,11 @@ defmodule Exmbus.Parser.Apl.CompactFrame do
   def expand(
         %{
           apl: %__MODULE__{format_signature: format_signature, data_bytes: data_bytes},
-          opts: %{format_frame_fn: f}
+          opts: %{format_frame_fn: format_frame_fn}
         } = ctx
       )
-      when is_function(f, 2) do
-    case f.(format_signature, ctx.opts) do
+      when is_function(format_frame_fn, 2) do
+    case format_frame_fn.(format_signature, ctx) do
       {:ok, %FormatFrame{headers: headers}} ->
         case _expand(headers, data_bytes, ctx, []) do
           {:next, ctx} -> {:next, ctx}
