@@ -12,6 +12,7 @@
 
 - `CompactFrame` is now only attempted expanded if a `format_frame_fn` is available.
 - `DataRecord.Header` can now unparse with `vib_bytes` and `dib_bytes`.
+- `DataRecord.to_map!` now sets unit and value to `nil` if the retriever returns an error (e.g. record error is set)
 
 ### Added
 

@@ -212,14 +212,14 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   def to_map!(%DataRecord{header: header} = dr) do
     unit =
       case unit(dr) do
-        {:ok, u} ->
-          u
+        {:ok, u} -> u
+        {:error, _} -> nil
       end
 
     value =
       case value(dr) do
-        {:ok, v} ->
-          v
+        {:ok, v} -> v
+        {:error, _} -> nil
       end
 
     %{
