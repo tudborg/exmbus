@@ -3,6 +3,8 @@ defmodule CrashResistanceTest do
   Test that the parser can handle unexpected frames without crashing.
   """
   alias Exmbus.Parser.Context
+  alias Exmbus.Parser.Afl
+  alias Exmbus.Parser.Afl.FragmentationControlField
 
   use ExUnit.Case, async: true
 
@@ -40,5 +42,58 @@ defmodule CrashResistanceTest do
     handler = fn _ctx -> {:error, :reason} end
     assert {:error, ctx} = Exmbus.parse(<<>>, Context.new(handlers: [handler]))
     assert ctx.errors == [{handler, {:unexpected_return, {:error, :reason}}}]
+  end
+
+  test "unsupported wmbus dll control field is a parse error" do
+    handler = &Exmbus.Parser.Dll.parse/1
+
+    frame =
+      Base.decode16!(
+        "2E4093157856341233037A2A0020255923C95AAA26D1B2E7493B013EC4A6F6D3529B520EDFF0EA6DEFC99D6D69EBF3"
+      )
+
+    assert {:error, %{errors: [{^handler, {:not_implemented, :snd_nke}}]}} =
+             Exmbus.parse(frame, key: [])
+  end
+
+  test "unsupported mbus dll control field is a parse error" do
+    handler = &Exmbus.Parser.Dll.parse/1
+    frame = <<0x68, 3, 3, 0x68, 0x40, 0x00, 0x78, 0xB8, 0x16>>
+
+    assert {:error, %{errors: [{^handler, {:not_implemented, :snd_nke}}]}} =
+             Exmbus.parse(frame)
+  end
+
+  test "truncated tpl headers are parse errors" do
+    handler = &Exmbus.Parser.Tpl.parse/1
+    ctx = Context.new(handlers: [handler])
+
+    assert {:error, %{errors: [{^handler, {:invalid_tpl_header, :short}}]}} =
+             Exmbus.parse(<<0x7A>>, ctx)
+  end
+
+  test "fragmented afl is a parse error" do
+    handler = &Exmbus.Parser.Tpl.parse/1
+    fcl = %FragmentationControlField{fragment_id: 1}
+    ctx = Context.new(handlers: [handler], afl: %Afl{fcl: fcl})
+
+    assert {:error, %{errors: [{^handler, {:not_implemented, :fragmented_afl}}]}} =
+             Exmbus.parse(<<0x7A>>, ctx)
+  end
+
+  test "truncated afl is a parse error" do
+    handler = &Exmbus.Parser.Afl.parse/1
+    ctx = Context.new(handlers: [handler])
+
+    assert {:error, %{errors: [{^handler, {:invalid_afl, :truncated}}]}} =
+             Exmbus.parse(<<0x90, 1, 0>>, ctx)
+  end
+
+  test "unsupported ell variants are parse errors" do
+    handler = &Exmbus.Parser.Ell.parse/1
+    ctx = Context.new(handlers: [handler])
+
+    assert {:error, %{errors: [{^handler, {:not_implemented, :ell_v}}]}} =
+             Exmbus.parse(<<0x86>>, ctx)
   end
 end

@@ -23,7 +23,7 @@ defmodule Exmbus.Parser.Ell.SessionNumber do
           :aes_128_ctr
 
         enc ->
-          raise "ELL session number encryption mode #{enc} is reserved for future use, see 13.2.11 of EN 13757-4:2019"
+          throw({:error, {:reserved_ell_session_encryption_mode, enc}})
       end
 
     {:ok,
@@ -35,6 +35,8 @@ defmodule Exmbus.Parser.Ell.SessionNumber do
        # inter-minute session
        session: session
      }}
+  catch
+    {:error, _} = e -> e
   end
 
   def encode(%__MODULE__{encryption: mode, minutes: m, session: s}) do

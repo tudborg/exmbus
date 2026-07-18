@@ -26,12 +26,12 @@ defmodule Exmbus.Crypto do
           iv :: iodata(),
           data :: iodata(),
           flag_or_options :: crypto_opts() | boolean()
-        ) :: {:ok, binary} | {:error, crypto_error()}
+        ) :: {:ok, binary} | {:error, {:crypto_error, crypto_error()}}
   def crypto_one_time(cipher, key, iv, data, flag_or_options) do
     try do
       {:ok, :crypto.crypto_one_time(cipher, key, iv, data, flag_or_options)}
     catch
-      :error, {_tag, _c_file_info, _description} = e -> {:error, e}
+      :error, {_tag, _c_file_info, _description} = e -> {:error, {:crypto_error, e}}
     end
   end
 
@@ -43,7 +43,7 @@ defmodule Exmbus.Crypto do
           key :: iodata(),
           data :: iodata(),
           flag_or_options :: crypto_opts() | boolean()
-        ) :: {:ok, binary} | {:error, crypto_error()}
+        ) :: {:ok, binary} | {:error, {:crypto_error, crypto_error()}}
   def crypto_one_time(cipher, key, data, flag_or_options) do
     try do
       {:ok, :crypto.crypto_one_time(cipher, key, data, flag_or_options)}

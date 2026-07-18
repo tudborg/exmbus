@@ -120,36 +120,39 @@ defmodule Exmbus.Parser.Tpl.ConfigurationField do
     counter_bits = if(z == 1, do: 32, else: 0)
     key_version_bits = if(v == 1, do: 8, else: 0)
 
-    <<
-      counter::little-size(counter_bits),
-      key_version::little-size(key_version_bits),
-      rest::binary
-    >> = rest
+    if bit_size(rest) < counter_bits + key_version_bits do
+      {:error, {:invalid_configuration_field, :truncated}}
+    else
+      <<
+        counter::little-size(counter_bits),
+        key_version::little-size(key_version_bits),
+        rest::binary
+      >> = rest
 
-    cf = %__MODULE__{
-      hop_count: 0,
-      repeater_access: 0,
-      content_of_message: cc,
-      syncrony: false,
-      accessibility: false,
-      bidirectional: false,
-      mode: 7,
-      blocks: blocks,
-      padding: p == 1,
-      content_index: iiii,
-      counter: if(z == 1, do: counter),
-      key_version: if(v == 1, do: key_version),
-      key_id: kkkk,
-      kdf: dd
-    }
+      cf = %__MODULE__{
+        hop_count: 0,
+        repeater_access: 0,
+        content_of_message: cc,
+        syncrony: false,
+        accessibility: false,
+        bidirectional: false,
+        mode: 7,
+        blocks: blocks,
+        padding: p == 1,
+        content_index: iiii,
+        counter: if(z == 1, do: counter),
+        key_version: if(v == 1, do: key_version),
+        key_id: kkkk,
+        kdf: dd
+      }
 
-    {:ok, cf, rest}
+      {:ok, cf, rest}
+    end
   end
 
-  # raise if unknown encryption mode
-  def parse(<<_::8, _::3, mode::5, _rest::binary>> = bin) do
-    <<cfbin::binary-size(2), _::binary>> = bin
-
-    raise "Encryption mode #{mode} not implemented. configuration field bits were #{Exmbus.Debug.to_bits(cfbin)}"
+  def parse(<<_::8, _::3, mode::5, _rest::binary>>) do
+    {:error, {:not_implemented, {:encryption_mode, mode}}}
   end
+
+  def parse(_bin), do: {:error, {:invalid_configuration_field, :truncated}}
 end
