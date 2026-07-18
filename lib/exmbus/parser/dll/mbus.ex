@@ -30,15 +30,19 @@ defmodule Exmbus.Parser.Dll.Mbus do
     end
   end
 
+  def parse(ctx), do: {:halt, Context.add_error(ctx, {:invalid_dll, :mbus})}
+
   defp _parse(<<c::binary-size(1), a, rest::binary>>, ctx) do
-    {:ok, control} = decode_c_field(c)
+    with {:ok, control} <- decode_c_field(c) do
+      dll = %__MODULE__{
+        control: control,
+        address: a
+      }
 
-    dll = %__MODULE__{
-      control: control,
-      address: a
-    }
-
-    {:next, %{ctx | dll: dll, bin: rest}}
+      {:next, %{ctx | dll: dll, bin: rest}}
+    else
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    end
   end
 
   def unparse(%{dll: nil} = ctx) do
@@ -69,24 +73,38 @@ defmodule Exmbus.Parser.Dll.Mbus do
   def direction(%__MODULE__{control: :rsp_ud}), do: {:ok, :from_meter}
 
   defp decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x0::4>>),
-    do: raise("SND-NKE not implemented")
+    do: {:error, {:not_implemented, :snd_nke}}
 
   defp decode_c_field(<<0::1, 1::1, _fcb::1, _fcv::1, 0x3::4>>),
-    do: raise("SND-UD/SND-UD2 not implemented")
+    do: {:error, {:not_implemented, :snd_ud}}
 
   defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x4::4>>), do: {:ok, :snd_nr}
-  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x5::4>>), do: raise("SND-UD3 not implemented")
-  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x6::4>>), do: {:ok, :snd_ir}
-  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x7::4>>), do: raise("ACC-NR not implemented")
-  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x8::4>>), do: raise("ACC-DMD not implemented")
-  defp decode_c_field(<<0::1, 1::1, _fcb::1, 1::1, 0xA::4>>), do: raise("REQ-UD1 not implemented")
-  defp decode_c_field(<<0::1, 1::1, _fcb::1, 1::1, 0xB::4>>), do: raise("REQ-UD2 not implemented")
 
-  defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x0::4>>), do: raise("ACK not implemented")
-  defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x1::4>>), do: raise("NACK not implemented")
+  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x5::4>>),
+    do: {:error, {:not_implemented, :snd_ud3}}
+
+  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x6::4>>), do: {:ok, :snd_ir}
+
+  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x7::4>>),
+    do: {:error, {:not_implemented, :acc_nr}}
+
+  defp decode_c_field(<<0::1, 1::1, _fcb::1, 0::1, 0x8::4>>),
+    do: {:error, {:not_implemented, :acc_dmd}}
+
+  defp decode_c_field(<<0::1, 1::1, _fcb::1, 1::1, 0xA::4>>),
+    do: {:error, {:not_implemented, :req_ud1}}
+
+  defp decode_c_field(<<0::1, 1::1, _fcb::1, 1::1, 0xB::4>>),
+    do: {:error, {:not_implemented, :req_ud2}}
+
+  defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x0::4>>),
+    do: {:error, {:not_implemented, :ack}}
+
+  defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x1::4>>),
+    do: {:error, {:not_implemented, :nack}}
 
   defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x6::4>>),
-    do: raise("CNF-IR not implemented")
+    do: {:error, {:not_implemented, :cnf_ir}}
 
   defp decode_c_field(<<0::1, 0::1, _acd::1, _dfc::1, 0x8::4>>), do: {:ok, :rsp_ud}
 end

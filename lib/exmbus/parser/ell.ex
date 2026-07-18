@@ -38,14 +38,16 @@ defmodule Exmbus.Parser.Ell do
   # > Table 44 below, shows the complete extension block in this case.
   # Fields: CC, ACC
   def parse(%{bin: <<0x8C, cc::binary-size(1), acc, rest::binary>>} = ctx) do
-    {:ok, control} = CommunicationControl.decode(cc)
+    with {:ok, control} <- CommunicationControl.decode(cc) do
+      ell = %Unencrypted{
+        communication_control: control,
+        access_no: acc
+      }
 
-    ell = %Unencrypted{
-      communication_control: control,
-      access_no: acc
-    }
-
-    {:next, %{ctx | ell: ell, bin: rest}}
+      {:next, %{ctx | ell: ell, bin: rest}}
+    else
+      {:error, reason} -> {:halt, Context.add_error(ctx, {:ell_parse_error, reason, ci: 0x8C})}
+    end
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is used in the frame.
@@ -58,16 +60,18 @@ defmodule Exmbus.Parser.Ell do
               rest::binary>>
         } = ctx
       ) do
-    {:ok, control} = CommunicationControl.decode(cc)
-    {:ok, session_number} = SessionNumber.decode(sn)
+    with {:ok, control} <- CommunicationControl.decode(cc),
+         {:ok, session_number} <- SessionNumber.decode(sn) do
+      ell = %Encrypted{
+        communication_control: control,
+        access_no: acc,
+        session_number: session_number
+      }
 
-    ell = %Encrypted{
-      communication_control: control,
-      access_no: acc,
-      session_number: session_number
-    }
-
-    {:next, %{ctx | ell: ell, bin: <<payload_crc::size(16), rest::binary>>}}
+      {:next, %{ctx | ell: ell, bin: <<payload_crc::size(16), rest::binary>>}}
+    else
+      {:error, reason} -> {:halt, Context.add_error(ctx, {:ell_parse_error, reason, ci: 0x8D})}
+    end
   end
 
   # > This value of the CI-field is used if data encryption at the link layer is not used in the frame.
@@ -87,20 +91,26 @@ defmodule Exmbus.Parser.Ell do
   # > This extended link layer specifies the receiver address.
   # > Table 47 below shows the complete extension block in this case.
   # Fields: CC, ACC, M2, A2, SN, PayloadCRC
-  def parse(%{
-        bin:
-          <<0x8F, _cc::binary-size(1), _acc, _m2::binary-size(2), _a2::binary-size(6),
-            _sn::binary-size(4), _payload_crc::binary-size(2), _rest::binary>>
-      }) do
-    raise "TODO: ELL IV"
+  def parse(
+        %{
+          bin:
+            <<0x8F, _cc::binary-size(1), _acc, _m2::binary-size(2), _a2::binary-size(6),
+              _sn::binary-size(4), _payload_crc::binary-size(2), _rest::binary>>
+        } = ctx
+      ) do
+    {:halt, Context.add_error(ctx, {:not_implemented, :ell_iv})}
   end
 
   # > The variable Extended Link Layer allows to select optional ELL fields separately.
   # > The shadowed rows of Table 48 shall always be present.
   # > The other fields are optional and can be selected in case they are needed.
   # > The table defines the ordering of the fields.
-  def parse(%{bin: <<0x86, _rest::binary>>}) do
-    raise "TODO: ELL V"
+  def parse(%{bin: <<0x86, _rest::binary>>} = ctx) do
+    {:halt, Context.add_error(ctx, {:not_implemented, :ell_v})}
+  end
+
+  def parse(%{bin: <<ci, _rest::binary>>} = ctx) when ci in [0x8C, 0x8D, 0x8E, 0x8F] do
+    {:halt, Context.add_error(ctx, {:ell_parse_error, :truncated, ci: ci})}
   end
 
   def parse(%{bin: <<ci, _rest::binary>>} = ctx) do

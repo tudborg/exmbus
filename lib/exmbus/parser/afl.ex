@@ -82,9 +82,23 @@ defmodule Exmbus.Parser.Afl do
   # see table in module doc
   # we can parse up to the MAC
   def parse(%{bin: <<0x90, afll::8, afl_bytes::binary-size(afll), rest::binary>>} = ctx) do
-    <<fcl_bytes::binary-size(2), bytes::binary>> = afl_bytes
-    {:ok, fcl} = FragmentationControlField.decode(fcl_bytes)
+    with <<fcl_bytes::binary-size(2), bytes::binary>> <- afl_bytes,
+         {:ok, fcl} <- FragmentationControlField.decode(fcl_bytes) do
+      parse_fields(ctx, fcl, bytes, rest)
+    else
+      _ -> {:halt, Context.add_error(ctx, {:invalid_afl, :truncated})}
+    end
+  end
 
+  def parse(%{bin: <<0x90, _rest::binary>>} = ctx) do
+    {:halt, Context.add_error(ctx, {:invalid_afl, :truncated})}
+  end
+
+  def parse(%{bin: <<ci, _rest::binary>>} = ctx) do
+    {:halt, Context.add_error(ctx, {:ci_not_afl, ci})}
+  end
+
+  defp parse_fields(ctx, fcl, bytes, rest) do
     # our "accumulator" for the AFL layer
     afl = %__MODULE__{fcl: fcl}
 
@@ -117,10 +131,6 @@ defmodule Exmbus.Parser.Afl do
     else
       {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
-  end
-
-  def parse(%{bin: <<ci, _rest::binary>>} = ctx) do
-    {:halt, Context.add_error(ctx, {:ci_not_afl, ci})}
   end
 
   @doc """

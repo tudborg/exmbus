@@ -35,9 +35,13 @@ defmodule Exmbus.Parser.Tpl do
   def parse(ctx) do
     # guard against fragmented messages, which we don't currently have a good solution for.
     if is_struct(ctx.afl, Afl) and Afl.fragmented?(ctx.afl) do
-      raise "AFL is fragmented, cannot parse TPL"
+      {:halt, Context.add_error(ctx, {:not_implemented, :fragmented_afl})}
+    else
+      do_parse(ctx)
     end
+  end
 
+  defp do_parse(ctx) do
     # Allow only TPL and APL CI codes.
     # If if hit an ELL, AFL or similar, we error out.
     case CI.lookup(ctx.bin) do
@@ -70,18 +74,17 @@ defmodule Exmbus.Parser.Tpl do
   # short
   def _parse(%{bin: <<0x6A, rest::binary>>} = ctx) do
     case parse_tpl_header_short(rest) do
-      {:ok, header, rest} ->
-        finalize_tpl(:format_frame, header, rest, ctx)
-        # NOTE: short header cannot currently return error,
-        # so dialyzer will complain if we try to handle an error from it:
-        # {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+      {:ok, header, rest} -> finalize_tpl(:format_frame, header, rest, ctx)
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
   # long
   def _parse(%{bin: <<0x6B, rest::binary>>} = ctx) do
-    {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:format_frame, header, rest, ctx)
+    case parse_tpl_header_long(rest) do
+      {:ok, header, rest} -> finalize_tpl(:format_frame, header, rest, ctx)
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    end
   end
 
   ##
@@ -95,18 +98,17 @@ defmodule Exmbus.Parser.Tpl do
   # MBus full frame short
   def _parse(%{bin: <<0x7A, rest::binary>>} = ctx) do
     case parse_tpl_header_short(rest) do
-      {:ok, header, rest} ->
-        finalize_tpl(:full_frame, header, rest, ctx)
-        # NOTE: short header cannot currently return error,
-        # so dialyzer will complain if we try to handle an error from it:
-        # {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+      {:ok, header, rest} -> finalize_tpl(:full_frame, header, rest, ctx)
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
   # MBus full frame long
   def _parse(%{bin: <<0x72, rest::binary>>} = ctx) do
-    {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:full_frame, header, rest, ctx)
+    case parse_tpl_header_long(rest) do
+      {:ok, header, rest} -> finalize_tpl(:full_frame, header, rest, ctx)
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    end
   end
 
   ##
@@ -115,8 +117,10 @@ defmodule Exmbus.Parser.Tpl do
 
   # MBus compact long
   def _parse(%{bin: <<0x73, rest::binary>>} = ctx) do
-    {:ok, header, rest} = parse_tpl_header_long(rest)
-    finalize_tpl(:compact_frame, header, rest, ctx)
+    case parse_tpl_header_long(rest) do
+      {:ok, header, rest} -> finalize_tpl(:compact_frame, header, rest, ctx)
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+    end
   end
 
   # MBus compact none
@@ -127,11 +131,8 @@ defmodule Exmbus.Parser.Tpl do
   # MBus compact short
   def _parse(%{bin: <<0x7B, rest::binary>>} = ctx) do
     case parse_tpl_header_short(rest) do
-      {:ok, header, rest} ->
-        finalize_tpl(:compact_frame, header, rest, ctx)
-        # NOTE: short header cannot currently return error,
-        # so dialyzer will complain if we try to handle an error from it:
-        # {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
+      {:ok, header, rest} -> finalize_tpl(:compact_frame, header, rest, ctx)
+      {:error, reason} -> {:halt, Context.add_error(ctx, reason)}
     end
   end
 
@@ -164,6 +165,8 @@ defmodule Exmbus.Parser.Tpl do
       {:ok, header, rest}
     end
   end
+
+  defp parse_tpl_header_short(_rest), do: {:error, {:invalid_tpl_header, :short}}
 
   @doc """
   Decode a TPL long header.
@@ -198,9 +201,8 @@ defmodule Exmbus.Parser.Tpl do
       }
 
       {:ok, header, rest}
-    else
-      {:error, reason} ->
-        {:error, reason, rest}
     end
   end
+
+  def parse_tpl_header_long(_rest), do: {:error, {:invalid_tpl_header, :long}}
 end
