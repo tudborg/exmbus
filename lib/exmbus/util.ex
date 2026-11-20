@@ -3,6 +3,7 @@ defmodule Exmbus.Util do
   Utilities for manipulating data using the Exmbus library.
   """
   alias Exmbus.Parser.Context
+  require Logger
 
   @doc """
   Re-key the ELL payload, returning the original headers with the rekeyed payload.
@@ -49,8 +50,12 @@ defmodule Exmbus.Util do
     ctx = Context.new(handlers: handlers, opts: opts)
 
     case Exmbus.parse(frame, ctx) do
-      {:ok, %{errors: [], warnings: []} = ctx} ->
-        # if the frame parsed successfully with no errors and no warnings
+      {:ok, %{errors: [], warnings: warnings} = ctx} ->
+        for warning <- warnings do
+          Logger.warning("Warning: #{inspect(warning)}")
+        end
+
+        # if the frame parsed successfully with no errors,
         # the ctx.bin is the remaining bytes, which should be the APL bytes.
         {:ok, ctx.bin}
 

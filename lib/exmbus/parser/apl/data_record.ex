@@ -80,6 +80,16 @@ defmodule Exmbus.Parser.Apl.DataRecord do
     {:ok, :invalid}
   end
 
+  def value(%DataRecord{header: _, data: :no_data}) do
+    {:ok, nil}
+  end
+
+  # it doens't really make sense to "get" a value from a selection_for_readout,
+  # but let's just say the value of a selection_for_readout is nil
+  def value(%DataRecord{header: _, data: :selection_for_readout}) do
+    {:ok, nil}
+  end
+
   def value(%DataRecord{
         header: %{vib: %{extensions: vib_extensions, multiplier: mul}},
         data: data
@@ -121,7 +131,7 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   end
 
   defp value_vib_multiplier(value, nil), do: value
-  defp value_vib_multiplier(value, mul), do: value * mul
+  defp value_vib_multiplier(value, mul) when is_number(value), do: value * mul
 
   defp value_vib_extensions(value, []), do: value
 
@@ -208,6 +218,30 @@ defmodule Exmbus.Parser.Apl.DataRecord do
   defp interval_to_string(:day), do: "day"
   defp interval_to_string(:month), do: "month"
   defp interval_to_string(:year), do: "year"
+
+  @doc """
+  Returns a map representation of a DataRecord, including its unit, value, and header information.
+  If the unit or value cannot be retrieved, the function will return an error tuple.
+
+  Note that device, tariff, storage, function_field, description, and extensions are returned as-is from the headers.
+  """
+  @spec to_map(%DataRecord{}) :: {:ok, map()} | {:error, any()}
+  def to_map(%DataRecord{header: header} = record) do
+    with {:ok, unit} <- unit(record),
+         {:ok, value} <- value(record) do
+      {:ok,
+       %{
+         unit: unit,
+         value: value,
+         device: header.dib.device,
+         tariff: header.dib.tariff,
+         storage: header.dib.storage,
+         function_field: header.dib.function_field,
+         description: header.vib.description,
+         extensions: header.vib.extensions
+       }}
+    end
+  end
 
   def to_map!(%DataRecord{header: header} = dr) do
     unit =
