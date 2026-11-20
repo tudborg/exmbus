@@ -38,6 +38,6 @@ jobs:
       - name: Run tests
         run: mix test --cover
       - name: Credo
-        run: mix credo || [[ $? -lt 8 ]]
+        run: mix credo --format oneline || [[ $? -lt 8 ]]
       - name: Dialyzer
         run: mix dialyzer --format github

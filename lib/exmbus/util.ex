@@ -50,19 +50,16 @@ defmodule Exmbus.Util do
     ctx = Context.new(handlers: handlers, opts: opts)
 
     case Exmbus.parse(frame, ctx) do
-      {:ok, %{errors: [], warnings: warnings} = ctx} ->
+      {:ok, %Context{errors: [], warnings: warnings, bin: bin}} ->
         for warning <- warnings do
           Logger.warning("Warning: #{inspect(warning)}")
         end
 
         # if the frame parsed successfully with no errors,
         # the ctx.bin is the remaining bytes, which should be the APL bytes.
-        {:ok, ctx.bin}
+        {:ok, bin}
 
       {:error, %Context{} = ctx} ->
-        {:error, ctx}
-
-      {:ok, %Context{} = ctx} ->
         {:error, ctx}
     end
   end

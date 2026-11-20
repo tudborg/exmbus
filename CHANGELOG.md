@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.6.2-dev]
+## [v0.6.2]
 
 ### Breaking Changes
 
@@ -12,10 +12,12 @@
 
 - `CompactFrame` is now only attempted expanded if a `format_frame_fn` is available.
 - `DataRecord.Header` can now unparse with `vib_bytes` and `dib_bytes`.
-- `DataRecord.to_map!` now sets unit and value to `nil` if the retriever returns an error (e.g. record error is set)
+- `DataRecord.to_map!/1` now sets unit and value to `nil` if the retriever returns an error (e.g. record error is set)
+- `DataRecord.value/1` now returns `:no_data` and `:selection_for_readout` as `nil` (NOTE: Selection for readout is not even a meter-to-master value but can happen during errors)
 
 ### Added
 
+- `DataRecord.to_map/1` that will return errors from `DataRecord.value/1` and `DataRecord.unit/1` instead of `nil`ing the result.
 - Regression testing related to expanding compact frames from header bytes.
 
 ## [v0.6.1] - 2026-06-18

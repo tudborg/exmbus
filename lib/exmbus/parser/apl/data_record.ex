@@ -225,7 +225,7 @@ defmodule Exmbus.Parser.Apl.DataRecord do
 
   Note that device, tariff, storage, function_field, description, and extensions are returned as-is from the headers.
   """
-  @spec to_map(%DataRecord{}) :: {:ok, map()} | {:error, any()}
+  @spec to_map(t()) :: {:ok, map()} | {:error, any()}
   def to_map(%DataRecord{header: header} = record) do
     with {:ok, unit} <- unit(record),
          {:ok, value} <- value(record) do
